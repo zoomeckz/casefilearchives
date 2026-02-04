@@ -1,21 +1,40 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { Icons } from "@/lib/icons";
-import { ForumPost, User, generateId, forumCategories } from "@/lib/data";
+import { AuthUser } from "@/hooks/useAuth";
+import { supabase } from "@/integrations/supabase/client";
+import { generateId, forumCategories } from "@/lib/data";
+
+interface ForumPost {
+  id: string;
+  title: string;
+  content: string;
+  category: string;
+  author: string;
+  authorId: string;
+  replies: number;
+  createdAt: string;
+}
+
+interface ForumReply {
+  id: string;
+  content: string;
+  author: string;
+  authorId: string;
+  createdAt: string;
+}
 
 interface ForumPageProps {
-  posts: ForumPost[];
-  setPosts: (posts: ForumPost[]) => void;
-  user: User | null;
+  user: AuthUser | null;
   setShowAuthModal: (show: boolean) => void;
 }
 
 export const ForumPage: React.FC<ForumPageProps> = ({
-  posts,
-  setPosts,
   user,
   setShowAuthModal,
 }) => {
+  const [posts, setPosts] = useState<ForumPost[]>([]);
   const [selectedPost, setSelectedPost] = useState<ForumPost | null>(null);
+  const [replies, setReplies] = useState<ForumReply[]>([]);
   const [showNewPost, setShowNewPost] = useState(false);
   const [newPost, setNewPost] = useState({
     title: "",
@@ -23,8 +42,88 @@ export const ForumPage: React.FC<ForumPageProps> = ({
     category: "General",
   });
   const [replyContent, setReplyContent] = useState("");
+  const [loading, setLoading] = useState(true);
 
-  const handleCreatePost = (e: React.FormEvent) => {
+  // Fetch posts
+  useEffect(() => {
+    const fetchPosts = async () => {
+      const { data, error } = await supabase
+        .from('forum_posts')
+        .select(`
+          id,
+          title,
+          content,
+          category,
+          created_at,
+          user_id,
+          profiles!inner(name)
+        `)
+        .order('created_at', { ascending: false });
+
+      if (!error && data) {
+        // Get reply counts
+        const postsWithReplies = await Promise.all(
+          data.map(async (post) => {
+            const { count } = await supabase
+              .from('forum_replies')
+              .select('*', { count: 'exact', head: true })
+              .eq('post_id', post.id);
+            
+            return {
+              id: post.id,
+              title: post.title,
+              content: post.content,
+              category: post.category,
+              author: (post.profiles as any)?.name || 'Anonymous',
+              authorId: post.user_id,
+              replies: count || 0,
+              createdAt: post.created_at,
+            };
+          })
+        );
+        setPosts(postsWithReplies);
+      }
+      setLoading(false);
+    };
+
+    fetchPosts();
+  }, []);
+
+  // Fetch replies when post is selected
+  useEffect(() => {
+    if (!selectedPost) {
+      setReplies([]);
+      return;
+    }
+
+    const fetchReplies = async () => {
+      const { data, error } = await supabase
+        .from('forum_replies')
+        .select(`
+          id,
+          content,
+          created_at,
+          user_id,
+          profiles!inner(name)
+        `)
+        .eq('post_id', selectedPost.id)
+        .order('created_at', { ascending: true });
+
+      if (!error && data) {
+        setReplies(data.map(r => ({
+          id: r.id,
+          content: r.content,
+          author: (r.profiles as any)?.name || 'Anonymous',
+          authorId: r.user_id,
+          createdAt: r.created_at,
+        })));
+      }
+    };
+
+    fetchReplies();
+  }, [selectedPost?.id]);
+
+  const handleCreatePost = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!newPost.title || !newPost.content) return;
 
@@ -33,49 +132,77 @@ export const ForumPage: React.FC<ForumPageProps> = ({
       return;
     }
 
-    const post: ForumPost = {
-      id: generateId(),
-      ...newPost,
-      author: user.name,
-      authorId: user.id,
-      replies: 0,
-      comments: [],
-      createdAt: new Date().toISOString(),
-    };
+    const { data, error } = await supabase
+      .from('forum_posts')
+      .insert({
+        title: newPost.title,
+        content: newPost.content,
+        category: newPost.category,
+        user_id: user.id,
+      })
+      .select()
+      .single();
 
-    setPosts([post, ...posts]);
-    setNewPost({ title: "", content: "", category: "General" });
-    setShowNewPost(false);
+    if (!error && data) {
+      setPosts([{
+        id: data.id,
+        title: data.title,
+        content: data.content,
+        category: data.category,
+        author: user.name,
+        authorId: data.user_id,
+        replies: 0,
+        createdAt: data.created_at,
+      }, ...posts]);
+      setNewPost({ title: "", content: "", category: "General" });
+      setShowNewPost(false);
+    }
   };
 
-  const handleAddReply = (e: React.FormEvent) => {
+  const handleAddReply = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!user || !replyContent.trim() || !selectedPost) return;
 
-    const updatedPosts = posts.map((p) => {
-      if (p.id === selectedPost.id) {
-        return {
-          ...p,
-          replies: p.replies + 1,
-          comments: [
-            ...(p.comments || []),
-            {
-              id: generateId(),
-              content: replyContent,
-              author: user.name,
-              authorId: user.id,
-              createdAt: new Date().toISOString(),
-            },
-          ],
-        };
-      }
-      return p;
-    });
+    const { data, error } = await supabase
+      .from('forum_replies')
+      .insert({
+        post_id: selectedPost.id,
+        user_id: user.id,
+        content: replyContent,
+      })
+      .select()
+      .single();
 
-    setPosts(updatedPosts);
-    setSelectedPost(updatedPosts.find((p) => p.id === selectedPost.id) || null);
-    setReplyContent("");
+    if (!error && data) {
+      setReplies([...replies, {
+        id: data.id,
+        content: data.content,
+        author: user.name,
+        authorId: data.user_id,
+        createdAt: data.created_at,
+      }]);
+      
+      // Update post reply count
+      setSelectedPost({
+        ...selectedPost,
+        replies: selectedPost.replies + 1,
+      });
+      setPosts(posts.map(p => 
+        p.id === selectedPost.id 
+          ? { ...p, replies: p.replies + 1 }
+          : p
+      ));
+      setReplyContent("");
+    }
   };
+
+  if (loading) {
+    return (
+      <div className="min-h-screen py-12 px-6 flex items-center justify-center">
+        <p className="text-stone-400">Loading forum...</p>
+      </div>
+    );
+  }
 
   if (selectedPost) {
     return (
@@ -104,7 +231,7 @@ export const ForumPage: React.FC<ForumPageProps> = ({
           </div>
 
           <h3 className="text-xl font-display text-amber-100 mb-6">
-            Replies ({selectedPost.comments?.length || 0})
+            Replies ({replies.length})
           </h3>
 
           <form onSubmit={handleAddReply} className="mb-8">
@@ -126,18 +253,18 @@ export const ForumPage: React.FC<ForumPageProps> = ({
           </form>
 
           <div className="divide-y divide-stone-800/50">
-            {(selectedPost.comments || []).map((comment) => (
-              <div key={comment.id} className="py-4">
+            {replies.map((reply) => (
+              <div key={reply.id} className="py-4">
                 <div className="flex items-center gap-3 mb-2">
                   <div className="w-8 h-8 rounded-full bg-gradient-to-br from-sky-600 to-indigo-600 flex items-center justify-center text-white text-sm font-medium">
-                    {comment.author?.charAt(0).toUpperCase()}
+                    {reply.author?.charAt(0).toUpperCase()}
                   </div>
-                  <span className="text-stone-200">{comment.author}</span>
+                  <span className="text-stone-200">{reply.author}</span>
                   <span className="text-stone-600 text-sm">
-                    {new Date(comment.createdAt).toLocaleDateString()}
+                    {new Date(reply.createdAt).toLocaleDateString()}
                   </span>
                 </div>
-                <p className="text-stone-400 pl-11">{comment.content}</p>
+                <p className="text-stone-400 pl-11">{reply.content}</p>
               </div>
             ))}
           </div>

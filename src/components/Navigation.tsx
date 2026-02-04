@@ -1,11 +1,13 @@
 import React, { useState } from "react";
 import { Icons } from "@/lib/icons";
+import { AuthUser } from "@/hooks/useAuth";
 
 interface NavigationProps {
   currentPage: string;
   setCurrentPage: (page: string) => void;
-  user: any | null;
+  user: AuthUser | null;
   setShowAuthModal: (show: boolean) => void;
+  onSignOut: () => void;
 }
 
 export const Navigation: React.FC<NavigationProps> = ({
@@ -13,6 +15,7 @@ export const Navigation: React.FC<NavigationProps> = ({
   setCurrentPage,
   user,
   setShowAuthModal,
+  onSignOut,
 }) => {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
@@ -59,12 +62,21 @@ export const Navigation: React.FC<NavigationProps> = ({
             ))}
 
             {user ? (
-              <button
-                onClick={() => setCurrentPage("profile")}
-                className="w-7 h-7 rounded-full bg-gradient-to-br from-sky-600 to-maroon-600 flex items-center justify-center text-white text-xs font-medium"
-              >
-                {user.name?.charAt(0).toUpperCase()}
-              </button>
+              <div className="flex items-center gap-3">
+                <button
+                  onClick={() => setCurrentPage("profile")}
+                  className="w-7 h-7 rounded-full bg-gradient-to-br from-sky-600 to-maroon-600 flex items-center justify-center text-white text-xs font-medium"
+                >
+                  {user.name?.charAt(0).toUpperCase()}
+                </button>
+                <button
+                  onClick={onSignOut}
+                  className="text-stone-500 hover:text-stone-300 transition-colors"
+                  title="Sign out"
+                >
+                  <Icons.Logout className="w-4 h-4" />
+                </button>
+              </div>
             ) : (
               <button
                 onClick={() => setShowAuthModal(true)}
@@ -103,7 +115,17 @@ export const Navigation: React.FC<NavigationProps> = ({
                 {item.label}
               </button>
             ))}
-            {!user && (
+            {user ? (
+              <button
+                onClick={() => {
+                  onSignOut();
+                  setMobileMenuOpen(false);
+                }}
+                className="block w-full text-left py-2 text-stone-500 hover:text-red-400"
+              >
+                Sign Out
+              </button>
+            ) : (
               <button
                 onClick={() => {
                   setShowAuthModal(true);
