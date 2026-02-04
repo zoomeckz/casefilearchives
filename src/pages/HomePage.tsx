@@ -1,5 +1,6 @@
 import React from "react";
-import { Chapter } from "@/lib/data";
+import { Chapter } from "@/hooks/useChapters";
+import heroImage from "@/assets/hero-bg.jpg";
 
 interface HomePageProps {
   chapters: Chapter[];
@@ -16,21 +17,33 @@ export const HomePage: React.FC<HomePageProps> = ({
 
   return (
     <div className="min-h-screen">
-      {/* Hero Section */}
-      <section className="py-32 px-6 text-center gradient-hero">
-        <div className="max-w-2xl mx-auto">
-          <h1 className="font-display text-5xl sm:text-7xl text-amber-100 mb-6">
+      {/* Hero Section with Background Image */}
+      <section 
+        className="relative py-32 px-6 text-center overflow-hidden"
+        style={{
+          backgroundImage: `url(${heroImage})`,
+          backgroundSize: 'cover',
+          backgroundPosition: 'center',
+        }}
+      >
+        {/* Dark overlay for text readability */}
+        <div className="absolute inset-0 bg-gradient-to-b from-stone-950/70 via-stone-950/50 to-stone-950" />
+        
+        <div className="relative max-w-2xl mx-auto z-10">
+          <h1 className="font-display text-5xl sm:text-7xl text-amber-100 mb-6 drop-shadow-lg">
             Sedorium
           </h1>
-          <p className="text-stone-400 text-lg mb-12 max-w-lg mx-auto">
+          <p className="text-stone-300 text-lg mb-12 max-w-lg mx-auto drop-shadow-md">
             A fantasy epic of druids, kingdoms, and ancient power
           </p>
           <button
             onClick={() => {
-              setSelectedChapter(chapters[0]);
-              setCurrentPage("reader");
+              if (chapters[0]) {
+                setSelectedChapter(chapters[0]);
+                setCurrentPage("reader");
+              }
             }}
-            className="text-sky-400 hover:text-sky-300 transition-colors text-lg"
+            className="px-8 py-3 bg-sky-600/90 hover:bg-sky-500 text-white rounded-lg font-medium transition-colors shadow-lg backdrop-blur-sm"
           >
             Start Reading →
           </button>

@@ -1,19 +1,22 @@
-import React, { useState } from "react";
+import React, { useEffect } from "react";
 import { Icons } from "@/lib/icons";
-import { Chapter, Comment, GlossaryEntry, User } from "@/lib/data";
+import { Chapter } from "@/hooks/useChapters";
+import { GlossaryEntry } from "@/lib/data";
 import { InteractiveContent } from "@/components/InteractiveContent";
-import { Comments } from "@/components/Comments";
+import { CommentsSection } from "@/components/CommentsSection";
 import { TextToSpeech } from "@/components/TextToSpeech";
+import { AuthUser } from "@/hooks/useAuth";
 
 interface ReaderPageProps {
   chapter: Chapter | null;
   chapters: Chapter[];
   setSelectedChapter: (chapter: Chapter) => void;
   setCurrentPage: (page: string) => void;
-  user: User | null;
+  user: AuthUser | null;
   setShowAuthModal: (show: boolean) => void;
-  onUpdateChapter: (chapter: Chapter) => void;
   glossary: Record<string, GlossaryEntry>;
+  markAsRead: (chapterId: string) => void;
+  incrementViews: (chapterId: string) => void;
 }
 
 export const ReaderPage: React.FC<ReaderPageProps> = ({
@@ -23,23 +26,26 @@ export const ReaderPage: React.FC<ReaderPageProps> = ({
   setCurrentPage,
   user,
   setShowAuthModal,
-  onUpdateChapter,
   glossary,
+  markAsRead,
+  incrementViews,
 }) => {
+  // Mark chapter as read and increment views when opened
+  useEffect(() => {
+    if (chapter) {
+      incrementViews(chapter.id);
+      if (user) {
+        markAsRead(chapter.id);
+      }
+    }
+  }, [chapter?.id, user?.id]);
+
   if (!chapter) return null;
 
   const currentIndex = chapters.findIndex((c) => c.id === chapter.id);
   const prevChapter = currentIndex > 0 ? chapters[currentIndex - 1] : null;
   const nextChapter =
     currentIndex < chapters.length - 1 ? chapters[currentIndex + 1] : null;
-
-  const handleAddComment = (comment: Comment) => {
-    const updatedChapter = {
-      ...chapter,
-      comments: [...(chapter.comments || []), comment],
-    };
-    onUpdateChapter(updatedChapter);
-  };
 
   return (
     <div className="min-h-screen py-12 px-6">
@@ -118,9 +124,8 @@ export const ReaderPage: React.FC<ReaderPageProps> = ({
         </div>
 
         {/* Comments */}
-        <Comments
-          comments={chapter.comments || []}
-          onAddComment={handleAddComment}
+        <CommentsSection
+          chapterId={chapter.id}
           user={user}
           setShowAuthModal={setShowAuthModal}
         />

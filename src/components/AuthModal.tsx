@@ -1,17 +1,17 @@
 import React, { useState } from "react";
 import { Icons } from "@/lib/icons";
-import { generateId } from "@/lib/data";
+import { supabase } from "@/integrations/supabase/client";
 
 interface AuthModalProps {
   isOpen: boolean;
   onClose: () => void;
-  onLogin: (user: any) => void;
+  onSuccess: () => void;
 }
 
 export const AuthModal: React.FC<AuthModalProps> = ({
   isOpen,
   onClose,
-  onLogin,
+  onSuccess,
 }) => {
   const [mode, setMode] = useState<"login" | "register">("login");
   const [formData, setFormData] = useState({
@@ -20,47 +20,50 @@ export const AuthModal: React.FC<AuthModalProps> = ({
     name: "",
   });
   const [error, setError] = useState("");
+  const [loading, setLoading] = useState(false);
 
   if (!isOpen) return null;
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError("");
+    setLoading(true);
 
-    if (!formData.email || !formData.password) {
-      setError("Please fill in all fields");
-      return;
+    try {
+      if (!formData.email || !formData.password) {
+        throw new Error("Please fill in all fields");
+      }
+
+      if (mode === "register") {
+        if (!formData.name) {
+          throw new Error("Please enter your name");
+        }
+        
+        const { error } = await supabase.auth.signUp({
+          email: formData.email,
+          password: formData.password,
+          options: {
+            data: { name: formData.name }
+          }
+        });
+        
+        if (error) throw error;
+      } else {
+        const { error } = await supabase.auth.signInWithPassword({
+          email: formData.email,
+          password: formData.password,
+        });
+        
+        if (error) throw error;
+      }
+
+      onSuccess();
+      onClose();
+    } catch (err: any) {
+      setError(err.message || "An error occurred");
+    } finally {
+      setLoading(false);
     }
-
-    if (mode === "register" && !formData.name) {
-      setError("Please enter your name");
-      return;
-    }
-
-    // Simulate authentication
-    const user = {
-      id: generateId(),
-      email: formData.email,
-      name: mode === "register" ? formData.name : formData.email.split("@")[0],
-      isAdmin: formData.email.includes("admin"),
-      avatar: null,
-    };
-
-    onLogin(user);
-    onClose();
-  };
-
-  const handleGoogleLogin = () => {
-    // Simulate Google OAuth
-    const user = {
-      id: generateId(),
-      email: "user@gmail.com",
-      name: "Google User",
-      isAdmin: false,
-      avatar: null,
-    };
-    onLogin(user);
-    onClose();
   };
 
   return (
@@ -82,26 +85,9 @@ export const AuthModal: React.FC<AuthModalProps> = ({
         </h2>
         <p className="text-stone-400 mb-6">
           {mode === "login"
-            ? "Sign in to comment and join discussions"
+            ? "Sign in to comment and track your reading progress"
             : "Create an account to get started"}
         </p>
-
-        <button
-          onClick={handleGoogleLogin}
-          className="w-full flex items-center justify-center gap-3 px-4 py-3 bg-white hover:bg-gray-100 text-gray-800 rounded-lg font-medium transition-colors mb-6"
-        >
-          <Icons.Google />
-          Continue with Google
-        </button>
-
-        <div className="relative mb-6">
-          <div className="absolute inset-0 flex items-center">
-            <div className="w-full border-t border-stone-700"></div>
-          </div>
-          <div className="relative flex justify-center">
-            <span className="px-3 bg-stone-900 text-stone-500 text-sm">or</span>
-          </div>
-        </div>
 
         <form onSubmit={handleSubmit} className="space-y-4">
           {mode === "register" && (
@@ -115,6 +101,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({
                 }
                 className="w-full px-4 py-3 bg-stone-800 border border-stone-700 rounded-lg text-stone-200 focus:outline-none focus:border-sky-500 transition-colors"
                 placeholder="Your name"
+                disabled={loading}
               />
             </div>
           )}
@@ -129,6 +116,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({
               }
               className="w-full px-4 py-3 bg-stone-800 border border-stone-700 rounded-lg text-stone-200 focus:outline-none focus:border-sky-500 transition-colors"
               placeholder="your@email.com"
+              disabled={loading}
             />
           </div>
 
@@ -144,6 +132,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({
               }
               className="w-full px-4 py-3 bg-stone-800 border border-stone-700 rounded-lg text-stone-200 focus:outline-none focus:border-sky-500 transition-colors"
               placeholder="••••••••"
+              disabled={loading}
             />
           </div>
 
@@ -151,9 +140,10 @@ export const AuthModal: React.FC<AuthModalProps> = ({
 
           <button
             type="submit"
-            className="w-full py-3 bg-sky-600 hover:bg-sky-500 text-white rounded-lg font-medium transition-colors"
+            disabled={loading}
+            className="w-full py-3 bg-sky-600 hover:bg-sky-500 disabled:bg-sky-800 disabled:cursor-not-allowed text-white rounded-lg font-medium transition-colors"
           >
-            {mode === "login" ? "Sign In" : "Create Account"}
+            {loading ? "Please wait..." : mode === "login" ? "Sign In" : "Create Account"}
           </button>
         </form>
 
@@ -164,6 +154,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({
           <button
             onClick={() => setMode(mode === "login" ? "register" : "login")}
             className="text-sky-400 hover:text-sky-300"
+            disabled={loading}
           >
             {mode === "login" ? "Sign up" : "Sign in"}
           </button>

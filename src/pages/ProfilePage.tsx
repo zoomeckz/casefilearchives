@@ -1,42 +1,66 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { Icons } from "@/lib/icons";
-import { User } from "@/lib/data";
+import { AuthUser } from "@/hooks/useAuth";
+import { supabase } from "@/integrations/supabase/client";
+import { useReadingProgress } from "@/hooks/useReadingProgress";
 
 interface ProfilePageProps {
-  user: User;
-  setUser: (user: User) => void;
+  user: AuthUser;
   onLogout: () => void;
+  refreshUser: () => void;
 }
 
 export const ProfilePage: React.FC<ProfilePageProps> = ({
   user,
-  setUser,
   onLogout,
+  refreshUser,
 }) => {
   const [editing, setEditing] = useState(false);
+  const [saving, setSaving] = useState(false);
   const [profile, setProfile] = useState({
     name: user?.name || "",
-    bio: user?.bio || "",
-    location: user?.location || "",
-    website: user?.website || "",
-    favoriteCharacter: user?.favoriteCharacter || "",
-    avatar: user?.avatar || null,
   });
+  const { readCount } = useReadingProgress(user);
+  const [commentCount, setCommentCount] = useState(0);
+  const [postCount, setPostCount] = useState(0);
 
-  const handleSave = () => {
-    setUser({ ...user, ...profile });
-    setEditing(false);
-  };
+  // Fetch user stats
+  useEffect(() => {
+    const fetchStats = async () => {
+      if (!user) return;
 
-  const handleAvatarChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (file) {
-      const reader = new FileReader();
-      reader.onloadend = () => {
-        setProfile({ ...profile, avatar: reader.result as string });
-      };
-      reader.readAsDataURL(file);
+      // Count comments
+      const { count: comments } = await supabase
+        .from('comments')
+        .select('*', { count: 'exact', head: true })
+        .eq('user_id', user.id);
+      
+      // Count forum posts
+      const { count: posts } = await supabase
+        .from('forum_posts')
+        .select('*', { count: 'exact', head: true })
+        .eq('user_id', user.id);
+
+      setCommentCount(comments || 0);
+      setPostCount(posts || 0);
+    };
+
+    fetchStats();
+  }, [user?.id]);
+
+  const handleSave = async () => {
+    setSaving(true);
+    
+    const { error } = await supabase
+      .from('profiles')
+      .update({ name: profile.name })
+      .eq('user_id', user.id);
+
+    if (!error) {
+      refreshUser();
+      setEditing(false);
     }
+    setSaving(false);
   };
 
   if (!user) return null;
@@ -56,9 +80,9 @@ export const ProfilePage: React.FC<ProfilePageProps> = ({
           <div className="flex items-start gap-6">
             <div className="relative group">
               <div className="w-24 h-24 rounded-full overflow-hidden bg-gradient-to-br from-sky-600 to-maroon-600 flex items-center justify-center">
-                {profile.avatar ? (
+                {user.avatarUrl ? (
                   <img
-                    src={profile.avatar}
+                    src={user.avatarUrl}
                     alt="Avatar"
                     className="w-full h-full object-cover"
                   />
@@ -68,17 +92,6 @@ export const ProfilePage: React.FC<ProfilePageProps> = ({
                   </span>
                 )}
               </div>
-              {editing && (
-                <label className="absolute inset-0 flex items-center justify-center bg-black/50 rounded-full cursor-pointer opacity-0 group-hover:opacity-100 transition-opacity">
-                  <Icons.Camera className="text-white" />
-                  <input
-                    type="file"
-                    accept="image/*"
-                    onChange={handleAvatarChange}
-                    className="hidden"
-                  />
-                </label>
-              )}
             </div>
             <div className="flex-1">
               {editing ? (
@@ -97,103 +110,12 @@ export const ProfilePage: React.FC<ProfilePageProps> = ({
                 </h2>
               )}
               <p className="text-stone-500 mt-1">{user.email}</p>
-              <p className="text-stone-600 text-sm mt-1">
-                Member since {new Date().toLocaleDateString()}
-              </p>
+              {user.isAdmin && (
+                <span className="inline-block mt-2 px-2 py-0.5 bg-sky-600/20 text-sky-400 text-xs rounded">
+                  Admin
+                </span>
+              )}
             </div>
-          </div>
-
-          {/* Bio */}
-          <div>
-            <label className="text-stone-400 text-sm">About you</label>
-            {editing ? (
-              <textarea
-                value={profile.bio}
-                onChange={(e) =>
-                  setProfile({ ...profile, bio: e.target.value })
-                }
-                placeholder="Tell us about yourself..."
-                className="w-full mt-2 px-0 py-2 bg-transparent border-b border-stone-700 text-stone-200 focus:outline-none focus:border-sky-500 resize-none"
-                rows={3}
-              />
-            ) : (
-              <p className="text-stone-300 mt-2">
-                {profile.bio || "No bio yet."}
-              </p>
-            )}
-          </div>
-
-          {/* Location */}
-          <div>
-            <label className="text-stone-400 text-sm">Location</label>
-            {editing ? (
-              <input
-                type="text"
-                value={profile.location}
-                onChange={(e) =>
-                  setProfile({ ...profile, location: e.target.value })
-                }
-                placeholder="Where are you from?"
-                className="w-full mt-2 px-0 py-2 bg-transparent border-b border-stone-700 text-stone-200 focus:outline-none focus:border-sky-500"
-              />
-            ) : (
-              <p className="text-stone-300 mt-2">
-                {profile.location || "Not specified"}
-              </p>
-            )}
-          </div>
-
-          {/* Website */}
-          <div>
-            <label className="text-stone-400 text-sm">Website</label>
-            {editing ? (
-              <input
-                type="url"
-                value={profile.website}
-                onChange={(e) =>
-                  setProfile({ ...profile, website: e.target.value })
-                }
-                placeholder="https://..."
-                className="w-full mt-2 px-0 py-2 bg-transparent border-b border-stone-700 text-stone-200 focus:outline-none focus:border-sky-500"
-              />
-            ) : (
-              <p className="text-stone-300 mt-2">
-                {profile.website ? (
-                  <a
-                    href={profile.website}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="text-sky-400 hover:text-sky-300"
-                  >
-                    {profile.website}
-                  </a>
-                ) : (
-                  "Not specified"
-                )}
-              </p>
-            )}
-          </div>
-
-          {/* Favorite Character */}
-          <div>
-            <label className="text-stone-400 text-sm">
-              Favorite Character
-            </label>
-            {editing ? (
-              <input
-                type="text"
-                value={profile.favoriteCharacter}
-                onChange={(e) =>
-                  setProfile({ ...profile, favoriteCharacter: e.target.value })
-                }
-                placeholder="Who's your favorite?"
-                className="w-full mt-2 px-0 py-2 bg-transparent border-b border-stone-700 text-stone-200 focus:outline-none focus:border-sky-500"
-              />
-            ) : (
-              <p className="text-stone-300 mt-2">
-                {profile.favoriteCharacter || "Not specified"}
-              </p>
-            )}
           </div>
 
           {/* Actions */}
@@ -202,20 +124,14 @@ export const ProfilePage: React.FC<ProfilePageProps> = ({
               <>
                 <button
                   onClick={handleSave}
-                  className="px-6 py-2 bg-sky-600 hover:bg-sky-500 text-white rounded-lg font-medium transition-colors"
+                  disabled={saving}
+                  className="px-6 py-2 bg-sky-600 hover:bg-sky-500 disabled:bg-sky-800 text-white rounded-lg font-medium transition-colors"
                 >
-                  Save Changes
+                  {saving ? "Saving..." : "Save Changes"}
                 </button>
                 <button
                   onClick={() => {
-                    setProfile({
-                      name: user?.name || "",
-                      bio: user?.bio || "",
-                      location: user?.location || "",
-                      website: user?.website || "",
-                      favoriteCharacter: user?.favoriteCharacter || "",
-                      avatar: user?.avatar || null,
-                    });
+                    setProfile({ name: user.name });
                     setEditing(false);
                   }}
                   className="px-6 py-2 text-stone-400 hover:text-stone-200 transition-colors"
@@ -250,15 +166,15 @@ export const ProfilePage: React.FC<ProfilePageProps> = ({
           </h3>
           <div className="grid grid-cols-3 gap-8 text-center">
             <div>
-              <div className="text-3xl font-display text-stone-100">0</div>
+              <div className="text-3xl font-display text-stone-100">{readCount}</div>
               <div className="text-stone-500 text-sm mt-1">Chapters Read</div>
             </div>
             <div>
-              <div className="text-3xl font-display text-stone-100">0</div>
+              <div className="text-3xl font-display text-stone-100">{commentCount}</div>
               <div className="text-stone-500 text-sm mt-1">Comments</div>
             </div>
             <div>
-              <div className="text-3xl font-display text-stone-100">0</div>
+              <div className="text-3xl font-display text-stone-100">{postCount}</div>
               <div className="text-stone-500 text-sm mt-1">Forum Posts</div>
             </div>
           </div>
