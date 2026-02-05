@@ -2,6 +2,7 @@ import React, { useState } from "react";
 import { useAuth } from "@/hooks/useAuth";
 import { useChapters, Chapter } from "@/hooks/useChapters";
 import { useReadingProgress } from "@/hooks/useReadingProgress";
+import { useBookmarks } from "@/hooks/useBookmarks";
 import { defaultGlossary, GlossaryEntry } from "@/lib/data";
 import { Navigation } from "@/components/Navigation";
 import { Footer } from "@/components/Footer";
@@ -27,6 +28,9 @@ const Index = () => {
   
   // Reading progress
   const { isRead, markAsRead, markAsUnread, readCount } = useReadingProgress(user);
+  
+  // Bookmarks
+  const { isBookmarked, toggleBookmark, bookmarkCount } = useBookmarks(user);
   
   // Glossary (keeping local for now, can migrate later)
   const [glossary] = useState<Record<string, GlossaryEntry>>(defaultGlossary);
@@ -72,6 +76,8 @@ const Index = () => {
             isRead={isRead}
             markAsUnread={markAsUnread}
             readCount={readCount}
+            isBookmarked={isBookmarked}
+            toggleBookmark={toggleBookmark}
           />
         )}
 
@@ -90,6 +96,8 @@ const Index = () => {
             glossary={glossary}
             markAsRead={markAsRead}
             incrementViews={incrementViews}
+            isBookmarked={isBookmarked}
+            toggleBookmark={toggleBookmark}
           />
         )}
 
@@ -105,6 +113,7 @@ const Index = () => {
             user={user}
             onLogout={handleSignOut}
             refreshUser={refreshUser}
+            bookmarkCount={bookmarkCount}
           />
         )}
 

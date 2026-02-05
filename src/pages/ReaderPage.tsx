@@ -6,6 +6,7 @@ import { InteractiveContent } from "@/components/InteractiveContent";
 import { CommentsSection } from "@/components/CommentsSection";
 import { TextToSpeech } from "@/components/TextToSpeech";
 import { AuthUser } from "@/hooks/useAuth";
+import { BookmarkButton } from "@/components/BookmarkButton";
 
 interface ReaderPageProps {
   chapter: Chapter | null;
@@ -17,6 +18,8 @@ interface ReaderPageProps {
   glossary: Record<string, GlossaryEntry>;
   markAsRead: (chapterId: string) => void;
   incrementViews: (chapterId: string) => void;
+  isBookmarked: (chapterId: string) => boolean;
+  toggleBookmark: (chapterId: string) => void;
 }
 
 export const ReaderPage: React.FC<ReaderPageProps> = ({
@@ -29,6 +32,8 @@ export const ReaderPage: React.FC<ReaderPageProps> = ({
   glossary,
   markAsRead,
   incrementViews,
+  isBookmarked,
+  toggleBookmark,
 }) => {
   // Mark chapter as read and increment views when opened
   useEffect(() => {
@@ -64,9 +69,21 @@ export const ReaderPage: React.FC<ReaderPageProps> = ({
           <span className="text-sky-400 text-sm font-medium">
             Chapter {chapter.chapterNumber}
           </span>
-          <h1 className="font-display text-4xl sm:text-5xl text-amber-100 mt-2 mb-4">
-            {chapter.title}
-          </h1>
+          <div className="flex items-start justify-between gap-4 mt-2 mb-4">
+            <h1 className="font-display text-4xl sm:text-5xl text-amber-100">
+              {chapter.title}
+            </h1>
+            {user && (
+              <BookmarkButton
+                isBookmarked={isBookmarked(chapter.id)}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  toggleBookmark(chapter.id);
+                }}
+                size="md"
+              />
+            )}
+          </div>
           <div className="flex flex-wrap items-center gap-4 text-stone-500 text-sm">
             <span>{new Date(chapter.publishedAt).toLocaleDateString()}</span>
             <span className="flex items-center gap-1">

@@ -4,6 +4,7 @@ import { Chapter } from "@/hooks/useChapters";
 import { AuthUser } from "@/hooks/useAuth";
 import { ReadingProgressBadge } from "@/components/ReadingProgressBadge";
 import { ReadingStats } from "@/components/ReadingStats";
+import { BookmarkButton } from "@/components/BookmarkButton";
 
 interface StoriesPageProps {
   chapters: Chapter[];
@@ -13,6 +14,8 @@ interface StoriesPageProps {
   isRead: (chapterId: string) => boolean;
   markAsUnread: (chapterId: string) => void;
   readCount: number;
+  isBookmarked: (chapterId: string) => boolean;
+  toggleBookmark: (chapterId: string) => void;
 }
 
 export const StoriesPage: React.FC<StoriesPageProps> = ({
@@ -23,6 +26,8 @@ export const StoriesPage: React.FC<StoriesPageProps> = ({
   isRead,
   markAsUnread,
   readCount,
+  isBookmarked,
+  toggleBookmark,
 }) => (
   <div className="min-h-screen py-12 px-6">
     <div className="max-w-2xl mx-auto">
@@ -37,6 +42,7 @@ export const StoriesPage: React.FC<StoriesPageProps> = ({
       <div className="divide-y divide-stone-800/50">
         {chapters.map((chapter) => {
           const chapterIsRead = isRead(chapter.id);
+          const chapterIsBookmarked = isBookmarked(chapter.id);
           return (
             <div
               key={chapter.id}
@@ -58,6 +64,16 @@ export const StoriesPage: React.FC<StoriesPageProps> = ({
                       e.stopPropagation();
                       markAsUnread(chapter.id);
                     }}
+                  />
+                )}
+                {user && (
+                  <BookmarkButton
+                    isBookmarked={chapterIsBookmarked}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      toggleBookmark(chapter.id);
+                    }}
+                    size="sm"
                   />
                 )}
               </div>
