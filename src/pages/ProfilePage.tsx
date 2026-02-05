@@ -3,17 +3,20 @@ import { Icons } from "@/lib/icons";
 import { AuthUser } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
 import { useReadingProgress } from "@/hooks/useReadingProgress";
+import { useEmailSubscription } from "@/hooks/useEmailSubscription";
 
 interface ProfilePageProps {
   user: AuthUser;
   onLogout: () => void;
   refreshUser: () => void;
+  bookmarkCount: number;
 }
 
 export const ProfilePage: React.FC<ProfilePageProps> = ({
   user,
   onLogout,
   refreshUser,
+  bookmarkCount,
 }) => {
   const [editing, setEditing] = useState(false);
   const [saving, setSaving] = useState(false);
@@ -21,6 +24,7 @@ export const ProfilePage: React.FC<ProfilePageProps> = ({
     name: user?.name || "",
   });
   const { readCount } = useReadingProgress(user);
+  const { isSubscribed, toggleSubscription, loading: subLoading } = useEmailSubscription(user);
   const [commentCount, setCommentCount] = useState(0);
   const [postCount, setPostCount] = useState(0);
 
@@ -159,15 +163,43 @@ export const ProfilePage: React.FC<ProfilePageProps> = ({
           </div>
         </div>
 
-        {/* Reading Stats */}
+        {/* Email Notifications */}
+        <div className="mt-16 p-6 bg-stone-800/30 rounded-xl border border-stone-700">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <Icons.Mail className="w-5 h-5 text-stone-400" />
+              <div>
+                <h4 className="text-stone-100 font-medium">New Chapter Notifications</h4>
+                <p className="text-stone-500 text-sm">Get notified when new chapters are published</p>
+              </div>
+            </div>
+            <button
+              onClick={toggleSubscription}
+              disabled={subLoading}
+              className={`px-4 py-2 rounded-lg font-medium transition-colors ${
+                isSubscribed
+                  ? "bg-stone-700 text-stone-300 hover:bg-stone-600"
+                  : "bg-sky-600 text-white hover:bg-sky-500"
+              } disabled:opacity-50 disabled:cursor-not-allowed`}
+            >
+              {subLoading ? "..." : isSubscribed ? "Subscribed" : "Subscribe"}
+            </button>
+          </div>
+        </div>
+
+        {/* Activity Stats */}
         <div className="mt-16">
           <h3 className="font-display text-xl text-amber-100 mb-6">
             Your Activity
           </h3>
-          <div className="grid grid-cols-3 gap-8 text-center">
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-6 text-center">
             <div>
               <div className="text-3xl font-display text-stone-100">{readCount}</div>
               <div className="text-stone-500 text-sm mt-1">Chapters Read</div>
+            </div>
+            <div>
+              <div className="text-3xl font-display text-stone-100">{bookmarkCount}</div>
+              <div className="text-stone-500 text-sm mt-1">Bookmarked</div>
             </div>
             <div>
               <div className="text-3xl font-display text-stone-100">{commentCount}</div>

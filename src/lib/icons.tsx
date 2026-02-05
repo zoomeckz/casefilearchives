@@ -209,6 +209,23 @@ export const Icons = {
       <polyline points="10 9 9 9 8 9" />
     </svg>
   ),
+  Bookmark: ({ className = "w-5 h-5", fill = "none" }: IconProps & { fill?: string }) => (
+    <svg viewBox="0 0 24 24" fill={fill} stroke="currentColor" strokeWidth="2" className={className}>
+      <path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z" />
+    </svg>
+  ),
+  Bell: ({ className = "w-5 h-5" }: IconProps) => (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className={className}>
+      <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9" />
+      <path d="M13.73 21a2 2 0 0 1-3.46 0" />
+    </svg>
+  ),
+  Mail: ({ className = "w-5 h-5" }: IconProps) => (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className={className}>
+      <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z" />
+      <polyline points="22,6 12,13 2,6" />
+    </svg>
+  ),
 };
 
 export default Icons;
