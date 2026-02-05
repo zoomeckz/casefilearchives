@@ -33,9 +33,6 @@ export const HomePage: React.FC<HomePageProps> = ({
           <h1 className="font-display text-5xl sm:text-7xl text-amber-100 mb-6 drop-shadow-lg">
             Sedorium
           </h1>
-          <p className="text-stone-300 text-lg mb-12 max-w-lg mx-auto drop-shadow-md">
-            A fantasy epic of druids, kingdoms, and ancient power
-          </p>
           <button
             onClick={() => {
               if (chapters[0]) {
@@ -43,7 +40,7 @@ export const HomePage: React.FC<HomePageProps> = ({
                 setCurrentPage("reader");
               }
             }}
-            className="px-8 py-3 bg-sky-600/90 hover:bg-sky-500 text-white rounded-lg font-medium transition-colors shadow-lg backdrop-blur-sm"
+            className="mt-8 px-8 py-3 bg-sky-600/90 hover:bg-sky-500 text-white rounded-lg font-medium transition-colors shadow-lg backdrop-blur-sm"
           >
             Start Reading →
           </button>
