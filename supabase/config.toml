@@ -1,1 +1,4 @@
 project_id = "iiezbdlmikvgxjlozwlc"
+
+[functions.send-chapter-notification]
+verify_jwt = false
