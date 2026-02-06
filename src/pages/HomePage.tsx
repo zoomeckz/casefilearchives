@@ -48,27 +48,27 @@ export const HomePage: React.FC<HomePageProps> = ({
       </section>
 
       {/* Latest Chapter */}
-      <section className="py-16 px-6 border-t border-stone-800/50">
+      <section className="py-20 px-6 border-t border-stone-800/50">
         <div className="max-w-2xl mx-auto text-center">
-          <h2 className="font-display text-xl text-stone-500 mb-8">
+          <h2 className="font-display text-sm uppercase tracking-[0.2em] text-stone-500 mb-10">
             Latest Chapter
           </h2>
 
           {latestChapter && (
             <div
-              className="group cursor-pointer"
+              className="group cursor-pointer p-8 rounded-xl border border-stone-800/40 bg-stone-900/30 hover:border-sky-600/30 hover:bg-stone-900/60 transition-all duration-300"
               onClick={() => {
                 setSelectedChapter(latestChapter);
                 setCurrentPage("reader");
               }}
             >
-              <span className="text-stone-600 text-sm">
+              <span className="text-sky-500/70 text-xs font-medium uppercase tracking-wider">
                 Chapter {latestChapter.chapterNumber}
               </span>
-              <h3 className="font-display text-3xl text-stone-100 group-hover:text-sky-400 transition-colors mt-2 mb-4">
+              <h3 className="font-display text-3xl text-stone-100 group-hover:text-sky-400 transition-colors mt-3 mb-4">
                 {latestChapter.title}
               </h3>
-              <p className="text-stone-500 text-sm">
+              <p className="text-stone-600 text-sm">
                 {new Date(latestChapter.publishedAt).toLocaleDateString(
                   "en-US",
                   { year: "numeric", month: "long", day: "numeric" }
@@ -80,13 +80,13 @@ export const HomePage: React.FC<HomePageProps> = ({
       </section>
 
       {/* All Chapters Preview */}
-      <section className="py-16 px-6 border-t border-stone-800/50">
+      <section className="py-20 px-6 border-t border-stone-800/50">
         <div className="max-w-2xl mx-auto text-center">
-          <h2 className="font-display text-xl text-stone-500 mb-12">
+          <h2 className="font-display text-sm uppercase tracking-[0.2em] text-stone-500 mb-14">
             Chapters
           </h2>
 
-          <div className="space-y-6">
+          <div className="space-y-2">
             {chapters
               .slice()
               .reverse()
@@ -98,12 +98,12 @@ export const HomePage: React.FC<HomePageProps> = ({
                     setSelectedChapter(chapter);
                     setCurrentPage("reader");
                   }}
-                  className="group cursor-pointer py-2"
+                  className="group cursor-pointer py-5 px-6 rounded-lg hover:bg-stone-800/30 transition-all duration-200"
                 >
-                  <span className="text-stone-600 text-sm">
+                  <span className="text-stone-600 text-xs uppercase tracking-wider">
                     Chapter {chapter.chapterNumber}
                   </span>
-                  <h3 className="font-display text-lg text-stone-300 group-hover:text-sky-400 transition-colors">
+                  <h3 className="font-display text-lg text-stone-300 group-hover:text-sky-400 transition-colors mt-1">
                     {chapter.title}
                   </h3>
                 </div>
@@ -113,7 +113,7 @@ export const HomePage: React.FC<HomePageProps> = ({
           {chapters.length > 5 && (
             <button
               onClick={() => setCurrentPage("stories")}
-              className="mt-8 text-stone-500 hover:text-sky-400 text-sm transition-colors"
+              className="mt-10 text-stone-500 hover:text-sky-400 text-sm transition-colors duration-200"
             >
               View all {chapters.length} chapters →
             </button>

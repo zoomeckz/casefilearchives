@@ -39,7 +39,7 @@ export const StoriesPage: React.FC<StoriesPageProps> = ({
         <ReadingStats readCount={readCount} totalCount={chapters.length} />
       )}
 
-      <div className="divide-y divide-stone-800/50">
+      <div className="space-y-2">
         {chapters.map((chapter) => {
           const chapterIsRead = isRead(chapter.id);
           const chapterIsBookmarked = isBookmarked(chapter.id);
@@ -50,10 +50,10 @@ export const StoriesPage: React.FC<StoriesPageProps> = ({
                 setSelectedChapter(chapter);
                 setCurrentPage("reader");
               }}
-              className="group py-8 cursor-pointer text-center"
+              className="group py-6 px-6 cursor-pointer text-center rounded-lg hover:bg-stone-800/30 transition-all duration-200"
             >
-              <div className="flex items-center justify-center gap-3 mb-1">
-                <span className="text-stone-600 text-sm">
+              <div className="flex items-center justify-center gap-3 mb-2">
+                <span className="text-stone-600 text-xs uppercase tracking-wider">
                   Chapter {chapter.chapterNumber} ·{" "}
                   {new Date(chapter.publishedAt).toLocaleDateString()}
                 </span>
