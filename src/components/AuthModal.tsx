@@ -73,12 +73,13 @@ export const AuthModal: React.FC<AuthModalProps> = ({
         if (error) throw error;
       }
 
+      setFormData({ email: "", password: "", name: "" });
+      setLoading(false);
       onSuccess();
       onClose();
-      setFormData({ email: "", password: "", name: "" });
     } catch (err: any) {
+      console.error("Auth error:", err);
       setError(err.message || "An error occurred");
-    } finally {
       setLoading(false);
     }
   };
