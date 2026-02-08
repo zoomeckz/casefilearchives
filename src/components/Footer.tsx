@@ -1,22 +1,41 @@
 import React from "react";
 
-export const Footer: React.FC = () => {
+interface FooterProps {
+  setCurrentPage: (page: string) => void;
+}
+
+export const Footer: React.FC<FooterProps> = ({ setCurrentPage }) => {
   return (
-    <footer className="border-t border-stone-800/50 py-12 px-6">
+    <footer className="border-t border-border/50 py-12 px-6">
       <div className="max-w-4xl mx-auto text-center">
-        <p className="font-display text-lg text-amber-100 mb-2">Sedorium</p>
-        <p className="text-stone-500 text-sm mb-6">
-          A fantasy epic of druids, kingdoms, and ancient power.
+        <p className="font-display text-lg text-accent mb-4">SEDORIUM</p>
+        <p className="text-muted-foreground text-sm mb-6">
+          Written by Sam Nowroozi Larki
         </p>
-        <div className="flex justify-center gap-6 text-stone-500 text-sm">
-          <span>© 2024</span>
+        <div className="flex justify-center gap-4 mb-6">
+          <a
+            href="https://instagram.com/anyonebutsam"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="text-muted-foreground hover:text-primary transition-colors text-sm"
+          >
+            Instagram
+          </a>
+          <span className="text-muted-foreground">·</span>
+          <a
+            href="https://tiktok.com/@anyonebutsam"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="text-muted-foreground hover:text-primary transition-colors text-sm"
+          >
+            TikTok
+          </a>
+        </div>
+        <div className="flex justify-center gap-6 text-muted-foreground text-sm">
+          <span>© {new Date().getFullYear()}</span>
           <span>·</span>
-          <button className="hover:text-sky-400 transition-colors">
+          <button onClick={() => setCurrentPage("about")} className="hover:text-primary transition-colors">
             About
-          </button>
-          <span>·</span>
-          <button className="hover:text-sky-400 transition-colors">
-            Contact
           </button>
         </div>
       </div>

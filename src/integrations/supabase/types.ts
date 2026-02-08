@@ -141,6 +141,7 @@ export type Database = {
           content: string
           created_at: string
           id: string
+          is_pinned: boolean | null
           title: string
           updated_at: string
           user_id: string
@@ -150,6 +151,7 @@ export type Database = {
           content: string
           created_at?: string
           id?: string
+          is_pinned?: boolean | null
           title: string
           updated_at?: string
           user_id: string
@@ -159,6 +161,7 @@ export type Database = {
           content?: string
           created_at?: string
           id?: string
+          is_pinned?: boolean | null
           title?: string
           updated_at?: string
           user_id?: string
@@ -224,30 +227,80 @@ export type Database = {
         }
         Relationships: []
       }
+      page_views: {
+        Row: {
+          chapter_id: string | null
+          country: string | null
+          created_at: string
+          duration_seconds: number | null
+          id: string
+          page: string
+          user_id: string | null
+        }
+        Insert: {
+          chapter_id?: string | null
+          country?: string | null
+          created_at?: string
+          duration_seconds?: number | null
+          id?: string
+          page?: string
+          user_id?: string | null
+        }
+        Update: {
+          chapter_id?: string | null
+          country?: string | null
+          created_at?: string
+          duration_seconds?: number | null
+          id?: string
+          page?: string
+          user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "page_views_chapter_id_fkey"
+            columns: ["chapter_id"]
+            isOneToOne: false
+            referencedRelation: "chapters"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       profiles: {
         Row: {
           avatar_url: string | null
+          bio: string | null
           created_at: string
           id: string
+          instagram: string | null
           name: string
+          tiktok: string | null
           updated_at: string
           user_id: string
+          website: string | null
         }
         Insert: {
           avatar_url?: string | null
+          bio?: string | null
           created_at?: string
           id?: string
+          instagram?: string | null
           name: string
+          tiktok?: string | null
           updated_at?: string
           user_id: string
+          website?: string | null
         }
         Update: {
           avatar_url?: string | null
+          bio?: string | null
           created_at?: string
           id?: string
+          instagram?: string | null
           name?: string
+          tiktok?: string | null
           updated_at?: string
           user_id?: string
+          website?: string | null
         }
         Relationships: []
       }
