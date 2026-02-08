@@ -41,24 +41,47 @@ export function useAuth() {
   };
 
   useEffect(() => {
-    // Get initial session
-    supabase.auth.getSession().then(async ({ data: { session } }) => {
+    // Set up auth listener FIRST
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (_event, session) => {
       setSession(session);
       if (session?.user) {
-        const authUser = await fetchUserProfile(session.user.id, session.user.email || '');
-        setUser(authUser);
+        try {
+          const authUser = await fetchUserProfile(session.user.id, session.user.email || '');
+          setUser(authUser);
+        } catch (err) {
+          console.error('Failed to fetch user profile:', err);
+          // Still set a basic user so auth doesn't appear broken
+          setUser({
+            id: session.user.id,
+            email: session.user.email || '',
+            name: session.user.email?.split('@')[0] || 'User',
+            isAdmin: false,
+            avatarUrl: null,
+          });
+        }
+      } else {
+        setUser(null);
       }
       setLoading(false);
     });
 
-    // Listen for auth changes
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (_event, session) => {
+    // THEN get initial session
+    supabase.auth.getSession().then(async ({ data: { session } }) => {
       setSession(session);
       if (session?.user) {
-        const authUser = await fetchUserProfile(session.user.id, session.user.email || '');
-        setUser(authUser);
-      } else {
-        setUser(null);
+        try {
+          const authUser = await fetchUserProfile(session.user.id, session.user.email || '');
+          setUser(authUser);
+        } catch (err) {
+          console.error('Failed to fetch user profile:', err);
+          setUser({
+            id: session.user.id,
+            email: session.user.email || '',
+            name: session.user.email?.split('@')[0] || 'User',
+            isAdmin: false,
+            avatarUrl: null,
+          });
+        }
       }
       setLoading(false);
     });
@@ -89,8 +112,12 @@ export function useAuth() {
 
   const refreshUser = useCallback(async () => {
     if (session?.user) {
-      const authUser = await fetchUserProfile(session.user.id, session.user.email || '');
-      setUser(authUser);
+      try {
+        const authUser = await fetchUserProfile(session.user.id, session.user.email || '');
+        setUser(authUser);
+      } catch (err) {
+        console.error('Failed to refresh user profile:', err);
+      }
     }
   }, [session]);
 
