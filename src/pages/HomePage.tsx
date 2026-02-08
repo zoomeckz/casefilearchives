@@ -28,9 +28,7 @@ export const HomePage: React.FC<HomePageProps> = ({
       >
         <div className="absolute inset-0 bg-gradient-to-b from-stone-950/70 via-stone-950/50 to-stone-950" />
         <div className="relative max-w-2xl mx-auto z-10">
-          <h1 className="font-display text-5xl sm:text-7xl text-accent mb-6 drop-shadow-lg tracking-wider">
-            SEDORIUM
-          </h1>
+          <h1 className="sr-only">SEDORIUM</h1>
           <button
             onClick={() => {
               if (chapters[0]) {
