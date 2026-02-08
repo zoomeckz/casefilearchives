@@ -50,7 +50,13 @@ export const HomePage: React.FC<HomePageProps> = ({
           <h2 className="font-display text-sm uppercase tracking-[0.2em] text-muted-foreground mb-10">
             Latest Chapter
           </h2>
-          {latestChapter && (
+          {chapters.length === 0 ? (
+            <div className="p-8 rounded-xl border border-border/40 bg-card/30 animate-pulse">
+              <div className="h-4 w-24 bg-muted/30 rounded mx-auto mb-3" />
+              <div className="h-8 w-64 bg-muted/30 rounded mx-auto mb-4" />
+              <div className="h-4 w-40 bg-muted/30 rounded mx-auto" />
+            </div>
+          ) : latestChapter && (
             <div
               className="group cursor-pointer p-8 rounded-xl border border-border/40 bg-card/30 hover:border-primary/30 hover:bg-card/60 transition-all duration-300"
               onClick={() => setSelectedChapter(latestChapter)}
@@ -78,20 +84,29 @@ export const HomePage: React.FC<HomePageProps> = ({
             Chapters
           </h2>
           <div className="space-y-2">
-            {chapters.slice().reverse().slice(0, 5).map((chapter) => (
-              <div
-                key={chapter.id}
-                onClick={() => setSelectedChapter(chapter)}
-                className="group cursor-pointer py-5 px-6 rounded-lg hover:bg-secondary/30 transition-all duration-200"
-              >
-                <span className="text-muted-foreground text-xs uppercase tracking-wider">
-                  Chapter {chapter.chapterNumber}
-                </span>
-                <h3 className="font-display text-lg text-foreground/80 group-hover:text-primary transition-colors mt-1">
-                  {chapter.title}
-                </h3>
-              </div>
-            ))}
+            {chapters.length === 0 ? (
+              Array.from({ length: 5 }).map((_, i) => (
+                <div key={i} className="py-5 px-6 rounded-lg animate-pulse">
+                  <div className="h-3 w-20 bg-muted/30 rounded mb-2" />
+                  <div className="h-5 w-48 bg-muted/30 rounded" />
+                </div>
+              ))
+            ) : (
+              chapters.slice().reverse().slice(0, 5).map((chapter) => (
+                <div
+                  key={chapter.id}
+                  onClick={() => setSelectedChapter(chapter)}
+                  className="group cursor-pointer py-5 px-6 rounded-lg hover:bg-secondary/30 transition-all duration-200"
+                >
+                  <span className="text-muted-foreground text-xs uppercase tracking-wider">
+                    Chapter {chapter.chapterNumber}
+                  </span>
+                  <h3 className="font-display text-lg text-foreground/80 group-hover:text-primary transition-colors mt-1">
+                    {chapter.title}
+                  </h3>
+                </div>
+              ))
+            )}
           </div>
           {chapters.length > 5 && (
             <button
