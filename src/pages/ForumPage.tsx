@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { Icons } from "@/lib/icons";
 import { AuthUser } from "@/hooks/useAuth";
-import { supabase } from "@/integrations/supabase/client";
+import { dbFetch } from "@/lib/dbFetch";
 import { forumCategories } from "@/lib/data";
 
 interface ForumPost {
@@ -44,33 +44,49 @@ export const ForumPage: React.FC<ForumPageProps> = ({
 
   useEffect(() => {
     const fetchPosts = async () => {
-      const { data, error } = await supabase
-        .from('forum_posts')
-        .select(`id, title, content, category, created_at, user_id, is_pinned, profiles!inner(name)`)
-        .order('is_pinned', { ascending: false })
-        .order('created_at', { ascending: false });
+      try {
+        // Fetch posts
+        const { data: postsData } = await dbFetch<any[]>('forum_posts', {
+          select: 'id,title,content,category,created_at,user_id,is_pinned',
+          order: 'is_pinned.desc,created_at.desc',
+        });
 
-      if (!error && data) {
-        const postsWithReplies = await Promise.all(
-          data.map(async (post) => {
-            const { count } = await supabase
-              .from('forum_replies')
-              .select('*', { count: 'exact', head: true })
-              .eq('post_id', post.id);
-            return {
-              id: post.id,
-              title: post.title,
-              content: post.content,
-              category: post.category,
-              author: (post.profiles as any)?.name || 'Anonymous',
-              authorId: post.user_id,
-              replies: count || 0,
-              createdAt: post.created_at,
-              isPinned: post.is_pinned || false,
-            };
-          })
+        if (!postsData) { setLoading(false); return; }
+
+        // Fetch all profiles for authors
+        const userIds = [...new Set(postsData.map(p => p.user_id))];
+        const profilePromises = userIds.map(uid =>
+          dbFetch<any[]>('profiles', { select: 'user_id,name', filters: `user_id=eq.${uid}` })
         );
-        setPosts(postsWithReplies);
+        const profileResults = await Promise.all(profilePromises);
+        const profileMap: Record<string, string> = {};
+        profileResults.forEach(r => {
+          if (r.data && r.data[0]) {
+            profileMap[r.data[0].user_id] = r.data[0].name;
+          }
+        });
+
+        // Fetch reply counts
+        const replyCountPromises = postsData.map(post =>
+          dbFetch('forum_replies', { filters: `post_id=eq.${post.id}`, head: true })
+        );
+        const replyCounts = await Promise.all(replyCountPromises);
+
+        const mappedPosts: ForumPost[] = postsData.map((post, i) => ({
+          id: post.id,
+          title: post.title,
+          content: post.content,
+          category: post.category,
+          author: profileMap[post.user_id] || 'Anonymous',
+          authorId: post.user_id,
+          replies: replyCounts[i].count || 0,
+          createdAt: post.created_at,
+          isPinned: post.is_pinned || false,
+        }));
+
+        setPosts(mappedPosts);
+      } catch (err) {
+        console.error('Forum fetch error:', err);
       }
       setLoading(false);
     };
@@ -80,18 +96,33 @@ export const ForumPage: React.FC<ForumPageProps> = ({
   useEffect(() => {
     if (!selectedPost) { setReplies([]); return; }
     const fetchReplies = async () => {
-      const { data, error } = await supabase
-        .from('forum_replies')
-        .select(`id, content, created_at, user_id, profiles!inner(name)`)
-        .eq('post_id', selectedPost.id)
-        .order('created_at', { ascending: true });
-      if (!error && data) {
-        setReplies(data.map(r => ({
-          id: r.id, content: r.content,
-          author: (r.profiles as any)?.name || 'Anonymous',
-          authorId: r.user_id, createdAt: r.created_at,
-        })));
-      }
+      const { data: repliesData } = await dbFetch<any[]>('forum_replies', {
+        select: 'id,content,created_at,user_id',
+        filters: `post_id=eq.${selectedPost.id}`,
+        order: 'created_at.asc',
+      });
+
+      if (!repliesData) return;
+
+      const userIds = [...new Set(repliesData.map(r => r.user_id))];
+      const profilePromises = userIds.map(uid =>
+        dbFetch<any[]>('profiles', { select: 'user_id,name', filters: `user_id=eq.${uid}` })
+      );
+      const profileResults = await Promise.all(profilePromises);
+      const profileMap: Record<string, string> = {};
+      profileResults.forEach(r => {
+        if (r.data && r.data[0]) {
+          profileMap[r.data[0].user_id] = r.data[0].name;
+        }
+      });
+
+      setReplies(repliesData.map(r => ({
+        id: r.id,
+        content: r.content,
+        author: profileMap[r.user_id] || 'Anonymous',
+        authorId: r.user_id,
+        createdAt: r.created_at,
+      })));
     };
     fetchReplies();
   }, [selectedPost?.id]);
@@ -100,14 +131,16 @@ export const ForumPage: React.FC<ForumPageProps> = ({
     e.preventDefault();
     if (!newPost.title || !newPost.content) return;
     if (!user) { setShowAuthModal(true); return; }
-    const { data, error } = await supabase
-      .from('forum_posts')
-      .insert({ title: newPost.title, content: newPost.content, category: newPost.category, user_id: user.id })
-      .select().single();
-    if (!error && data) {
+
+    const { data } = await dbFetch<any[]>('forum_posts', {
+      method: 'POST',
+      body: { title: newPost.title, content: newPost.content, category: newPost.category, user_id: user.id },
+    });
+
+    if (data && data[0]) {
       setPosts([{
-        id: data.id, title: data.title, content: data.content, category: data.category,
-        author: user.name, authorId: data.user_id, replies: 0, createdAt: data.created_at,
+        id: data[0].id, title: data[0].title, content: data[0].content, category: data[0].category,
+        author: user.name, authorId: data[0].user_id, replies: 0, createdAt: data[0].created_at,
         isPinned: false,
       }, ...posts]);
       setNewPost({ title: "", content: "", category: "General" });
@@ -118,14 +151,16 @@ export const ForumPage: React.FC<ForumPageProps> = ({
   const handleAddReply = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!user || !replyContent.trim() || !selectedPost) return;
-    const { data, error } = await supabase
-      .from('forum_replies')
-      .insert({ post_id: selectedPost.id, user_id: user.id, content: replyContent })
-      .select().single();
-    if (!error && data) {
+
+    const { data } = await dbFetch<any[]>('forum_replies', {
+      method: 'POST',
+      body: { post_id: selectedPost.id, user_id: user.id, content: replyContent },
+    });
+
+    if (data && data[0]) {
       setReplies([...replies, {
-        id: data.id, content: data.content, author: user.name,
-        authorId: data.user_id, createdAt: data.created_at,
+        id: data[0].id, content: data[0].content, author: user.name,
+        authorId: data[0].user_id, createdAt: data[0].created_at,
       }]);
       setSelectedPost({ ...selectedPost, replies: selectedPost.replies + 1 });
       setPosts(posts.map(p => p.id === selectedPost.id ? { ...p, replies: p.replies + 1 } : p));
@@ -206,7 +241,6 @@ export const ForumPage: React.FC<ForumPageProps> = ({
             className="text-primary hover:text-primary/80 transition-colors">+ New Post</button>
         </div>
 
-        {/* Category filters */}
         <div className="flex flex-wrap gap-2 mb-8">
           <button
             onClick={() => setSelectedCategory(null)}
@@ -250,7 +284,6 @@ export const ForumPage: React.FC<ForumPageProps> = ({
           </div>
         )}
 
-        {/* Posts list */}
         <div className="space-y-1">
           {filteredPosts.length === 0 ? (
             <p className="text-muted-foreground text-center py-12">No discussions yet. Be the first to start one!</p>
