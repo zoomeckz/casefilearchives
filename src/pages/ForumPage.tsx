@@ -4,6 +4,10 @@ import { AuthUser } from "@/hooks/useAuth";
 import { dbFetch } from "@/lib/dbFetch";
 import { forumCategories } from "@/lib/data";
 
+function renderBold(text: string): string {
+  return text.replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>');
+}
+
 interface ForumPost {
   id: string;
   title: string;
@@ -196,7 +200,7 @@ export const ForumPage: React.FC<ForumPageProps> = ({
             <p className="text-muted-foreground text-sm mb-6">
               by <span className="text-foreground">{selectedPost.author}</span> · {new Date(selectedPost.createdAt).toLocaleDateString()}
             </p>
-            <p className="text-foreground/80 leading-relaxed whitespace-pre-wrap">{selectedPost.content}</p>
+            <p className="text-foreground/80 leading-relaxed whitespace-pre-wrap" dangerouslySetInnerHTML={{ __html: renderBold(selectedPost.content) }} />
           </div>
           <h3 className="text-xl font-display text-accent mb-6">Replies ({replies.length})</h3>
           <form onSubmit={handleAddReply} className="mb-8">
@@ -220,7 +224,7 @@ export const ForumPage: React.FC<ForumPageProps> = ({
                   <span className="text-foreground">{reply.author}</span>
                   <span className="text-muted-foreground text-sm">{new Date(reply.createdAt).toLocaleDateString()}</span>
                 </div>
-                <p className="text-foreground/70 pl-11">{reply.content}</p>
+                <p className="text-foreground/70 pl-11" dangerouslySetInnerHTML={{ __html: renderBold(reply.content) }} />
               </div>
             ))}
           </div>
@@ -299,7 +303,7 @@ export const ForumPage: React.FC<ForumPageProps> = ({
                   <span>{post.replies} replies</span>
                 </div>
                 <h3 className="text-lg text-foreground group-hover:text-primary transition-colors">{post.title}</h3>
-                <p className="text-muted-foreground text-sm mt-1 line-clamp-2">{post.content}</p>
+                <p className="text-muted-foreground text-sm mt-1 line-clamp-2" dangerouslySetInnerHTML={{ __html: renderBold(post.content) }} />
                 <p className="text-muted-foreground/60 text-xs mt-2">
                   by {post.author} · {new Date(post.createdAt).toLocaleDateString()}
                 </p>

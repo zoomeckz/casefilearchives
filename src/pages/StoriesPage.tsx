@@ -49,7 +49,7 @@ export const StoriesPage: React.FC<StoriesPageProps> = ({
               onClick={() => setSelectedChapter(chapter)}
               className="group py-6 px-6 cursor-pointer rounded-lg hover:bg-secondary/30 transition-all duration-200"
             >
-              <div className="flex items-center justify-between mb-2">
+              <div className="flex items-center justify-center mb-2">
                 <div className="flex items-center gap-3">
                   <span className="text-muted-foreground text-xs uppercase tracking-wider">
                     Chapter {chapter.chapterNumber} ·{" "}
@@ -79,10 +79,10 @@ export const StoriesPage: React.FC<StoriesPageProps> = ({
                   Read →
                 </span>
               </div>
-              <h3 className="font-display text-xl text-foreground group-hover:text-primary transition-colors">
+              <h3 className="font-display text-xl text-foreground group-hover:text-primary transition-colors text-center">
                 {chapter.title}
               </h3>
-              <div className="flex items-center gap-4 mt-2 text-xs text-muted-foreground">
+              <div className="flex items-center justify-center gap-4 mt-2 text-xs text-muted-foreground">
                 <span className="flex items-center gap-1">
                   <Icons.Eye className="w-3 h-3" /> {chapter.views} views
                 </span>
