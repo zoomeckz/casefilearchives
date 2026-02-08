@@ -1,12 +1,13 @@
 import React, { useState, useEffect } from "react";
 import { Icons } from "@/lib/icons";
 import { GlossaryEntry } from "@/lib/data";
-import { supabase } from "@/integrations/supabase/client";
+import { dbFetch } from "@/lib/dbFetch";
 import { downloadAllChapters } from "@/hooks/useChapterDownload";
 import { toast } from "sonner";
 
 interface AdminPanelProps {
   glossary: Record<string, GlossaryEntry>;
+  authToken?: string;
 }
 
 interface AnalyticsData {
@@ -19,59 +20,58 @@ interface AnalyticsData {
   chapterStats: Array<{ title: string; views: number; chapter_number: number }>;
 }
 
-export const AdminPanel: React.FC<AdminPanelProps> = ({ glossary }) => {
+export const AdminPanel: React.FC<AdminPanelProps> = ({ glossary, authToken }) => {
   const [activeTab, setActiveTab] = useState("dashboard");
   const [analytics, setAnalytics] = useState<AnalyticsData | null>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     const fetchAnalytics = async () => {
-      const [
-        { data: chapters },
-        { count: totalReaders },
-        { count: totalComments },
-        { count: totalForumPosts },
-        { count: totalSubscribers },
-        { data: pageViews },
-      ] = await Promise.all([
-        supabase.from('chapters').select('title, views, chapter_number').order('chapter_number'),
-        supabase.from('profiles').select('*', { count: 'exact', head: true }),
-        supabase.from('comments').select('*', { count: 'exact', head: true }),
-        supabase.from('forum_posts').select('*', { count: 'exact', head: true }),
-        supabase.from('email_subscriptions').select('*', { count: 'exact', head: true }).eq('new_chapters', true),
-        supabase.from('page_views').select('page, duration_seconds').limit(500),
-      ]);
+      try {
+        const [chaptersRes, readersRes, commentsRes, forumRes, subscribersRes, pageViewsRes] = await Promise.all([
+          dbFetch<any[]>('chapters', { select: 'title,views,chapter_number', order: 'chapter_number.asc', token: authToken }),
+          dbFetch<any[]>('profiles', { select: '*', head: true, token: authToken }),
+          dbFetch<any[]>('comments', { select: '*', head: true, token: authToken }),
+          dbFetch<any[]>('forum_posts', { select: '*', head: true, token: authToken }),
+          dbFetch<any[]>('email_subscriptions', { select: '*', head: true, filters: 'new_chapters=eq.true', token: authToken }),
+          dbFetch<any[]>('page_views', { select: 'page,duration_seconds', token: authToken }),
+        ]);
 
-      const totalViews = chapters?.reduce((sum, c) => sum + c.views, 0) || 0;
+        const chapters = chaptersRes.data || [];
+        const totalViews = chapters.reduce((sum: number, c: any) => sum + c.views, 0);
 
-      // Aggregate page views by page
-      const pageMap = new Map<string, { count: number; totalDuration: number }>();
-      pageViews?.forEach(pv => {
-        const existing = pageMap.get(pv.page) || { count: 0, totalDuration: 0 };
-        existing.count++;
-        existing.totalDuration += pv.duration_seconds || 0;
-        pageMap.set(pv.page, existing);
-      });
+        // Aggregate page views by page
+        const pageViews = pageViewsRes.data || [];
+        const pageMap = new Map<string, { count: number; totalDuration: number }>();
+        pageViews.forEach((pv: any) => {
+          const existing = pageMap.get(pv.page) || { count: 0, totalDuration: 0 };
+          existing.count++;
+          existing.totalDuration += pv.duration_seconds || 0;
+          pageMap.set(pv.page, existing);
+        });
 
-      const recentPageViews = Array.from(pageMap.entries()).map(([page, data]) => ({
-        page,
-        count: data.count,
-        avg_duration: Math.round(data.totalDuration / data.count),
-      })).sort((a, b) => b.count - a.count);
+        const recentPageViews = Array.from(pageMap.entries()).map(([page, data]) => ({
+          page,
+          count: data.count,
+          avg_duration: Math.round(data.totalDuration / data.count),
+        })).sort((a, b) => b.count - a.count);
 
-      setAnalytics({
-        totalViews,
-        totalReaders: totalReaders || 0,
-        totalComments: totalComments || 0,
-        totalForumPosts: totalForumPosts || 0,
-        totalSubscribers: totalSubscribers || 0,
-        recentPageViews,
-        chapterStats: chapters || [],
-      });
+        setAnalytics({
+          totalViews,
+          totalReaders: readersRes.count || 0,
+          totalComments: commentsRes.count || 0,
+          totalForumPosts: forumRes.count || 0,
+          totalSubscribers: subscribersRes.count || 0,
+          recentPageViews,
+          chapterStats: chapters,
+        });
+      } catch (err) {
+        console.error('Failed to fetch analytics:', err);
+      }
       setLoading(false);
     };
     fetchAnalytics();
-  }, []);
+  }, [authToken]);
 
   const [downloading, setDownloading] = useState(false);
 

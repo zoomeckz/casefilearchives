@@ -51,7 +51,7 @@ const Index = () => {
   };
 
   // Auth hook
-  const { user, loading: authLoading, signIn, signUp, signOut, refreshUser } = useAuth();
+  const { user, session, loading: authLoading, signIn, signUp, signOut, refreshUser } = useAuth();
 
   // Chapters from database
   const { chapters, loading: chaptersLoading, incrementViews } = useChapters();
@@ -160,7 +160,7 @@ const Index = () => {
         )}
 
         {currentPage === "admin" && user?.isAdmin && (
-          <AdminPanel glossary={glossary} />
+          <AdminPanel glossary={glossary} authToken={session?.access_token} />
         )}
 
         {currentPage === "about" && <AboutPage />}
