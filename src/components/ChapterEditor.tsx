@@ -215,6 +215,41 @@ export const ChapterEditor: React.FC<ChapterEditorProps> = ({ authToken, glossar
             </button>
           )}
           <button
+            onClick={() => {
+              // Open preview in new tab
+              const previewWindow = window.open('', '_blank');
+              if (previewWindow) {
+                previewWindow.document.write(`
+                  <!DOCTYPE html>
+                  <html>
+                  <head>
+                    <title>Preview: ${title || 'Untitled'}</title>
+                    <style>
+                      body { font-family: 'Lora', Georgia, serif; background: #0f0d0b; color: #d4cfc8; max-width: 720px; margin: 0 auto; padding: 2rem; line-height: 1.8; }
+                      h1 { color: #f0c040; font-size: 2em; margin-bottom: 0.5em; }
+                      .meta { color: #888; font-size: 0.9em; margin-bottom: 2em; }
+                      p { margin-bottom: 1em; }
+                      blockquote { border-left: 3px solid #0ea5e9; padding-left: 1em; color: #888; font-style: italic; }
+                      .glossary-term { color: #0ea5e9; border-bottom: 1px dashed rgba(14,165,233,0.5); }
+                      img { max-width: 100%; border-radius: 8px; }
+                      a { color: #0ea5e9; }
+                    </style>
+                  </head>
+                  <body>
+                    <h1>Chapter ${chapterNumber}: ${title || 'Untitled'}</h1>
+                    <div class="meta">Preview — Not yet published</div>
+                    ${content || '<p>No content yet.</p>'}
+                  </body>
+                  </html>
+                `);
+                previewWindow.document.close();
+              }
+            }}
+            className="px-4 py-2 bg-accent/20 hover:bg-accent/30 text-accent rounded-lg text-sm transition-colors"
+          >
+            Preview
+          </button>
+          <button
             onClick={handlePublish}
             disabled={publishing}
             className="px-6 py-2 bg-primary hover:bg-primary/90 text-primary-foreground rounded-lg text-sm font-medium transition-colors disabled:opacity-50"

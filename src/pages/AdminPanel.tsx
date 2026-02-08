@@ -1,14 +1,16 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import { Icons } from "@/lib/icons";
 import { GlossaryEntry } from "@/lib/data";
 import { dbFetch } from "@/lib/dbFetch";
 import { downloadAllChapters } from "@/hooks/useChapterDownload";
 import { ChapterEditor } from "@/components/ChapterEditor";
+import { GlossaryManager } from "@/components/GlossaryManager";
 import { toast } from "sonner";
 
 interface AdminPanelProps {
   glossary: Record<string, GlossaryEntry>;
   authToken?: string;
+  onGlossaryChange?: () => void;
 }
 
 interface AnalyticsData {
@@ -21,7 +23,7 @@ interface AnalyticsData {
   chapterStats: Array<{ id: string; title: string; views: number; chapter_number: number }>;
 }
 
-export const AdminPanel: React.FC<AdminPanelProps> = ({ glossary, authToken }) => {
+export const AdminPanel: React.FC<AdminPanelProps> = ({ glossary, authToken, onGlossaryChange }) => {
   const [activeTab, setActiveTab] = useState("dashboard");
   const [analytics, setAnalytics] = useState<AnalyticsData | null>(null);
   const [loading, setLoading] = useState(true);
@@ -30,6 +32,17 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ glossary, authToken }) =
   const [editorMode, setEditorMode] = useState<'list' | 'new' | 'edit'>('list');
   const [editChapterId, setEditChapterId] = useState<string | null>(null);
   const [chapters, setChapters] = useState<any[]>([]);
+  const [glossaryEntries, setGlossaryEntries] = useState<any[]>([]);
+
+  const fetchGlossaryEntries = useCallback(async () => {
+    const { data } = await dbFetch<any[]>('glossary', {
+      select: 'id,term,description,type,image_url',
+      order: 'term.asc',
+      token: authToken,
+    });
+    setGlossaryEntries(data || []);
+    onGlossaryChange?.();
+  }, [authToken, onGlossaryChange]);
 
   const fetchChapters = async () => {
     const { data } = await dbFetch<any[]>('chapters', {
@@ -86,7 +99,8 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ glossary, authToken }) =
       setLoading(false);
     };
     fetchAnalytics();
-  }, [authToken]);
+    fetchGlossaryEntries();
+  }, [authToken, fetchGlossaryEntries]);
 
   const [downloading, setDownloading] = useState(false);
 
@@ -231,6 +245,12 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ glossary, authToken }) =
                         </div>
                         <div className="flex items-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
                           <button
+                            onClick={() => window.open(`/chapters/${ch.chapter_number}`, '_blank')}
+                            className="px-3 py-1.5 bg-accent/20 hover:bg-accent/30 text-accent rounded text-sm transition-colors"
+                          >
+                            Preview
+                          </button>
+                          <button
                             onClick={() => {
                               setEditChapterId(ch.id);
                               setEditorMode('edit');
@@ -275,30 +295,11 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ glossary, authToken }) =
             )}
 
             {activeTab === "glossary" && (
-              <div>
-                <div className="flex items-center justify-between mb-8">
-                  <h1 className="font-display text-3xl text-accent">Glossary</h1>
-                  <p className="text-muted-foreground text-sm">Characters, locations, and concepts</p>
-                </div>
-                <div className="space-y-2">
-                  {Object.entries(glossary).map(([term, entry]) => (
-                    <div key={term} className="p-4 bg-card/30 rounded-lg border border-border/50">
-                      <div className="flex items-center gap-2 mb-1">
-                        <span className="text-foreground font-medium">{term}</span>
-                        <span className={`text-xs px-2 py-0.5 rounded ${
-                          entry.type === "character" ? "bg-primary/10 text-primary"
-                          : entry.type === "location" ? "bg-accent/10 text-accent"
-                          : entry.type === "creature" ? "bg-destructive/10 text-destructive"
-                          : "bg-purple-400/10 text-purple-400"
-                        }`}>
-                          {entry.type}
-                        </span>
-                      </div>
-                      <p className="text-muted-foreground text-sm">{entry.description}</p>
-                    </div>
-                  ))}
-                </div>
-              </div>
+              <GlossaryManager
+                authToken={authToken}
+                entries={glossaryEntries}
+                onRefresh={fetchGlossaryEntries}
+              />
             )}
           </>
         )}

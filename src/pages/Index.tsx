@@ -1,10 +1,11 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import { useNavigate, useLocation, useParams } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
 import { useChapters, Chapter } from "@/hooks/useChapters";
 import { useReadingProgress } from "@/hooks/useReadingProgress";
 import { useBookmarks } from "@/hooks/useBookmarks";
 import { defaultGlossary, GlossaryEntry } from "@/lib/data";
+import { dbFetch } from "@/lib/dbFetch";
 import { Navigation } from "@/components/Navigation";
 import { Footer } from "@/components/Footer";
 import { AuthModal } from "@/components/AuthModal";
@@ -62,8 +63,31 @@ const Index = () => {
   // Bookmarks
   const { isBookmarked, toggleBookmark, bookmarkCount } = useBookmarks(user);
 
-  // Glossary
-  const [glossary] = useState<Record<string, GlossaryEntry>>(defaultGlossary);
+  // Glossary — load from DB, fall back to defaults
+  const [glossary, setGlossary] = useState<Record<string, GlossaryEntry>>(defaultGlossary);
+
+  const fetchGlossary = useCallback(async () => {
+    const { data } = await dbFetch<any[]>('glossary', {
+      select: 'term,description,type,image_url',
+      order: 'term.asc',
+    });
+    if (data && data.length > 0) {
+      const mapped: Record<string, GlossaryEntry> = {};
+      for (const entry of data) {
+        mapped[entry.term] = {
+          type: entry.type as GlossaryEntry['type'],
+          description: entry.description,
+          image: entry.image_url || undefined,
+        };
+      }
+      // Merge with defaults (DB entries override)
+      setGlossary({ ...defaultGlossary, ...mapped });
+    }
+  }, []);
+
+  useEffect(() => {
+    fetchGlossary();
+  }, [fetchGlossary]);
 
   // Page tracking
   usePageTracking(user, currentPage, selectedChapter);
@@ -160,7 +184,7 @@ const Index = () => {
         )}
 
         {currentPage === "admin" && user?.isAdmin && (
-          <AdminPanel glossary={glossary} authToken={session?.access_token} />
+          <AdminPanel glossary={glossary} authToken={session?.access_token} onGlossaryChange={fetchGlossary} />
         )}
 
         {currentPage === "about" && <AboutPage />}

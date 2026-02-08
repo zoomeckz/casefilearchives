@@ -1,0 +1,2 @@
+ALTER TABLE public.glossary DROP CONSTRAINT glossary_type_check;
+ALTER TABLE public.glossary ADD CONSTRAINT glossary_type_check CHECK (type = ANY (ARRAY['character'::text, 'location'::text, 'concept'::text, 'creature'::text]));
