@@ -2,6 +2,8 @@ import React, { useState, useEffect } from "react";
 import { Icons } from "@/lib/icons";
 import { GlossaryEntry } from "@/lib/data";
 import { supabase } from "@/integrations/supabase/client";
+import { downloadAllChapters } from "@/hooks/useChapterDownload";
+import { toast } from "sonner";
 
 interface AdminPanelProps {
   glossary: Record<string, GlossaryEntry>;
@@ -71,6 +73,20 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ glossary }) => {
     fetchAnalytics();
   }, []);
 
+  const [downloading, setDownloading] = useState(false);
+
+  const handleDownload = async () => {
+    setDownloading(true);
+    try {
+      await downloadAllChapters();
+      toast.success("Chapters downloaded successfully");
+    } catch {
+      toast.error("Failed to download chapters");
+    } finally {
+      setDownloading(false);
+    }
+  };
+
   const tabs = [
     { id: "dashboard", label: "Dashboard", icon: Icons.Dashboard },
     { id: "analytics", label: "Analytics", icon: Icons.Eye },
@@ -116,7 +132,17 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ glossary }) => {
                   <StatCard label="Glossary Terms" value={Object.keys(glossary).length} />
                 </div>
 
-                <h2 className="font-display text-xl text-accent mb-4">Chapter Performance</h2>
+                <div className="flex items-center justify-between mb-4">
+                  <h2 className="font-display text-xl text-accent">Chapter Performance</h2>
+                  <button
+                    onClick={handleDownload}
+                    disabled={downloading}
+                    className="flex items-center gap-2 px-4 py-2 bg-primary/20 hover:bg-primary/30 text-primary rounded-lg text-sm transition-colors disabled:opacity-50"
+                  >
+                    <Icons.Save className="w-4 h-4" />
+                    {downloading ? "Downloading..." : "Download All Chapters"}
+                  </button>
+                </div>
                 <div className="space-y-2">
                   {analytics.chapterStats.map(ch => (
                     <div key={ch.chapter_number} className="flex items-center justify-between p-4 bg-card/50 rounded-lg border border-border/50">
