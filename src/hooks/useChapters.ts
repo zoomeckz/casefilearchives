@@ -61,21 +61,17 @@ export function useChapters() {
 
   const incrementViews = useCallback(
     async (chapterId: string) => {
-      const chapter = chapters.find((c) => c.id === chapterId);
-      if (!chapter) return;
-
       const url = import.meta.env.VITE_SUPABASE_URL;
       const key = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY;
 
-      await fetch(`${url}/rest/v1/chapters?id=eq.${chapterId}`, {
-        method: 'PATCH',
+      await fetch(`${url}/rest/v1/rpc/increment_chapter_views`, {
+        method: 'POST',
         headers: {
           'apikey': key,
           'Authorization': `Bearer ${key}`,
           'Content-Type': 'application/json',
-          'Prefer': 'return=minimal',
         },
-        body: JSON.stringify({ views: chapter.views + 1 }),
+        body: JSON.stringify({ chapter_id: chapterId }),
       });
 
       setChapters((prev) =>
@@ -84,7 +80,7 @@ export function useChapters() {
         )
       );
     },
-    [chapters]
+    []
   );
 
   const refetch = useCallback(async () => {

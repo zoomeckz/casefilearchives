@@ -363,6 +363,10 @@ export type Database = {
         }
         Returns: boolean
       }
+      increment_chapter_views: {
+        Args: { chapter_id: string }
+        Returns: undefined
+      }
     }
     Enums: {
       app_role: "admin" | "moderator" | "user"
