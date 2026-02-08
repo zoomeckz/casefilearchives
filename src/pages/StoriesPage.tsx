@@ -31,7 +31,7 @@ export const StoriesPage: React.FC<StoriesPageProps> = ({
 }) => (
   <div className="min-h-screen py-12 px-6">
     <div className="max-w-2xl mx-auto">
-      <h1 className="font-display text-4xl text-amber-100 mb-8 text-center">
+      <h1 className="font-display text-4xl text-accent mb-8 text-center">
         Chapters
       </h1>
 
@@ -46,40 +46,47 @@ export const StoriesPage: React.FC<StoriesPageProps> = ({
           return (
             <div
               key={chapter.id}
-              onClick={() => {
-                setSelectedChapter(chapter);
-                setCurrentPage("reader");
-              }}
-              className="group py-6 px-6 cursor-pointer text-center rounded-lg hover:bg-stone-800/30 transition-all duration-200"
+              onClick={() => setSelectedChapter(chapter)}
+              className="group py-6 px-6 cursor-pointer rounded-lg hover:bg-secondary/30 transition-all duration-200"
             >
-              <div className="flex items-center justify-center gap-3 mb-2">
-                <span className="text-stone-600 text-xs uppercase tracking-wider">
-                  Chapter {chapter.chapterNumber} ·{" "}
-                  {new Date(chapter.publishedAt).toLocaleDateString()}
+              <div className="flex items-center justify-between mb-2">
+                <div className="flex items-center gap-3">
+                  <span className="text-muted-foreground text-xs uppercase tracking-wider">
+                    Chapter {chapter.chapterNumber} ·{" "}
+                    {new Date(chapter.publishedAt).toLocaleDateString()}
+                  </span>
+                  {user && chapterIsRead && (
+                    <ReadingProgressBadge
+                      isRead={chapterIsRead}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        markAsUnread(chapter.id);
+                      }}
+                    />
+                  )}
+                  {user && (
+                    <BookmarkButton
+                      isBookmarked={chapterIsBookmarked}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        toggleBookmark(chapter.id);
+                      }}
+                      size="sm"
+                    />
+                  )}
+                </div>
+                <span className="text-xs text-primary opacity-0 group-hover:opacity-100 transition-opacity font-medium">
+                  Read →
                 </span>
-                {user && chapterIsRead && (
-                  <ReadingProgressBadge
-                    isRead={chapterIsRead}
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      markAsUnread(chapter.id);
-                    }}
-                  />
-                )}
-                {user && (
-                  <BookmarkButton
-                    isBookmarked={chapterIsBookmarked}
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      toggleBookmark(chapter.id);
-                    }}
-                    size="sm"
-                  />
-                )}
               </div>
-              <h3 className="font-display text-xl text-stone-100 group-hover:text-sky-400 transition-colors">
+              <h3 className="font-display text-xl text-foreground group-hover:text-primary transition-colors">
                 {chapter.title}
               </h3>
+              <div className="flex items-center gap-4 mt-2 text-xs text-muted-foreground">
+                <span className="flex items-center gap-1">
+                  <Icons.Eye className="w-3 h-3" /> {chapter.views} views
+                </span>
+              </div>
             </div>
           );
         })}

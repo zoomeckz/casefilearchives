@@ -1,4 +1,5 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
+import { useNavigate, useLocation, useParams } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
 import { useChapters, Chapter } from "@/hooks/useChapters";
 import { useReadingProgress } from "@/hooks/useReadingProgress";
@@ -14,36 +15,83 @@ import { CharactersPage } from "@/pages/CharactersPage";
 import { ForumPage } from "@/pages/ForumPage";
 import { ProfilePage } from "@/pages/ProfilePage";
 import { AdminPanel } from "@/pages/AdminPanel";
+import { AboutPage } from "@/pages/AboutPage";
+import { usePageTracking } from "@/hooks/usePageTracking";
 
 const Index = () => {
-  const [currentPage, setCurrentPage] = useState("home");
+  const navigate = useNavigate();
+  const location = useLocation();
   const [showAuthModal, setShowAuthModal] = useState(false);
   const [selectedChapter, setSelectedChapter] = useState<Chapter | null>(null);
-  
+
+  // Derive current page from URL
+  const currentPage = (() => {
+    const path = location.pathname;
+    if (path.startsWith("/chapters/")) return "reader";
+    if (path === "/chapters") return "chapters";
+    if (path === "/characters") return "characters";
+    if (path === "/forum") return "forum";
+    if (path === "/profile") return "profile";
+    if (path === "/admin") return "admin";
+    if (path === "/about") return "about";
+    return "home";
+  })();
+
+  const setCurrentPage = (page: string) => {
+    if (page === "home") navigate("/");
+    else if (page === "chapters") navigate("/chapters");
+    else if (page === "characters") navigate("/characters");
+    else if (page === "forum") navigate("/forum");
+    else if (page === "profile") navigate("/profile");
+    else if (page === "admin") navigate("/admin");
+    else if (page === "about") navigate("/about");
+    else if (page === "reader" && selectedChapter) {
+      navigate(`/chapters/${selectedChapter.chapterNumber}`);
+    }
+  };
+
   // Auth hook
   const { user, loading: authLoading, signOut, refreshUser } = useAuth();
-  
+
   // Chapters from database
   const { chapters, loading: chaptersLoading, incrementViews } = useChapters();
-  
+
   // Reading progress
   const { isRead, markAsRead, markAsUnread, readCount } = useReadingProgress(user);
-  
+
   // Bookmarks
   const { isBookmarked, toggleBookmark, bookmarkCount } = useBookmarks(user);
-  
-  // Glossary (keeping local for now, can migrate later)
+
+  // Glossary
   const [glossary] = useState<Record<string, GlossaryEntry>>(defaultGlossary);
+
+  // Page tracking
+  usePageTracking(user, currentPage, selectedChapter);
+
+  // Resolve chapter from URL param
+  useEffect(() => {
+    const match = location.pathname.match(/^\/chapters\/(\d+)$/);
+    if (match && chapters.length > 0) {
+      const num = parseInt(match[1]);
+      const ch = chapters.find(c => c.chapterNumber === num);
+      if (ch) setSelectedChapter(ch);
+    }
+  }, [location.pathname, chapters]);
+
+  const handleSelectChapter = (chapter: Chapter) => {
+    setSelectedChapter(chapter);
+    navigate(`/chapters/${chapter.chapterNumber}`);
+  };
 
   const handleSignOut = async () => {
     await signOut();
-    setCurrentPage("home");
+    navigate("/");
   };
 
   if (authLoading || chaptersLoading) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
-        <div className="text-stone-400">Loading...</div>
+        <div className="text-muted-foreground">Loading...</div>
       </div>
     );
   }
@@ -63,14 +111,14 @@ const Index = () => {
           <HomePage
             chapters={chapters}
             setCurrentPage={setCurrentPage}
-            setSelectedChapter={setSelectedChapter}
+            setSelectedChapter={handleSelectChapter}
           />
         )}
 
-        {currentPage === "stories" && (
+        {currentPage === "chapters" && (
           <StoriesPage
             chapters={chapters}
-            setSelectedChapter={setSelectedChapter}
+            setSelectedChapter={handleSelectChapter}
             setCurrentPage={setCurrentPage}
             user={user}
             isRead={isRead}
@@ -89,7 +137,7 @@ const Index = () => {
           <ReaderPage
             chapter={selectedChapter}
             chapters={chapters}
-            setSelectedChapter={setSelectedChapter}
+            setSelectedChapter={handleSelectChapter}
             setCurrentPage={setCurrentPage}
             user={user}
             setShowAuthModal={setShowAuthModal}
@@ -118,13 +166,13 @@ const Index = () => {
         )}
 
         {currentPage === "admin" && user?.isAdmin && (
-          <AdminPanel
-            glossary={glossary}
-          />
+          <AdminPanel glossary={glossary} />
         )}
+
+        {currentPage === "about" && <AboutPage />}
       </main>
 
-      {currentPage !== "admin" && <Footer />}
+      {currentPage !== "admin" && <Footer setCurrentPage={setCurrentPage} />}
 
       <AuthModal
         isOpen={showAuthModal}
