@@ -1,14 +1,12 @@
-import { supabase } from "@/integrations/supabase/client";
+import { dbFetch } from "@/lib/dbFetch";
 
 function stripHtml(html: string): string {
   const div = document.createElement("div");
   div.innerHTML = html;
   
-  // Convert <p> tags to double newlines
   div.querySelectorAll("p").forEach((p) => {
     p.insertAdjacentText("afterend", "\n\n");
   });
-  // Convert <br> to newlines
   div.querySelectorAll("br").forEach((br) => {
     br.replaceWith("\n");
   });
@@ -17,10 +15,10 @@ function stripHtml(html: string): string {
 }
 
 export async function downloadAllChapters() {
-  const { data: chapters, error } = await supabase
-    .from("chapters")
-    .select("title, content, chapter_number")
-    .order("chapter_number", { ascending: true });
+  const { data: chapters, error } = await dbFetch<any[]>('chapters', {
+    select: 'title,content,chapter_number',
+    order: 'chapter_number.asc',
+  });
 
   if (error || !chapters) {
     throw new Error("Failed to fetch chapters");
