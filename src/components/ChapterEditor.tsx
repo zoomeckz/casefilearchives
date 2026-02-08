@@ -10,35 +10,64 @@ interface ChapterEditorProps {
   glossary: Record<string, GlossaryEntry>;
   onBack: () => void;
   editChapterId?: string | null;
+  resumeDraftId?: string | null;
 }
-
-interface ChapterDraft {
+export interface ChapterDraft {
+  id: string;
   title: string;
   content: string;
   chapterNumber: number;
   lastSaved: string;
 }
 
-const DRAFT_KEY = 'sedorium-chapter-draft';
+const DRAFTS_KEY = 'sedorium-chapter-drafts';
 
-function getDraft(): ChapterDraft | null {
+export function getAllDrafts(): ChapterDraft[] {
   try {
-    const raw = localStorage.getItem(DRAFT_KEY);
-    return raw ? JSON.parse(raw) : null;
+    const raw = localStorage.getItem(DRAFTS_KEY);
+    return raw ? JSON.parse(raw) : [];
   } catch {
-    return null;
+    return [];
   }
 }
 
-function saveDraft(draft: ChapterDraft) {
-  localStorage.setItem(DRAFT_KEY, JSON.stringify(draft));
+function getDraftById(draftId: string): ChapterDraft | null {
+  return getAllDrafts().find(d => d.id === draftId) || null;
 }
 
-function clearDraft() {
-  localStorage.removeItem(DRAFT_KEY);
+function saveDraftById(draft: ChapterDraft) {
+  const drafts = getAllDrafts();
+  const idx = drafts.findIndex(d => d.id === draft.id);
+  if (idx >= 0) {
+    drafts[idx] = draft;
+  } else {
+    drafts.push(draft);
+  }
+  localStorage.setItem(DRAFTS_KEY, JSON.stringify(drafts));
 }
 
-export const ChapterEditor: React.FC<ChapterEditorProps> = ({ authToken, glossary, onBack, editChapterId }) => {
+export function deleteDraft(draftId: string) {
+  const drafts = getAllDrafts().filter(d => d.id !== draftId);
+  localStorage.setItem(DRAFTS_KEY, JSON.stringify(drafts));
+}
+
+// Migrate old single-draft format
+(function migrateLegacyDraft() {
+  try {
+    const old = localStorage.getItem('sedorium-chapter-draft');
+    if (old) {
+      const parsed = JSON.parse(old);
+      if (parsed && parsed.title) {
+        const draft: ChapterDraft = { ...parsed, id: 'legacy-' + Date.now() };
+        saveDraftById(draft);
+      }
+      localStorage.removeItem('sedorium-chapter-draft');
+    }
+  } catch { /* ignore */ }
+})();
+
+export const ChapterEditor: React.FC<ChapterEditorProps> = ({ authToken, glossary, onBack, editChapterId, resumeDraftId }) => {
+  const [currentDraftId] = useState(() => resumeDraftId || `draft-${Date.now()}`);
   const [title, setTitle] = useState('');
   const [content, setContent] = useState('');
   const [chapterNumber, setChapterNumber] = useState(1);
@@ -68,7 +97,7 @@ export const ChapterEditor: React.FC<ChapterEditorProps> = ({ authToken, glossar
       loadChapter();
     } else {
       // Load draft or set next chapter number
-      const draft = getDraft();
+      const draft = resumeDraftId ? getDraftById(resumeDraftId) : null;
       if (draft) {
         setTitle(draft.title);
         setContent(draft.content);
@@ -91,7 +120,8 @@ export const ChapterEditor: React.FC<ChapterEditorProps> = ({ authToken, glossar
   // Auto-save draft every 10 seconds when content changes
   const autoSave = useCallback(() => {
     if (!editChapterId && (title || content)) {
-      saveDraft({
+      saveDraftById({
+        id: currentDraftId,
         title,
         content,
         chapterNumber,
@@ -99,7 +129,7 @@ export const ChapterEditor: React.FC<ChapterEditorProps> = ({ authToken, glossar
       });
       setDraftStatus(`Draft auto-saved at ${new Date().toLocaleTimeString()}`);
     }
-  }, [title, content, chapterNumber, editChapterId]);
+  }, [title, content, chapterNumber, editChapterId, currentDraftId]);
 
   useEffect(() => {
     if (autoSaveTimer.current) clearTimeout(autoSaveTimer.current);
@@ -111,7 +141,8 @@ export const ChapterEditor: React.FC<ChapterEditorProps> = ({ authToken, glossar
 
   // Save manually
   const handleSaveDraft = () => {
-    saveDraft({
+    saveDraftById({
+      id: currentDraftId,
       title,
       content,
       chapterNumber,
@@ -176,7 +207,7 @@ export const ChapterEditor: React.FC<ChapterEditorProps> = ({ authToken, glossar
           token: authToken,
         });
         if (error) throw new Error(error);
-        clearDraft();
+        deleteDraft(currentDraftId);
         toast.success('Chapter published!');
       }
       onBack();
