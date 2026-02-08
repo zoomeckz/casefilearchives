@@ -58,11 +58,11 @@ export const CharactersPage: React.FC<CharactersPageProps> = ({ glossary }) => {
                   onClick={() => setSelectedCharacter(char.name)}
                   className="group cursor-pointer bg-stone-900/50 rounded-xl border border-stone-800 overflow-hidden hover:border-sky-500/50 transition-all"
                 >
-                  <div className="aspect-[4/3] overflow-hidden">
+                  <div className="aspect-[3/4] overflow-hidden">
                     <img
                       src={char.image}
                       alt={char.name}
-                      className="w-full h-full object-cover object-top group-hover:scale-105 transition-transform duration-500"
+                      className="w-full h-full object-cover object-center group-hover:scale-105 transition-transform duration-500"
                     />
                   </div>
                   <div className="p-4">
@@ -87,22 +87,22 @@ export const CharactersPage: React.FC<CharactersPageProps> = ({ glossary }) => {
               onClick={() => setSelectedCharacter(null)}
             />
             <div className="relative bg-stone-900 rounded-2xl shadow-2xl w-full max-w-3xl max-h-[90vh] overflow-y-auto border border-stone-700 animate-fade-in">
-              <button
-                onClick={() => setSelectedCharacter(null)}
-                className="absolute top-4 right-4 z-10 text-stone-400 hover:text-stone-200 bg-stone-800/80 rounded-full p-2"
-              >
-                <Icons.Close />
-              </button>
+          <button
+            onClick={() => setSelectedCharacter(null)}
+            className="absolute top-4 right-4 z-10 text-stone-400 hover:text-stone-200 bg-stone-800/80 rounded-full p-2"
+          >
+            <Icons.Close />
+          </button>
 
-              {selected.image && (
-                <div className="aspect-[16/9] overflow-hidden rounded-t-2xl">
-                  <img
-                    src={selected.image}
-                    alt={selected.name}
-                    className="w-full h-full object-cover object-top"
-                  />
-                </div>
-              )}
+          {selected.image && (
+            <div className="max-h-[50vh] overflow-hidden rounded-t-2xl">
+              <img
+                src={selected.image}
+                alt={selected.name}
+                className="w-full h-auto object-cover object-center"
+              />
+            </div>
+          )}
 
               <div className="p-8">
                 <div className="flex items-center gap-3 mb-4">
