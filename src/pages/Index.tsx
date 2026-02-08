@@ -80,8 +80,16 @@ const Index = () => {
           image: entry.image_url || undefined,
         };
       }
-      // Merge with defaults (DB entries override)
-      setGlossary({ ...defaultGlossary, ...mapped });
+      // Merge: DB entries override defaults, but preserve default images if DB has none
+      const merged: Record<string, GlossaryEntry> = { ...defaultGlossary };
+      for (const [term, entry] of Object.entries(mapped)) {
+        merged[term] = {
+          ...merged[term],
+          ...entry,
+          image: entry.image || merged[term]?.image || undefined,
+        };
+      }
+      setGlossary(merged);
     }
   }, []);
 
