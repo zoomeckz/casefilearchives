@@ -1,19 +1,21 @@
 import React, { useState } from "react";
 import { Icons } from "@/lib/icons";
-import { supabase } from "@/integrations/supabase/client";
 import { lovable } from "@/integrations/lovable/index";
-import { dbAuth } from "@/lib/dbFetch";
 
 interface AuthModalProps {
   isOpen: boolean;
   onClose: () => void;
   onSuccess: () => void;
+  onSignIn: (email: string, password: string) => Promise<void>;
+  onSignUp: (email: string, password: string, name: string) => Promise<void>;
 }
 
 export const AuthModal: React.FC<AuthModalProps> = ({
   isOpen,
   onClose,
   onSuccess,
+  onSignIn,
+  onSignUp,
 }) => {
   const [mode, setMode] = useState<"login" | "register">("login");
   const [formData, setFormData] = useState({
@@ -54,57 +56,9 @@ export const AuthModal: React.FC<AuthModalProps> = ({
         if (!formData.name) {
           throw new Error("Please enter your name");
         }
-
-        const { data, error: authError } = await dbAuth('signup', {
-          email: formData.email,
-          password: formData.password,
-          name: formData.name,
-        });
-
-        if (authError) throw new Error(authError);
-
-        if (data?.access_token) {
-          // Store session directly in localStorage to bypass hanging setSession
-          const sessionData = {
-            access_token: data.access_token,
-            refresh_token: data.refresh_token,
-            token_type: 'bearer',
-            expires_in: data.expires_in || 3600,
-            expires_at: data.expires_at || Math.floor(Date.now() / 1000) + 3600,
-            user: data.user,
-          };
-          localStorage.setItem(
-            `sb-iiezbdlmikvgxjlozwlc-auth-token`,
-            JSON.stringify(sessionData)
-          );
-          // Force reload to pick up the new session
-          window.location.reload();
-          return;
-        }
+        await onSignUp(formData.email, formData.password, formData.name);
       } else {
-        const { data, error: authError } = await dbAuth('signin', {
-          email: formData.email,
-          password: formData.password,
-        });
-
-        if (authError) throw new Error(authError);
-
-        if (data?.access_token) {
-          const sessionData = {
-            access_token: data.access_token,
-            refresh_token: data.refresh_token,
-            token_type: 'bearer',
-            expires_in: data.expires_in || 3600,
-            expires_at: data.expires_at || Math.floor(Date.now() / 1000) + 3600,
-            user: data.user,
-          };
-          localStorage.setItem(
-            `sb-iiezbdlmikvgxjlozwlc-auth-token`,
-            JSON.stringify(sessionData)
-          );
-          window.location.reload();
-          return;
-        }
+        await onSignIn(formData.email, formData.password);
       }
 
       setFormData({ email: "", password: "", name: "" });
