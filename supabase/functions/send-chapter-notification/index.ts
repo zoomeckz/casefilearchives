@@ -16,24 +16,55 @@ import { Resend } from "https://esm.sh/resend@2.0.0";
    chapterNumber: number;
  }
  
- const handler = async (req: Request): Promise<Response> => {
-   // Handle CORS preflight requests
-   if (req.method === "OPTIONS") {
-     return new Response(null, { headers: corsHeaders });
-   }
- 
-   try {
-     const { chapterId, chapterTitle, chapterNumber }: NotificationRequest = await req.json();
- 
-     // Validate required fields
-     if (!chapterId || !chapterTitle || !chapterNumber) {
-       throw new Error("Missing required fields: chapterId, chapterTitle, chapterNumber");
-     }
- 
-     // Initialize Supabase client with service role key
-     const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
-     const supabaseServiceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
-     const supabase = createClient(supabaseUrl, supabaseServiceKey);
+const handler = async (req: Request): Promise<Response> => {
+  // Handle CORS preflight requests
+  if (req.method === "OPTIONS") {
+    return new Response(null, { headers: corsHeaders });
+  }
+
+  try {
+    // Initialize Supabase clients
+    const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
+    const supabaseServiceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
+    const supabaseAnonKey = Deno.env.get("SUPABASE_ANON_KEY")!;
+
+    // Verify the caller is an authenticated admin
+    const authHeader = req.headers.get("authorization");
+    if (!authHeader) {
+      return new Response(JSON.stringify({ error: "Missing authorization header" }), {
+        status: 401,
+        headers: { "Content-Type": "application/json", ...corsHeaders },
+      });
+    }
+
+    const userClient = createClient(supabaseUrl, supabaseAnonKey, {
+      global: { headers: { Authorization: authHeader } },
+    });
+
+    const { data: { user }, error: authError } = await userClient.auth.getUser();
+    if (authError || !user) {
+      return new Response(JSON.stringify({ error: "Unauthorized" }), {
+        status: 401,
+        headers: { "Content-Type": "application/json", ...corsHeaders },
+      });
+    }
+
+    // Check admin role using service role client
+    const supabase = createClient(supabaseUrl, supabaseServiceKey);
+    const { data: roles } = await supabase
+      .from("user_roles")
+      .select("role")
+      .eq("user_id", user.id)
+      .eq("role", "admin");
+
+    if (!roles || roles.length === 0) {
+      return new Response(JSON.stringify({ error: "Admin access required" }), {
+        status: 403,
+        headers: { "Content-Type": "application/json", ...corsHeaders },
+      });
+    }
+
+    const { chapterId, chapterTitle, chapterNumber }: NotificationRequest = await req.json();
  
      // Get all subscribed users
      const { data: subscribers, error: fetchError } = await supabase
