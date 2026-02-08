@@ -184,3 +184,102 @@
     background-clip: text;
   }
 }
+
+/* TipTap Editor Styles */
+.tiptap {
+  outline: none;
+}
+
+.tiptap p {
+  margin-bottom: 1em;
+}
+
+.tiptap h1 {
+  font-size: 2em;
+  font-weight: 700;
+  margin-bottom: 0.5em;
+  color: hsl(var(--accent));
+}
+
+.tiptap h2 {
+  font-size: 1.5em;
+  font-weight: 600;
+  margin-bottom: 0.5em;
+  color: hsl(var(--accent));
+}
+
+.tiptap h3 {
+  font-size: 1.25em;
+  font-weight: 600;
+  margin-bottom: 0.5em;
+}
+
+.tiptap blockquote {
+  border-left: 3px solid hsl(var(--primary));
+  padding-left: 1em;
+  margin: 1em 0;
+  color: hsl(var(--muted-foreground));
+  font-style: italic;
+}
+
+.tiptap ul, .tiptap ol {
+  padding-left: 1.5em;
+  margin-bottom: 1em;
+}
+
+.tiptap ul {
+  list-style-type: disc;
+}
+
+.tiptap ol {
+  list-style-type: decimal;
+}
+
+.tiptap pre {
+  background: hsl(var(--secondary));
+  border-radius: 0.5em;
+  padding: 1em;
+  margin: 1em 0;
+  overflow-x: auto;
+}
+
+.tiptap code {
+  font-family: monospace;
+  font-size: 0.9em;
+}
+
+.tiptap img {
+  max-width: 100%;
+  border-radius: 0.5em;
+  margin: 1em 0;
+}
+
+.tiptap a {
+  color: hsl(var(--primary));
+  text-decoration: underline;
+}
+
+.tiptap mark {
+  background-color: hsl(45 93% 58% / 0.3);
+  padding: 0.1em 0.2em;
+  border-radius: 0.2em;
+}
+
+.tiptap hr {
+  border-color: hsl(var(--border));
+  margin: 2em 0;
+}
+
+.tiptap .glossary-term {
+  color: hsl(var(--primary));
+  border-bottom: 1px dashed hsl(var(--primary) / 0.5);
+  cursor: help;
+}
+
+.tiptap p.is-editor-empty:first-child::before {
+  content: attr(data-placeholder);
+  float: left;
+  color: hsl(var(--muted-foreground));
+  pointer-events: none;
+  height: 0;
+}
