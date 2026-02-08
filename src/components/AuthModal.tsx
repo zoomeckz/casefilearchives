@@ -2,6 +2,7 @@ import React, { useState } from "react";
 import { Icons } from "@/lib/icons";
 import { supabase } from "@/integrations/supabase/client";
 import { lovable } from "@/integrations/lovable/index";
+import { dbAuth } from "@/lib/dbFetch";
 
 interface AuthModalProps {
   isOpen: boolean;
@@ -33,7 +34,6 @@ export const AuthModal: React.FC<AuthModalProps> = ({
         redirect_uri: window.location.origin,
       });
       if (error) throw error;
-      // OAuth redirects the page, so no need to call onSuccess/onClose here
     } catch (err: any) {
       setError(err.message || "Failed to sign in with Google");
       setLoading(false);
@@ -54,23 +54,37 @@ export const AuthModal: React.FC<AuthModalProps> = ({
         if (!formData.name) {
           throw new Error("Please enter your name");
         }
-        
-        const { error } = await supabase.auth.signUp({
+
+        const { data, error: authError } = await dbAuth('signup', {
           email: formData.email,
           password: formData.password,
-          options: {
-            data: { name: formData.name }
-          }
+          name: formData.name,
         });
-        
-        if (error) throw error;
+
+        if (authError) throw new Error(authError);
+
+        // If signup returns a session, set it
+        if (data?.access_token) {
+          await supabase.auth.setSession({
+            access_token: data.access_token,
+            refresh_token: data.refresh_token,
+          });
+        }
       } else {
-        const { error } = await supabase.auth.signInWithPassword({
+        const { data, error: authError } = await dbAuth('signin', {
           email: formData.email,
           password: formData.password,
         });
-        
-        if (error) throw error;
+
+        if (authError) throw new Error(authError);
+
+        // Set the session in supabase client
+        if (data?.access_token) {
+          await supabase.auth.setSession({
+            access_token: data.access_token,
+            refresh_token: data.refresh_token,
+          });
+        }
       }
 
       setFormData({ email: "", password: "", name: "" });
@@ -107,7 +121,6 @@ export const AuthModal: React.FC<AuthModalProps> = ({
             : "Create an account to get started"}
         </p>
 
-        {/* Google Sign In Button */}
         <button
           onClick={handleGoogleSignIn}
           disabled={loading}
