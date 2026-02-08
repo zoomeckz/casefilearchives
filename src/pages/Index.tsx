@@ -88,13 +88,7 @@ const Index = () => {
     navigate("/");
   };
 
-  if (authLoading || chaptersLoading) {
-    return (
-      <div className="min-h-screen bg-background flex items-center justify-center">
-        <div className="text-muted-foreground">Loading...</div>
-      </div>
-    );
-  }
+  // Don't block rendering — show the page immediately
 
   return (
     <div className="min-h-screen bg-background text-foreground flex flex-col">
