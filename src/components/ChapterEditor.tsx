@@ -1,0 +1,277 @@
+import React, { useState, useEffect, useCallback, useRef } from 'react';
+import { Icons } from '@/lib/icons';
+import { RichTextEditor } from '@/components/RichTextEditor';
+import { dbFetch } from '@/lib/dbFetch';
+import { GlossaryEntry } from '@/lib/data';
+import { toast } from 'sonner';
+
+interface ChapterEditorProps {
+  authToken?: string;
+  glossary: Record<string, GlossaryEntry>;
+  onBack: () => void;
+  editChapterId?: string | null;
+}
+
+interface ChapterDraft {
+  title: string;
+  content: string;
+  chapterNumber: number;
+  lastSaved: string;
+}
+
+const DRAFT_KEY = 'sedorium-chapter-draft';
+
+function getDraft(): ChapterDraft | null {
+  try {
+    const raw = localStorage.getItem(DRAFT_KEY);
+    return raw ? JSON.parse(raw) : null;
+  } catch {
+    return null;
+  }
+}
+
+function saveDraft(draft: ChapterDraft) {
+  localStorage.setItem(DRAFT_KEY, JSON.stringify(draft));
+}
+
+function clearDraft() {
+  localStorage.removeItem(DRAFT_KEY);
+}
+
+export const ChapterEditor: React.FC<ChapterEditorProps> = ({ authToken, glossary, onBack, editChapterId }) => {
+  const [title, setTitle] = useState('');
+  const [content, setContent] = useState('');
+  const [chapterNumber, setChapterNumber] = useState(1);
+  const [saving, setSaving] = useState(false);
+  const [publishing, setPublishing] = useState(false);
+  const [draftStatus, setDraftStatus] = useState<string>('');
+  const [loadingChapter, setLoadingChapter] = useState(!!editChapterId);
+  const autoSaveTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const [glossaryMarked, setGlossaryMarked] = useState(false);
+
+  // Load existing chapter for editing
+  useEffect(() => {
+    if (editChapterId) {
+      const loadChapter = async () => {
+        const { data } = await dbFetch<any[]>('chapters', {
+          select: 'title,content,chapter_number',
+          filters: `id=eq.${editChapterId}`,
+          token: authToken,
+        });
+        if (data && data[0]) {
+          setTitle(data[0].title);
+          setContent(data[0].content);
+          setChapterNumber(data[0].chapter_number);
+        }
+        setLoadingChapter(false);
+      };
+      loadChapter();
+    } else {
+      // Load draft or set next chapter number
+      const draft = getDraft();
+      if (draft) {
+        setTitle(draft.title);
+        setContent(draft.content);
+        setChapterNumber(draft.chapterNumber);
+        setDraftStatus(`Draft restored from ${new Date(draft.lastSaved).toLocaleTimeString()}`);
+      } else {
+        // Get next chapter number
+        dbFetch<any[]>('chapters', {
+          select: 'chapter_number',
+          order: 'chapter_number.desc',
+          token: authToken,
+        }).then(({ data }) => {
+          const max = data?.[0]?.chapter_number || 0;
+          setChapterNumber(max + 1);
+        });
+      }
+    }
+  }, [editChapterId, authToken]);
+
+  // Auto-save draft every 10 seconds when content changes
+  const autoSave = useCallback(() => {
+    if (!editChapterId && (title || content)) {
+      saveDraft({
+        title,
+        content,
+        chapterNumber,
+        lastSaved: new Date().toISOString(),
+      });
+      setDraftStatus(`Draft auto-saved at ${new Date().toLocaleTimeString()}`);
+    }
+  }, [title, content, chapterNumber, editChapterId]);
+
+  useEffect(() => {
+    if (autoSaveTimer.current) clearTimeout(autoSaveTimer.current);
+    autoSaveTimer.current = setTimeout(autoSave, 10000);
+    return () => {
+      if (autoSaveTimer.current) clearTimeout(autoSaveTimer.current);
+    };
+  }, [autoSave]);
+
+  // Save manually
+  const handleSaveDraft = () => {
+    saveDraft({
+      title,
+      content,
+      chapterNumber,
+      lastSaved: new Date().toISOString(),
+    });
+    setDraftStatus(`Draft saved at ${new Date().toLocaleTimeString()}`);
+    toast.success('Draft saved locally');
+  };
+
+  // Mark glossary terms in content
+  const handleMarkGlossary = () => {
+    const terms = Object.keys(glossary).sort((a, b) => b.length - a.length);
+    let markedContent = content;
+
+    for (const term of terms) {
+      // Don't re-wrap already wrapped terms
+      const regex = new RegExp(`(?<!<[^>]*)(\\b${term}\\b)(?![^<]*>)`, 'gi');
+      markedContent = markedContent.replace(regex, `<span class="glossary-term" data-term="${term}">$1</span>`);
+    }
+
+    setContent(markedContent);
+    setGlossaryMarked(true);
+    toast.success(`Marked ${terms.length} glossary terms`);
+  };
+
+  // Publish chapter
+  const handlePublish = async () => {
+    if (!title.trim()) {
+      toast.error('Please enter a chapter title');
+      return;
+    }
+    if (!content.trim()) {
+      toast.error('Please write some content');
+      return;
+    }
+
+    setPublishing(true);
+    try {
+      if (editChapterId) {
+        // Update existing chapter
+        const { error } = await dbFetch('chapters', {
+          method: 'PATCH',
+          filters: `id=eq.${editChapterId}`,
+          body: {
+            title: title.trim(),
+            content,
+            chapter_number: chapterNumber,
+          },
+          token: authToken,
+        });
+        if (error) throw new Error(error);
+        toast.success('Chapter updated!');
+      } else {
+        // Create new chapter
+        const { error } = await dbFetch('chapters', {
+          method: 'POST',
+          body: {
+            title: title.trim(),
+            content,
+            chapter_number: chapterNumber,
+          },
+          token: authToken,
+        });
+        if (error) throw new Error(error);
+        clearDraft();
+        toast.success('Chapter published!');
+      }
+      onBack();
+    } catch (err: any) {
+      toast.error(err.message || 'Failed to save chapter');
+    } finally {
+      setPublishing(false);
+    }
+  };
+
+  if (loadingChapter) {
+    return <p className="text-muted-foreground p-8">Loading chapter...</p>;
+  }
+
+  return (
+    <div className="min-h-screen">
+      {/* Top bar */}
+      <div className="flex items-center justify-between mb-6">
+        <button
+          onClick={onBack}
+          className="flex items-center gap-2 text-muted-foreground hover:text-foreground transition-colors"
+        >
+          <Icons.ChevronLeft className="w-4 h-4" />
+          Back to Chapters
+        </button>
+        <div className="flex items-center gap-3">
+          {draftStatus && (
+            <span className="text-xs text-muted-foreground">{draftStatus}</span>
+          )}
+          {!editChapterId && (
+            <button
+              onClick={handleSaveDraft}
+              className="px-4 py-2 bg-secondary hover:bg-secondary/80 text-foreground rounded-lg text-sm transition-colors"
+            >
+              Save Draft
+            </button>
+          )}
+          <button
+            onClick={handlePublish}
+            disabled={publishing}
+            className="px-6 py-2 bg-primary hover:bg-primary/90 text-primary-foreground rounded-lg text-sm font-medium transition-colors disabled:opacity-50"
+          >
+            {publishing ? 'Saving...' : editChapterId ? 'Update Chapter' : 'Publish Chapter'}
+          </button>
+        </div>
+      </div>
+
+      {/* Chapter metadata */}
+      <div className="grid grid-cols-1 md:grid-cols-[1fr_auto] gap-4 mb-6">
+        <div>
+          <label className="block text-sm text-muted-foreground mb-1">Chapter Title</label>
+          <input
+            type="text"
+            value={title}
+            onChange={(e) => setTitle(e.target.value)}
+            placeholder="Enter chapter title..."
+            className="w-full px-4 py-3 bg-card/50 border border-border rounded-lg text-foreground text-lg font-display focus:outline-none focus:border-primary transition-colors"
+          />
+        </div>
+        <div>
+          <label className="block text-sm text-muted-foreground mb-1">Chapter #</label>
+          <input
+            type="number"
+            value={chapterNumber}
+            onChange={(e) => setChapterNumber(parseInt(e.target.value) || 1)}
+            min={1}
+            className="w-24 px-4 py-3 bg-card/50 border border-border rounded-lg text-foreground text-lg text-center focus:outline-none focus:border-primary transition-colors"
+          />
+        </div>
+      </div>
+
+      {/* Glossary terms indicator */}
+      <div className="flex items-center gap-2 mb-3">
+        <span className="text-xs text-muted-foreground">
+          {Object.keys(glossary).length} glossary terms available
+        </span>
+        {glossaryMarked && (
+          <span className="text-xs text-primary">✓ Terms marked</span>
+        )}
+      </div>
+
+      {/* Editor */}
+      <RichTextEditor
+        content={content}
+        onChange={setContent}
+        glossaryTerms={Object.keys(glossary)}
+        onMarkGlossary={handleMarkGlossary}
+      />
+
+      {/* Word count */}
+      <div className="mt-3 text-xs text-muted-foreground">
+        {content.replace(/<[^>]*>/g, '').trim().split(/\s+/).filter(Boolean).length} words
+      </div>
+    </div>
+  );
+};
+
+export default ChapterEditor;

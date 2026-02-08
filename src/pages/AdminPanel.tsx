@@ -3,6 +3,7 @@ import { Icons } from "@/lib/icons";
 import { GlossaryEntry } from "@/lib/data";
 import { dbFetch } from "@/lib/dbFetch";
 import { downloadAllChapters } from "@/hooks/useChapterDownload";
+import { ChapterEditor } from "@/components/ChapterEditor";
 import { toast } from "sonner";
 
 interface AdminPanelProps {
@@ -17,7 +18,7 @@ interface AnalyticsData {
   totalForumPosts: number;
   totalSubscribers: number;
   recentPageViews: Array<{ page: string; count: number; avg_duration: number }>;
-  chapterStats: Array<{ title: string; views: number; chapter_number: number }>;
+  chapterStats: Array<{ id: string; title: string; views: number; chapter_number: number }>;
 }
 
 export const AdminPanel: React.FC<AdminPanelProps> = ({ glossary, authToken }) => {
@@ -25,11 +26,25 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ glossary, authToken }) =
   const [analytics, setAnalytics] = useState<AnalyticsData | null>(null);
   const [loading, setLoading] = useState(true);
 
+  // Chapter editor state
+  const [editorMode, setEditorMode] = useState<'list' | 'new' | 'edit'>('list');
+  const [editChapterId, setEditChapterId] = useState<string | null>(null);
+  const [chapters, setChapters] = useState<any[]>([]);
+
+  const fetchChapters = async () => {
+    const { data } = await dbFetch<any[]>('chapters', {
+      select: 'id,title,chapter_number,views,published_at',
+      order: 'chapter_number.asc',
+      token: authToken,
+    });
+    setChapters(data || []);
+  };
+
   useEffect(() => {
     const fetchAnalytics = async () => {
       try {
         const [chaptersRes, readersRes, commentsRes, forumRes, subscribersRes, pageViewsRes] = await Promise.all([
-          dbFetch<any[]>('chapters', { select: 'title,views,chapter_number', order: 'chapter_number.asc', token: authToken }),
+          dbFetch<any[]>('chapters', { select: 'id,title,views,chapter_number', order: 'chapter_number.asc', token: authToken }),
           dbFetch<any[]>('profiles', { select: '*', head: true, token: authToken }),
           dbFetch<any[]>('comments', { select: '*', head: true, token: authToken }),
           dbFetch<any[]>('forum_posts', { select: '*', head: true, token: authToken }),
@@ -37,10 +52,10 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ glossary, authToken }) =
           dbFetch<any[]>('page_views', { select: 'page,duration_seconds', token: authToken }),
         ]);
 
-        const chapters = chaptersRes.data || [];
-        const totalViews = chapters.reduce((sum: number, c: any) => sum + c.views, 0);
+        const chapterData = chaptersRes.data || [];
+        setChapters(chapterData);
+        const totalViews = chapterData.reduce((sum: number, c: any) => sum + c.views, 0);
 
-        // Aggregate page views by page
         const pageViews = pageViewsRes.data || [];
         const pageMap = new Map<string, { count: number; totalDuration: number }>();
         pageViews.forEach((pv: any) => {
@@ -53,7 +68,7 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ glossary, authToken }) =
         const recentPageViews = Array.from(pageMap.entries()).map(([page, data]) => ({
           page,
           count: data.count,
-          avg_duration: Math.round(data.totalDuration / data.count),
+          avg_duration: data.count > 0 ? Math.round(data.totalDuration / data.count) : 0,
         })).sort((a, b) => b.count - a.count);
 
         setAnalytics({
@@ -63,7 +78,7 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ glossary, authToken }) =
           totalForumPosts: forumRes.count || 0,
           totalSubscribers: subscribersRes.count || 0,
           recentPageViews,
-          chapterStats: chapters,
+          chapterStats: chapterData,
         });
       } catch (err) {
         console.error('Failed to fetch analytics:', err);
@@ -87,11 +102,45 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ glossary, authToken }) =
     }
   };
 
+  const handleDeleteChapter = async (id: string, title: string) => {
+    if (!confirm(`Are you sure you want to delete "${title}"? This cannot be undone.`)) return;
+    const { error } = await dbFetch('chapters', {
+      method: 'DELETE',
+      filters: `id=eq.${id}`,
+      token: authToken,
+    });
+    if (error) {
+      toast.error('Failed to delete chapter');
+    } else {
+      toast.success('Chapter deleted');
+      fetchChapters();
+    }
+  };
+
   const tabs = [
     { id: "dashboard", label: "Dashboard", icon: Icons.Dashboard },
+    { id: "chapters", label: "Chapters", icon: Icons.Book },
     { id: "analytics", label: "Analytics", icon: Icons.Eye },
     { id: "glossary", label: "Glossary", icon: Icons.Book },
   ];
+
+  // If in editor mode, render full-screen editor
+  if (activeTab === 'chapters' && editorMode !== 'list') {
+    return (
+      <div className="min-h-screen p-8">
+        <ChapterEditor
+          authToken={authToken}
+          glossary={glossary}
+          editChapterId={editorMode === 'edit' ? editChapterId : undefined}
+          onBack={() => {
+            setEditorMode('list');
+            setEditChapterId(null);
+            fetchChapters();
+          }}
+        />
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen flex">
@@ -117,7 +166,7 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ glossary, authToken }) =
 
       <main className="flex-1 p-8 overflow-y-auto">
         {loading ? (
-          <p className="text-muted-foreground">Loading analytics...</p>
+          <p className="text-muted-foreground">Loading...</p>
         ) : (
           <>
             {activeTab === "dashboard" && analytics && (
@@ -154,12 +203,62 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ glossary, authToken }) =
               </div>
             )}
 
+            {activeTab === "chapters" && (
+              <div>
+                <div className="flex items-center justify-between mb-8">
+                  <h1 className="font-display text-3xl text-accent">Chapters</h1>
+                  <button
+                    onClick={() => setEditorMode('new')}
+                    className="flex items-center gap-2 px-5 py-2.5 bg-primary hover:bg-primary/90 text-primary-foreground rounded-lg font-medium transition-colors"
+                  >
+                    <Icons.Plus className="w-4 h-4" />
+                    New Chapter
+                  </button>
+                </div>
+
+                {chapters.length === 0 ? (
+                  <p className="text-muted-foreground">No chapters yet. Create your first one!</p>
+                ) : (
+                  <div className="space-y-2">
+                    {chapters.map(ch => (
+                      <div key={ch.id} className="flex items-center justify-between p-4 bg-card/50 rounded-lg border border-border/50 group">
+                        <div>
+                          <span className="text-foreground font-medium">Ch. {ch.chapter_number}: {ch.title}</span>
+                          <div className="flex gap-4 mt-1 text-xs text-muted-foreground">
+                            <span>{ch.views} views</span>
+                            <span>Published: {new Date(ch.published_at).toLocaleDateString()}</span>
+                          </div>
+                        </div>
+                        <div className="flex items-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                          <button
+                            onClick={() => {
+                              setEditChapterId(ch.id);
+                              setEditorMode('edit');
+                            }}
+                            className="px-3 py-1.5 bg-secondary hover:bg-secondary/80 text-foreground rounded text-sm transition-colors"
+                          >
+                            Edit
+                          </button>
+                          <button
+                            onClick={() => handleDeleteChapter(ch.id, ch.title)}
+                            className="px-3 py-1.5 bg-destructive/20 hover:bg-destructive/30 text-destructive rounded text-sm transition-colors"
+                          >
+                            Delete
+                          </button>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            )}
+
             {activeTab === "analytics" && analytics && (
               <div>
                 <h1 className="font-display text-3xl text-accent mb-8">Page Analytics</h1>
                 <div className="space-y-2">
                   {analytics.recentPageViews.length === 0 ? (
-                    <p className="text-muted-foreground">No page view data yet. Data will populate as readers visit.</p>
+                    <p className="text-muted-foreground">No page view data yet.</p>
                   ) : (
                     analytics.recentPageViews.map(pv => (
                       <div key={pv.page} className="flex items-center justify-between p-4 bg-card/50 rounded-lg border border-border/50">
