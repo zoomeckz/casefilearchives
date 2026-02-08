@@ -63,12 +63,23 @@ export const AuthModal: React.FC<AuthModalProps> = ({
 
         if (authError) throw new Error(authError);
 
-        // If signup returns a session, set it
         if (data?.access_token) {
-          await supabase.auth.setSession({
+          // Store session directly in localStorage to bypass hanging setSession
+          const sessionData = {
             access_token: data.access_token,
             refresh_token: data.refresh_token,
-          });
+            token_type: 'bearer',
+            expires_in: data.expires_in || 3600,
+            expires_at: data.expires_at || Math.floor(Date.now() / 1000) + 3600,
+            user: data.user,
+          };
+          localStorage.setItem(
+            `sb-iiezbdlmikvgxjlozwlc-auth-token`,
+            JSON.stringify(sessionData)
+          );
+          // Force reload to pick up the new session
+          window.location.reload();
+          return;
         }
       } else {
         const { data, error: authError } = await dbAuth('signin', {
@@ -78,12 +89,21 @@ export const AuthModal: React.FC<AuthModalProps> = ({
 
         if (authError) throw new Error(authError);
 
-        // Set the session in supabase client
         if (data?.access_token) {
-          await supabase.auth.setSession({
+          const sessionData = {
             access_token: data.access_token,
             refresh_token: data.refresh_token,
-          });
+            token_type: 'bearer',
+            expires_in: data.expires_in || 3600,
+            expires_at: data.expires_at || Math.floor(Date.now() / 1000) + 3600,
+            user: data.user,
+          };
+          localStorage.setItem(
+            `sb-iiezbdlmikvgxjlozwlc-auth-token`,
+            JSON.stringify(sessionData)
+          );
+          window.location.reload();
+          return;
         }
       }
 
