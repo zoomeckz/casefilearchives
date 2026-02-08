@@ -58,11 +58,11 @@ export const CharactersPage: React.FC<CharactersPageProps> = ({ glossary }) => {
                   onClick={() => setSelectedCharacter(char.name)}
                   className="group cursor-pointer bg-stone-900/50 rounded-xl border border-stone-800 overflow-hidden hover:border-sky-500/50 transition-all"
                 >
-                  <div className="aspect-[3/4] overflow-hidden">
+                  <div className="aspect-[4/3] overflow-hidden">
                     <img
                       src={char.image}
                       alt={char.name}
-                      className="w-full h-full object-cover object-center group-hover:scale-105 transition-transform duration-500"
+                      className="w-full h-full object-cover object-top group-hover:scale-105 transition-transform duration-500"
                     />
                   </div>
                   <div className="p-4">
@@ -95,11 +95,11 @@ export const CharactersPage: React.FC<CharactersPageProps> = ({ glossary }) => {
           </button>
 
           {selected.image && (
-            <div className="max-h-[50vh] overflow-hidden rounded-t-2xl">
+            <div className="aspect-[16/9] overflow-hidden rounded-t-2xl">
               <img
                 src={selected.image}
                 alt={selected.name}
-                className="w-full h-auto object-cover object-center"
+                className="w-full h-full object-cover object-top"
               />
             </div>
           )}
