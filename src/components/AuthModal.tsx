@@ -33,11 +33,9 @@ export const AuthModal: React.FC<AuthModalProps> = ({
         redirect_uri: window.location.origin,
       });
       if (error) throw error;
-      onSuccess();
-      onClose();
+      // OAuth redirects the page, so no need to call onSuccess/onClose here
     } catch (err: any) {
       setError(err.message || "Failed to sign in with Google");
-    } finally {
       setLoading(false);
     }
   };
@@ -77,6 +75,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({
 
       onSuccess();
       onClose();
+      setFormData({ email: "", password: "", name: "" });
     } catch (err: any) {
       setError(err.message || "An error occurred");
     } finally {
