@@ -3,7 +3,7 @@ import { Icons } from "@/lib/icons";
 import { GlossaryEntry } from "@/lib/data";
 import { dbFetch } from "@/lib/dbFetch";
 import { downloadAllChapters } from "@/hooks/useChapterDownload";
-import { ChapterEditor } from "@/components/ChapterEditor";
+import { ChapterEditor, getAllDrafts, deleteDraft, type ChapterDraft } from "@/components/ChapterEditor";
 import { GlossaryManager } from "@/components/GlossaryManager";
 import { toast } from "sonner";
 
@@ -29,8 +29,11 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ glossary, authToken, onG
   const [loading, setLoading] = useState(true);
 
   // Chapter editor state
-  const [editorMode, setEditorMode] = useState<'list' | 'new' | 'edit'>('list');
+  const [editorMode, setEditorMode] = useState<'list' | 'new' | 'edit' | 'draft'>('list');
   const [editChapterId, setEditChapterId] = useState<string | null>(null);
+  const [resumeDraftId, setResumeDraftId] = useState<string | null>(null);
+  const [chapterSubTab, setChapterSubTab] = useState<'published' | 'drafts'>('published');
+  const [drafts, setDrafts] = useState<ChapterDraft[]>([]);
   const [chapters, setChapters] = useState<any[]>([]);
   const [glossaryEntries, setGlossaryEntries] = useState<any[]>([]);
 
@@ -138,6 +141,14 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ glossary, authToken, onG
     { id: "glossary", label: "Glossary", icon: Icons.Book },
   ];
 
+  const refreshDrafts = useCallback(() => {
+    setDrafts(getAllDrafts());
+  }, []);
+
+  useEffect(() => {
+    refreshDrafts();
+  }, [refreshDrafts]);
+
   // If in editor mode, render full-screen editor
   if (activeTab === 'chapters' && editorMode !== 'list') {
     return (
@@ -146,10 +157,13 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ glossary, authToken, onG
           authToken={authToken}
           glossary={glossary}
           editChapterId={editorMode === 'edit' ? editChapterId : undefined}
+          resumeDraftId={editorMode === 'draft' ? resumeDraftId : undefined}
           onBack={() => {
             setEditorMode('list');
             setEditChapterId(null);
+            setResumeDraftId(null);
             fetchChapters();
+            refreshDrafts();
           }}
         />
       </div>
@@ -219,7 +233,7 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ glossary, authToken, onG
 
             {activeTab === "chapters" && (
               <div>
-                <div className="flex items-center justify-between mb-8">
+                <div className="flex items-center justify-between mb-6">
                   <h1 className="font-display text-3xl text-accent">Chapters</h1>
                   <button
                     onClick={() => setEditorMode('new')}
@@ -230,45 +244,113 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ glossary, authToken, onG
                   </button>
                 </div>
 
-                {chapters.length === 0 ? (
-                  <p className="text-muted-foreground">No chapters yet. Create your first one!</p>
-                ) : (
-                  <div className="space-y-2">
-                    {chapters.map(ch => (
-                      <div key={ch.id} className="flex items-center justify-between p-4 bg-card/50 rounded-lg border border-border/50 group">
-                        <div>
-                          <span className="text-foreground font-medium">Ch. {ch.chapter_number}: {ch.title}</span>
-                          <div className="flex gap-4 mt-1 text-xs text-muted-foreground">
-                            <span>{ch.views} views</span>
-                            <span>Published: {new Date(ch.published_at).toLocaleDateString()}</span>
+                {/* Sub-tabs */}
+                <div className="flex gap-1 mb-6 bg-card/30 p-1 rounded-lg w-fit">
+                  {(['published', 'drafts'] as const).map(tab => (
+                    <button
+                      key={tab}
+                      onClick={() => { setChapterSubTab(tab); if (tab === 'drafts') refreshDrafts(); }}
+                      className={`px-4 py-2 rounded-md text-sm font-medium transition-colors ${
+                        chapterSubTab === tab
+                          ? 'bg-primary/20 text-primary'
+                          : 'text-muted-foreground hover:text-foreground'
+                      }`}
+                    >
+                      {tab === 'published' ? `Published (${chapters.length})` : `Drafts (${drafts.length})`}
+                    </button>
+                  ))}
+                </div>
+
+                {chapterSubTab === 'published' && (
+                  <>
+                    {chapters.length === 0 ? (
+                      <p className="text-muted-foreground">No chapters yet. Create your first one!</p>
+                    ) : (
+                      <div className="space-y-2">
+                        {chapters.map(ch => (
+                          <div key={ch.id} className="flex items-center justify-between p-4 bg-card/50 rounded-lg border border-border/50 group">
+                            <div>
+                              <span className="text-foreground font-medium">Ch. {ch.chapter_number}: {ch.title}</span>
+                              <div className="flex gap-4 mt-1 text-xs text-muted-foreground">
+                                <span>{ch.views} views</span>
+                                <span>Published: {new Date(ch.published_at).toLocaleDateString()}</span>
+                              </div>
+                            </div>
+                            <div className="flex items-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                              <button
+                                onClick={() => window.open(`/chapters/${ch.chapter_number}`, '_blank')}
+                                className="px-3 py-1.5 bg-accent/20 hover:bg-accent/30 text-accent rounded text-sm transition-colors"
+                              >
+                                Preview
+                              </button>
+                              <button
+                                onClick={() => {
+                                  setEditChapterId(ch.id);
+                                  setEditorMode('edit');
+                                }}
+                                className="px-3 py-1.5 bg-secondary hover:bg-secondary/80 text-foreground rounded text-sm transition-colors"
+                              >
+                                Edit
+                              </button>
+                              <button
+                                onClick={() => handleDeleteChapter(ch.id, ch.title)}
+                                className="px-3 py-1.5 bg-destructive/20 hover:bg-destructive/30 text-destructive rounded text-sm transition-colors"
+                              >
+                                Delete
+                              </button>
+                            </div>
                           </div>
-                        </div>
-                        <div className="flex items-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                          <button
-                            onClick={() => window.open(`/chapters/${ch.chapter_number}`, '_blank')}
-                            className="px-3 py-1.5 bg-accent/20 hover:bg-accent/30 text-accent rounded text-sm transition-colors"
-                          >
-                            Preview
-                          </button>
-                          <button
-                            onClick={() => {
-                              setEditChapterId(ch.id);
-                              setEditorMode('edit');
-                            }}
-                            className="px-3 py-1.5 bg-secondary hover:bg-secondary/80 text-foreground rounded text-sm transition-colors"
-                          >
-                            Edit
-                          </button>
-                          <button
-                            onClick={() => handleDeleteChapter(ch.id, ch.title)}
-                            className="px-3 py-1.5 bg-destructive/20 hover:bg-destructive/30 text-destructive rounded text-sm transition-colors"
-                          >
-                            Delete
-                          </button>
-                        </div>
+                        ))}
                       </div>
-                    ))}
-                  </div>
+                    )}
+                  </>
+                )}
+
+                {chapterSubTab === 'drafts' && (
+                  <>
+                    {drafts.length === 0 ? (
+                      <p className="text-muted-foreground">No drafts saved. Drafts auto-save every 10 seconds while editing.</p>
+                    ) : (
+                      <div className="space-y-2">
+                        {drafts.sort((a, b) => new Date(b.lastSaved).getTime() - new Date(a.lastSaved).getTime()).map(draft => (
+                          <div key={draft.id} className="flex items-center justify-between p-4 bg-card/50 rounded-lg border border-border/50 group">
+                            <div>
+                              <span className="text-foreground font-medium">
+                                {draft.title ? `Ch. ${draft.chapterNumber}: ${draft.title}` : `Untitled Draft (Ch. ${draft.chapterNumber})`}
+                              </span>
+                              <div className="flex gap-4 mt-1 text-xs text-muted-foreground">
+                                <span>Last saved: {new Date(draft.lastSaved).toLocaleString()}</span>
+                                <span>{draft.content.replace(/<[^>]*>/g, '').trim().split(/\s+/).filter(Boolean).length} words</span>
+                              </div>
+                            </div>
+                            <div className="flex items-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                              <button
+                                onClick={() => {
+                                  setResumeDraftId(draft.id);
+                                  setEditorMode('draft');
+                                }}
+                                className="px-3 py-1.5 bg-primary/20 hover:bg-primary/30 text-primary rounded text-sm transition-colors"
+                              >
+                                Resume
+                              </button>
+                              <button
+                                onClick={() => {
+                                  if (confirm('Delete this draft?')) {
+                                    deleteDraft(draft.id);
+                                    refreshDrafts();
+                                    toast.success('Draft deleted');
+                                  }
+                                }}
+                                className="px-3 py-1.5 bg-destructive/20 hover:bg-destructive/30 text-destructive rounded text-sm transition-colors"
+                              >
+                                Delete
+                              </button>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </>
                 )}
               </div>
             )}
