@@ -51,7 +51,7 @@ const Index = () => {
   };
 
   // Auth hook
-  const { user, loading: authLoading, signOut, refreshUser } = useAuth();
+  const { user, loading: authLoading, signIn, signUp, signOut, refreshUser } = useAuth();
 
   // Chapters from database
   const { chapters, loading: chaptersLoading, incrementViews } = useChapters();
@@ -172,6 +172,8 @@ const Index = () => {
         isOpen={showAuthModal}
         onClose={() => setShowAuthModal(false)}
         onSuccess={refreshUser}
+        onSignIn={signIn}
+        onSignUp={signUp}
       />
     </div>
   );
