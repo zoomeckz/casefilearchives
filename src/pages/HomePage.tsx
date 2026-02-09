@@ -29,12 +29,9 @@ export const HomePage: React.FC<HomePageProps> = ({
         />
         <div className="absolute inset-0 bg-gradient-to-b from-stone-950/70 via-stone-950/50 to-stone-950" />
         <div className="relative max-w-2xl mx-auto z-10">
-          <h1 className="font-display text-5xl sm:text-7xl text-accent mb-4 drop-shadow-lg tracking-wider">
+          <h1 className="font-display text-5xl sm:text-7xl text-accent mb-6 drop-shadow-lg tracking-wider">
             SEDORIUM
           </h1>
-          <p className="text-muted-foreground text-sm sm:text-base tracking-wide mb-8 max-w-md mx-auto">
-            A dark fantasy web novel by Sam Nowroozi Larki — free to read online
-          </p>
           <button
             onClick={() => {
               if (chapters[0]) {
