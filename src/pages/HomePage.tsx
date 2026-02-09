@@ -1,6 +1,5 @@
 import React from "react";
 import { Chapter } from "@/hooks/useChapters";
-import heroImage from "@/assets/hero-bg.jpg";
 
 interface HomePageProps {
   chapters: Chapter[];
@@ -19,15 +18,9 @@ export const HomePage: React.FC<HomePageProps> = ({
     <div className="min-h-screen">
       {/* Hero Section */}
       <section 
-        className="relative py-32 px-6 text-center overflow-hidden"
+        className="relative py-32 px-6 text-center overflow-hidden bg-stone-950"
       >
-        <img
-          src={heroImage}
-          alt="Sedorium — a dark fantasy world of ancient kingdoms, druids, and mystical creatures by Sam Nowroozi Larki"
-          className="absolute inset-0 w-full h-full object-cover"
-          loading="eager"
-        />
-        <div className="absolute inset-0 bg-gradient-to-b from-stone-950/70 via-stone-950/50 to-stone-950" />
+        <div className="absolute inset-0 bg-gradient-to-b from-stone-900/50 via-stone-950/80 to-stone-950" />
         <div className="relative max-w-2xl mx-auto z-10">
           <h1 className="font-display text-5xl sm:text-7xl text-accent mb-6 tracking-wider" style={{ WebkitTextStroke: '4px black', paintOrder: 'stroke fill', textShadow: '0 0 10px rgba(0,0,0,0.8), 0 0 20px rgba(0,0,0,0.5)' }}>
             SEDORIUM
