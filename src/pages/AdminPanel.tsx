@@ -5,6 +5,7 @@ import { dbFetch } from "@/lib/dbFetch";
 import { downloadAllChapters } from "@/hooks/useChapterDownload";
 import { ChapterEditor, getAllDrafts, deleteDraft, type ChapterDraft } from "@/components/ChapterEditor";
 import { GlossaryManager } from "@/components/GlossaryManager";
+import { AnalyticsDashboard } from "@/components/AnalyticsDashboard";
 import { toast } from "sonner";
 
 interface AdminPanelProps {
@@ -355,25 +356,8 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ glossary, authToken, onG
               </div>
             )}
 
-            {activeTab === "analytics" && analytics && (
-              <div>
-                <h1 className="font-display text-3xl text-accent mb-8">Page Analytics</h1>
-                <div className="space-y-2">
-                  {analytics.recentPageViews.length === 0 ? (
-                    <p className="text-muted-foreground">No page view data yet.</p>
-                  ) : (
-                    analytics.recentPageViews.map(pv => (
-                      <div key={pv.page} className="flex items-center justify-between p-4 bg-card/50 rounded-lg border border-border/50">
-                        <span className="text-foreground">{pv.page}</span>
-                        <div className="flex gap-6 text-sm text-muted-foreground">
-                          <span>{pv.count} visits</span>
-                          <span>~{pv.avg_duration}s avg</span>
-                        </div>
-                      </div>
-                    ))
-                  )}
-                </div>
-              </div>
+            {activeTab === "analytics" && (
+              <AnalyticsDashboard authToken={authToken} />
             )}
 
             {activeTab === "glossary" && (
