@@ -20,17 +20,21 @@ export const HomePage: React.FC<HomePageProps> = ({
       {/* Hero Section */}
       <section 
         className="relative py-32 px-6 text-center overflow-hidden"
-        style={{
-          backgroundImage: `url(${heroImage})`,
-          backgroundSize: 'cover',
-          backgroundPosition: 'center',
-        }}
       >
+        <img
+          src={heroImage}
+          alt="Sedorium — a dark fantasy world of ancient kingdoms, druids, and mystical creatures by Sam Nowroozi Larki"
+          className="absolute inset-0 w-full h-full object-cover"
+          loading="eager"
+        />
         <div className="absolute inset-0 bg-gradient-to-b from-stone-950/70 via-stone-950/50 to-stone-950" />
         <div className="relative max-w-2xl mx-auto z-10">
-          <h1 className="font-display text-5xl sm:text-7xl text-accent mb-6 drop-shadow-lg tracking-wider">
+          <h1 className="font-display text-5xl sm:text-7xl text-accent mb-4 drop-shadow-lg tracking-wider">
             SEDORIUM
           </h1>
+          <p className="text-muted-foreground text-sm sm:text-base tracking-wide mb-8 max-w-md mx-auto">
+            A dark fantasy web novel by Sam Nowroozi Larki — free to read online
+          </p>
           <button
             onClick={() => {
               if (chapters[0]) {
