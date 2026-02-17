@@ -181,6 +181,38 @@ export const defaultGlossary: Record<string, GlossaryEntry> = {
     type: 'concept',
     description: 'Mysterious stones with time-altering properties. Extremely rare and poorly understood. Said to slow or distort the passage of time in their immediate vicinity.'
   },
+  'Lamoon': {
+    type: 'location',
+    description: 'The ancient name for Beambreak. Lamoon was the seat of the fifth throne and the richest hub of civilization the continent had ever known, built atop Mount Ahl\'s massive natural deposit of Sedorium. The city was renamed Beambreak after the demon Beam was slain on the mountain.'
+  },
+  'Maelle': {
+    type: 'character',
+    description: 'Mira\'s great-great-grandmother. Born into the most accomplished druidic line on the continent with royal blood stretching back to the founding of the fourth throne. She broke the bloodline covenant by falling in love with Ignius, a bastard druid, and was hunted across every nation as an Oathbreaker. Mother of Beam.'
+  },
+  'Ignius': {
+    type: 'character',
+    description: 'A bastard druid and Maelle\'s partner. Born with two conflicting forms: raw, unstructured elemental fire that leaked from him constantly, and an uncontainable lycan wolf form that consumed his consciousness entirely. At eight years old, it took eleven adult druids to subdue his first full lycan shift, and three did not survive.'
+  },
+  'Beam': {
+    type: 'character',
+    description: 'Son of Maelle and Ignius. His name is the origin of the city name Beambreak—he is the highest class of demon that ravaged the continent before being killed on Mount Lamoon in the battle that gave the city its current name.'
+  },
+  'Oathbreaker': {
+    type: 'concept',
+    description: 'A druid who violates the foundational covenant of the five thrones by mating outside their bloodline. The act was considered the highest possible violation, punishable by extermination. Mira\'s family carries this title through their descent from Maelle.'
+  },
+  'Lycan': {
+    type: 'creature',
+    description: 'A wolf-like druid beast form of extraordinary and uncontainable power. When a lycan shift takes hold, the druid\'s consciousness is consumed entirely, replaced by a predatory intelligence so overwhelming that nothing can withstand proximity to it.'
+  },
+  'Skyborn': {
+    type: 'concept',
+    description: 'Elite warriors of Dim\'cra whose druid forms are raptors capable of striking from extreme altitudes where the thin air itself becomes a weapon.'
+  },
+  'Veilkeeper': {
+    type: 'concept',
+    description: 'Mysterious figures who serve within Beambreak\'s inner sanctum. They bear distinctive tattoos and attend to the royal family\'s private chambers and council rooms.'
+  },
 };
 
 export const forumCategories = ['General', 'Theories', 'Character Discussion', 'Chapter Reviews', 'Fan Art', 'Questions', 'World Building'];
