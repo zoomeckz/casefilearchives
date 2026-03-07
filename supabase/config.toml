@@ -2,3 +2,6 @@ project_id = "iiezbdlmikvgxjlozwlc"
 
 [functions.send-chapter-notification]
 verify_jwt = false
+
+[functions.generate-manga-panel]
+verify_jwt = false
