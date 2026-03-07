@@ -254,7 +254,7 @@ export const MangaPage: React.FC<MangaPageProps> = ({ user, setCurrentPage }) =>
                       />
                     ) : (
                       <div className="text-center py-16 px-6">
-                        <Icons.Image className="w-12 h-12 text-muted-foreground/30 mx-auto mb-3" />
+                        <Icons.Eye className="w-12 h-12 text-muted-foreground/30 mx-auto mb-3" />
                         <p className="text-muted-foreground/50 text-sm">
                           {isAdmin
                             ? 'Click "Generate" to create this panel'
