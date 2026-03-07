@@ -48,6 +48,7 @@ const Index = () => {
     else if (page === "profile") navigate("/profile");
     else if (page === "admin") navigate("/admin");
     else if (page === "about") navigate("/about");
+    else if (page === "manga") navigate("/manga");
     else if (page === "reader" && selectedChapter) {
       navigate(`/chapters/${selectedChapter.chapterNumber}`);
     }
