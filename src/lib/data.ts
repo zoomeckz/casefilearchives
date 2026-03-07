@@ -65,7 +65,8 @@ export const defaultGlossary: Record<string, GlossaryEntry> = {
   },
   'Felm': { 
     type: 'character', 
-    description: 'A mysterious figure with piercing ocean-blue eyes. He stands sentinel over an infant and leads a secretive group with knowledge of ancient gifts. He speaks of the child being their "legacy—our hero, or our demon."' 
+    image: FelmImage,
+    description: 'Known as "The Keeper." A mysterious figure with piercing ocean-blue eyes, dark windswept hair, and scarred hands bearing faint glowing runes. He wears a dark cloak with intricate detailing, carries an ornate amulet and rings set with blue stones, and bears a distinctive symbol tied to his secretive order. He stands sentinel over an infant and leads a group with knowledge of ancient gifts, speaking of the child being their "legacy—our hero, or our demon."' 
   },
   'Vicera': { 
     type: 'character', 
