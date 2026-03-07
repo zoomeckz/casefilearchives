@@ -22,6 +22,7 @@ const App = () => (
           <Route path="/forum" element={<Index />} />
           <Route path="/profile" element={<Index />} />
           <Route path="/admin" element={<Index />} />
+          <Route path="/manga" element={<Index />} />
           <Route path="/about" element={<Index />} />
           {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
           <Route path="*" element={<NotFound />} />

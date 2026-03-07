@@ -227,6 +227,50 @@ export type Database = {
         }
         Relationships: []
       }
+      manga_panels: {
+        Row: {
+          caption: string | null
+          chapter_id: string
+          created_at: string
+          id: string
+          image_url: string | null
+          panel_number: number
+          prompt: string
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          caption?: string | null
+          chapter_id: string
+          created_at?: string
+          id?: string
+          image_url?: string | null
+          panel_number: number
+          prompt: string
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          caption?: string | null
+          chapter_id?: string
+          created_at?: string
+          id?: string
+          image_url?: string | null
+          panel_number?: number
+          prompt?: string
+          title?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "manga_panels_chapter_id_fkey"
+            columns: ["chapter_id"]
+            isOneToOne: false
+            referencedRelation: "chapters"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       page_views: {
         Row: {
           chapter_id: string | null

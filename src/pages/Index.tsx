@@ -17,6 +17,7 @@ import { ForumPage } from "@/pages/ForumPage";
 import { ProfilePage } from "@/pages/ProfilePage";
 import { AdminPanel } from "@/pages/AdminPanel";
 import { AboutPage } from "@/pages/AboutPage";
+import { MangaPage } from "@/pages/MangaPage";
 import { usePageTracking } from "@/hooks/usePageTracking";
 
 const Index = () => {
@@ -35,6 +36,7 @@ const Index = () => {
     if (path === "/profile") return "profile";
     if (path === "/admin") return "admin";
     if (path === "/about") return "about";
+    if (path === "/manga") return "manga";
     return "home";
   })();
 
@@ -46,6 +48,7 @@ const Index = () => {
     else if (page === "profile") navigate("/profile");
     else if (page === "admin") navigate("/admin");
     else if (page === "about") navigate("/about");
+    else if (page === "manga") navigate("/manga");
     else if (page === "reader" && selectedChapter) {
       navigate(`/chapters/${selectedChapter.chapterNumber}`);
     }
@@ -196,6 +199,10 @@ const Index = () => {
         )}
 
         {currentPage === "about" && <AboutPage />}
+
+        {currentPage === "manga" && (
+          <MangaPage user={user} setCurrentPage={setCurrentPage} />
+        )}
       </main>
 
       {currentPage !== "admin" && <Footer setCurrentPage={setCurrentPage} />}
