@@ -228,7 +228,7 @@ export const MangaPage: React.FC<MangaPageProps> = ({ user, setCurrentPage }) =>
                         >
                           {isGenerating ? (
                             <>
-                              <Icons.Loader className="animate-spin" />
+                              <span className="animate-spin inline-block w-4 h-4 border-2 border-current border-t-transparent rounded-full" />
                               Generating…
                             </>
                           ) : existing ? (
