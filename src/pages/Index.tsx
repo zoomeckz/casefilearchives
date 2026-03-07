@@ -36,6 +36,7 @@ const Index = () => {
     if (path === "/profile") return "profile";
     if (path === "/admin") return "admin";
     if (path === "/about") return "about";
+    if (path === "/manga") return "manga";
     return "home";
   })();
 
