@@ -199,6 +199,10 @@ const Index = () => {
         )}
 
         {currentPage === "about" && <AboutPage />}
+
+        {currentPage === "manga" && (
+          <MangaPage user={user} setCurrentPage={setCurrentPage} />
+        )}
       </main>
 
       {currentPage !== "admin" && <Footer setCurrentPage={setCurrentPage} />}
