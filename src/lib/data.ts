@@ -185,23 +185,27 @@ export const defaultGlossary: Record<string, GlossaryEntry> = {
   },
   'Lamoon': {
     type: 'location',
-    description: 'The ancient name for Beambreak. Lamoon was the seat of the fifth throne and the richest hub of civilization the continent had ever known, built atop Mount Ahl\'s massive natural deposit of Sedorium. The city was renamed Beambreak after the demon Beam was slain on the mountain.'
+    description: 'The ancient name for Beambreak. Lamoon was the seat of the fifth throne and the richest hub of civilization the continent had ever known, built atop Mount Ahl\'s massive Sedorium deposit. It was held for generations by a company of Oathbreaker mercenaries — halfbred druid fighters whose volatile mixed blood made them nearly impossible to defeat. The city was renamed Beambreak after the demon Beam was slain on the mountain.'
+  },
+  'Mount Ahl': {
+    type: 'location',
+    description: 'The mountain upon which Beambreak (formerly Lamoon) is built. Sits on the largest natural deposit of Sedorium ever discovered — veins so deep and wide that the original miners believed the mountain was alive and Sedorium was its blood.'
   },
   'Maelle': {
     type: 'character',
-    description: 'Mira\'s great-great-grandmother. Born into the most accomplished druidic line on the continent with royal blood stretching back to the founding of the fourth throne. She broke the bloodline covenant by falling in love with Ignius, a bastard druid, and was hunted across every nation as an Oathbreaker. Mother of Beam.'
+    description: 'Born into the Oathbreaker line with royal blood — the purest remaining strain of the fourth throne\'s dynasty. Brilliant, resourceful, and possessed of a ferocious, stubborn love. When the lycan consumed Ignius and he rampaged across the continent for hundreds of years, Maelle followed him — across nations, across lifetimes — searching for a way to reach the man inside the beast. She found him. And the lycan killed her. Her death was the only thing that stopped it.'
   },
   'Ignius': {
     type: 'character',
-    description: 'A bastard druid and Maelle\'s partner. Born with two conflicting forms: raw, unstructured elemental fire that leaked from him constantly, and an uncontainable lycan wolf form that consumed his consciousness entirely. At eight years old, it took eleven adult druids to subdue his first full lycan shift, and three did not survive.'
+    description: 'A bastard druid born with two catastrophically conflicting forms. His first was raw, unstructured elemental fire that leaked from him constantly — burning his cradle as an infant and blistering anyone who touched him. His second was a lycan wolf form so powerful it consumed his consciousness entirely. At eight years old, it took eleven adult druids to subdue his first full shift, and three did not survive. He was the strongest of the Oathbreaker mercenaries who held Lamoon. His wife was Maelle.'
   },
   'Beam': {
     type: 'character',
-    description: 'Son of Maelle and Ignius. His name is the origin of the city name Beambreak—he is the highest class of demon that ravaged the continent before being killed on Mount Lamoon in the battle that gave the city its current name.'
+    description: 'Son of Maelle and Ignius. The highest class of demon that ravaged the continent. His name is the origin of the city name Beambreak — the mountain where he was finally destroyed. The full story of what Beam was and what he became is central to the Oathbreaker legacy.'
   },
   'Oathbreaker': {
     type: 'concept',
-    description: 'A druid who violates the foundational covenant of the five thrones by mating outside their bloodline. The act was considered the highest possible violation, punishable by extermination. Mira\'s family carries this title through their descent from Maelle.'
+    description: 'The first royal druidic bloodline to break the ancient covenant by mixing their blood with common, non-royal kin. The name was assigned as a sentence. Oathbreaker offspring were volatile — producing both horrors and extraordinary beings. A company of Oathbreaker mercenaries held Lamoon against four nations for generations. Mira\'s family carries this title through their descent from Maelle and Ignius.'
   },
   'Lycan': {
     type: 'creature',
@@ -214,6 +218,14 @@ export const defaultGlossary: Record<string, GlossaryEntry> = {
   'Veilkeeper': {
     type: 'concept',
     description: 'Mysterious figures who serve within Beambreak\'s inner sanctum. They bear distinctive tattoos and attend to the royal family\'s private chambers and council rooms.'
+  },
+  'Bestowed': {
+    type: 'concept',
+    description: 'A title or group referenced within Beambreak\'s inner circles. Their exact role remains shrouded in secrecy, but they are present during the most sensitive royal proceedings.'
+  },
+  'Burning Shield': {
+    type: 'concept',
+    description: 'An ancient symbol carved into the black stone council table in Beambreak\'s inner chambers. Its significance is tied to the royal bloodline and the history of the Oathbreakers.'
   },
 };
 
