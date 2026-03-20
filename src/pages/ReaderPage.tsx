@@ -71,7 +71,8 @@ export const ReaderPage: React.FC<ReaderPageProps> = ({
           </span>
           <div className="flex items-start justify-between gap-4 mt-2 mb-4">
             <h1 className="font-display text-4xl sm:text-5xl text-accent">
-              {chapter.title}
+              {translated.title}
+            </h1>
             </h1>
             {user && (
               <BookmarkButton
