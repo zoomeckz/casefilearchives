@@ -227,6 +227,14 @@ export const defaultGlossary: Record<string, GlossaryEntry> = {
     type: 'concept',
     description: 'An ancient symbol carved into the black stone council table in Beambreak\'s inner chambers. Its significance is tied to the royal bloodline and the history of the Oathbreakers.'
   },
+  'Bertrand': {
+    type: 'character',
+    description: 'The Throne Archivist of Beambreak. A tall, angular man with mismatched eyes — one deep brown, one pale milky blue — dark hair swept back with a grey streak from temple to nape, and an impossibly precise manner of dress. His bloodline has maintained perfect eidetic recall for nineteen generations. Summoned by Mira through an ancient invocation after eleven years of silence, he recognized Sam on sight with what can only be described as theological collapse.'
+  },
+  'Veylan Fragments': {
+    type: 'concept',
+    description: 'Ancient texts or records referenced by the Throne Archivist Bertrand. They contain descriptions of a "void signature" and convergence patterns that Bertrand\'s bloodline has catalogued across nineteen generations. Their exact origin and full contents remain unknown.'
+  },
 };
 
 export const forumCategories = ['General', 'Theories', 'Character Discussion', 'Chapter Reviews', 'Fan Art', 'Questions', 'World Building'];
