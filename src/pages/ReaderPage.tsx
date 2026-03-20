@@ -7,6 +7,8 @@ import { CommentsSection } from "@/components/CommentsSection";
 import { TextToSpeech } from "@/components/TextToSpeech";
 import { AuthUser } from "@/hooks/useAuth";
 import { BookmarkButton } from "@/components/BookmarkButton";
+import { LanguageSelector } from "@/components/LanguageSelector";
+import { useTranslation } from "@/hooks/useTranslation";
 
 interface ReaderPageProps {
   chapter: Chapter | null;
