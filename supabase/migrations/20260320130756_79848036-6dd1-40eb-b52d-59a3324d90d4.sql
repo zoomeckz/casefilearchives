@@ -1,0 +1,1 @@
+UPDATE chapters SET content = replace(content, 'He looked at Mira. He looked at Ayel. He looked at Rathel. He looked at the Bestowed. He looked at the shadows where the Veilkeepers had gone rigid.', 'He looked at Mira. He looked at Ayel. He looked at Rathel.') WHERE chapter_number = 13
