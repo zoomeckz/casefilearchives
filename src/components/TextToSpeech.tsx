@@ -1,8 +1,46 @@
-import React, { useState, useEffect, useRef } from "react";
+import React, { useState, useEffect, useRef, useCallback } from "react";
 import { Icons } from "@/lib/icons";
 
 interface TextToSpeechProps {
   content: string;
+}
+
+const MAX_CHUNK_LENGTH = 3000;
+
+function splitIntoChunks(text: string): string[] {
+  if (text.length <= MAX_CHUNK_LENGTH) return [text];
+  
+  const chunks: string[] = [];
+  let remaining = text;
+  
+  while (remaining.length > 0) {
+    if (remaining.length <= MAX_CHUNK_LENGTH) {
+      chunks.push(remaining);
+      break;
+    }
+    
+    // Find a good break point (sentence end) within the limit
+    let breakPoint = remaining.lastIndexOf('. ', MAX_CHUNK_LENGTH);
+    if (breakPoint < MAX_CHUNK_LENGTH * 0.5) {
+      breakPoint = remaining.lastIndexOf('! ', MAX_CHUNK_LENGTH);
+    }
+    if (breakPoint < MAX_CHUNK_LENGTH * 0.5) {
+      breakPoint = remaining.lastIndexOf('? ', MAX_CHUNK_LENGTH);
+    }
+    if (breakPoint < MAX_CHUNK_LENGTH * 0.3) {
+      breakPoint = remaining.lastIndexOf(' ', MAX_CHUNK_LENGTH);
+    }
+    if (breakPoint <= 0) {
+      breakPoint = MAX_CHUNK_LENGTH;
+    } else {
+      breakPoint += 1; // include the period/space
+    }
+    
+    chunks.push(remaining.slice(0, breakPoint).trim());
+    remaining = remaining.slice(breakPoint).trim();
+  }
+  
+  return chunks;
 }
 
 export const TextToSpeech: React.FC<TextToSpeechProps> = ({ content }) => {
@@ -11,14 +49,15 @@ export const TextToSpeech: React.FC<TextToSpeechProps> = ({ content }) => {
   const [voices, setVoices] = useState<SpeechSynthesisVoice[]>([]);
   const [selectedVoiceURI, setSelectedVoiceURI] = useState<string>("");
   const [showVoices, setShowVoices] = useState(false);
-  const utteranceRef = useRef<SpeechSynthesisUtterance | null>(null);
+  const chunksRef = useRef<string[]>([]);
+  const currentChunkRef = useRef(0);
+  const stoppedRef = useRef(false);
 
   useEffect(() => {
     const loadVoices = () => {
       const available = window.speechSynthesis.getVoices();
       if (available.length > 0) {
         setVoices(available);
-        // Prefer natural/premium voices, then English ones
         const saved = localStorage.getItem("sedorium-tts-voice");
         if (saved && available.find((v) => v.voiceURI === saved)) {
           setSelectedVoiceURI(saved);
@@ -55,6 +94,34 @@ export const TextToSpeech: React.FC<TextToSpeechProps> = ({ content }) => {
 
   const selectedVoice = voices.find((v) => v.voiceURI === selectedVoiceURI);
 
+  const speakChunk = useCallback((index: number) => {
+    if (stoppedRef.current || index >= chunksRef.current.length) {
+      setIsPlaying(false);
+      setIsPaused(false);
+      return;
+    }
+
+    currentChunkRef.current = index;
+    const utterance = new SpeechSynthesisUtterance(chunksRef.current[index]);
+    if (selectedVoice) utterance.voice = selectedVoice;
+    utterance.rate = 0.95;
+    utterance.pitch = 1;
+
+    utterance.onend = () => {
+      if (!stoppedRef.current) {
+        speakChunk(index + 1);
+      }
+    };
+
+    utterance.onerror = () => {
+      if (!stoppedRef.current) {
+        speakChunk(index + 1);
+      }
+    };
+
+    window.speechSynthesis.speak(utterance);
+  }, [selectedVoice]);
+
   const handlePlay = () => {
     if (isPaused) {
       window.speechSynthesis.resume();
@@ -64,19 +131,13 @@ export const TextToSpeech: React.FC<TextToSpeechProps> = ({ content }) => {
     }
 
     const text = extractText(content);
-    const utterance = new SpeechSynthesisUtterance(text);
-    if (selectedVoice) utterance.voice = selectedVoice;
-    utterance.rate = 0.95;
-    utterance.pitch = 1;
+    const chunks = splitIntoChunks(text);
+    chunksRef.current = chunks;
+    currentChunkRef.current = 0;
+    stoppedRef.current = false;
 
-    utterance.onend = () => {
-      setIsPlaying(false);
-      setIsPaused(false);
-    };
-
-    utteranceRef.current = utterance;
-    window.speechSynthesis.speak(utterance);
     setIsPlaying(true);
+    speakChunk(0);
   };
 
   const handlePause = () => {
@@ -86,6 +147,7 @@ export const TextToSpeech: React.FC<TextToSpeechProps> = ({ content }) => {
   };
 
   const handleStop = () => {
+    stoppedRef.current = true;
     window.speechSynthesis.cancel();
     setIsPlaying(false);
     setIsPaused(false);
@@ -94,7 +156,6 @@ export const TextToSpeech: React.FC<TextToSpeechProps> = ({ content }) => {
   const handleVoiceChange = (uri: string) => {
     setSelectedVoiceURI(uri);
     localStorage.setItem("sedorium-tts-voice", uri);
-    // If currently playing, restart with new voice
     if (isPlaying || isPaused) {
       handleStop();
     }
