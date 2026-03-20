@@ -73,7 +73,6 @@ export const ReaderPage: React.FC<ReaderPageProps> = ({
             <h1 className="font-display text-4xl sm:text-5xl text-accent">
               {translated.title}
             </h1>
-            </h1>
             {user && (
               <BookmarkButton
                 isBookmarked={isBookmarked(chapter.id)}
