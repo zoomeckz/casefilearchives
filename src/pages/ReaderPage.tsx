@@ -44,7 +44,11 @@ export const ReaderPage: React.FC<ReaderPageProps> = ({
     }
   }, [chapter?.id, user?.id]);
 
+  const { language, switchLanguage, getTranslatedChapter, availableLanguages } = useTranslation();
+
   if (!chapter) return null;
+
+  const translated = getTranslatedChapter(chapter);
 
   const currentIndex = chapters.findIndex((c) => c.id === chapter.id);
   const prevChapter = currentIndex > 0 ? chapters[currentIndex - 1] : null;
