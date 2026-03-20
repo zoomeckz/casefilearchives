@@ -107,7 +107,7 @@ export const ReaderPage: React.FC<ReaderPageProps> = ({
         </p>
 
         <article className="mb-12">
-          <InteractiveContent content={chapter.content} glossary={glossary} />
+          <InteractiveContent content={translated.content} glossary={glossary} />
         </article>
 
         <div className="flex items-center justify-between gap-4 py-8 border-t border-b border-border mb-12">
