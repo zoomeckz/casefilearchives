@@ -7,6 +7,8 @@ import { CommentsSection } from "@/components/CommentsSection";
 import { TextToSpeech } from "@/components/TextToSpeech";
 import { AuthUser } from "@/hooks/useAuth";
 import { BookmarkButton } from "@/components/BookmarkButton";
+import { LanguageSelector } from "@/components/LanguageSelector";
+import { useTranslation } from "@/hooks/useTranslation";
 
 interface ReaderPageProps {
   chapter: Chapter | null;
@@ -42,7 +44,11 @@ export const ReaderPage: React.FC<ReaderPageProps> = ({
     }
   }, [chapter?.id, user?.id]);
 
+  const { language, switchLanguage, getTranslatedChapter, availableLanguages } = useTranslation();
+
   if (!chapter) return null;
+
+  const translated = getTranslatedChapter(chapter);
 
   const currentIndex = chapters.findIndex((c) => c.id === chapter.id);
   const prevChapter = currentIndex > 0 ? chapters[currentIndex - 1] : null;
@@ -65,7 +71,7 @@ export const ReaderPage: React.FC<ReaderPageProps> = ({
           </span>
           <div className="flex items-start justify-between gap-4 mt-2 mb-4">
             <h1 className="font-display text-4xl sm:text-5xl text-accent">
-              {chapter.title}
+              {translated.title}
             </h1>
             {user && (
               <BookmarkButton
@@ -87,7 +93,12 @@ export const ReaderPage: React.FC<ReaderPageProps> = ({
         </header>
 
         <div className="flex flex-wrap items-center gap-4 mb-10 text-sm">
-          <TextToSpeech content={chapter.content} />
+          <TextToSpeech content={translated.content} />
+          <LanguageSelector
+            language={language}
+            availableLanguages={availableLanguages}
+            onSwitch={switchLanguage}
+          />
         </div>
 
         <p className="text-muted-foreground/60 text-sm mb-6 italic">
@@ -95,7 +106,7 @@ export const ReaderPage: React.FC<ReaderPageProps> = ({
         </p>
 
         <article className="mb-12">
-          <InteractiveContent content={chapter.content} glossary={glossary} />
+          <InteractiveContent content={translated.content} glossary={glossary} />
         </article>
 
         <div className="flex items-center justify-between gap-4 py-8 border-t border-b border-border mb-12">
