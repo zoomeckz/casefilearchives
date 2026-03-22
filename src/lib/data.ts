@@ -235,6 +235,42 @@ export const defaultGlossary: Record<string, GlossaryEntry> = {
     type: 'concept',
     description: 'Ancient texts or records referenced by the Throne Archivist Bertrand. They contain descriptions of a "void signature" and convergence patterns that Bertrand\'s bloodline has catalogued across nineteen generations. Their exact origin and full contents remain unknown.'
   },
+  'Grebby': {
+    type: 'character',
+    description: 'A freelance vehicle engineer who moves between nations on contracted passes. Stocky and compact with calloused hands and infectious enthusiasm for mechanical systems. Raised by the Workshop Union, his natural affinity was destruction — understanding how to take things apart so thoroughly that he became the best in the world at preventing it. Childhood friend of the Veilkeeper Kassandra.'
+  },
+  'Agatha': {
+    type: 'character',
+    description: 'A blind master tailor formerly employed by King Rashad. Has pale, clouded grey eyes and an arresting face. Her hands can read a body like a cartographer reads a landscape — cataloguing every contour through touch with precision sighted tailors cannot replicate. Known for her sharp tongue, biting wit, and Irish-inflected speech. Mother of Daria. Suffered a crippling injury on the Sedi thoroughfare.'
+  },
+  'Daria': {
+    type: 'character',
+    description: 'Agatha\'s daughter and caretaker. Lives in reduced circumstances in the Meta district. Despite hardship, she maintains fierce devotion to her injured mother.'
+  },
+  'Kassandra': {
+    type: 'character',
+    description: 'A Veilkeeper and childhood friend of Grebby, both raised by the Workshop Union. Despite her oath of detachment, she retains a subtle connection to Grebby — enough to break protocol and deliver a secret message to Ayel via crow through Beambreak\'s ventilation routes.'
+  },
+  'Workshop Union': {
+    type: 'concept',
+    description: 'A sprawling, decentralized network of guilds, schools, and placement houses operating across all five nations. It collects stray children — orphans, runaways, the discarded — identifies their natural affinities, and trains them into world-class specialists. The Union does not traffic in backgrounds; it traffics in potential.'
+  },
+  'Anvil House': {
+    type: 'location',
+    description: 'A lodging house in the Igneous district\'s second ring of Beambreak. Known as Grebby\'s usual accommodation when on contracted work in the city.'
+  },
+  'Sedorium Heart': {
+    type: 'concept',
+    description: 'The central Sedorium node powering Beambreak\'s infrastructure. Located beneath the Aromi gardens, it pulses with a deep, rhythmic luminescence felt more than seen — a bass-frequency throb that travels through stone, wood, and glass throughout the city.'
+  },
+  'Wall of Atonement': {
+    type: 'location',
+    description: 'A section of Mount Ahl\'s living rock left deliberately uncarved as the ultimate testing surface. Used for generations to test weapons and druidic power against the raw mountain stone. Sam cracked it with his reverberation ability — a feat previously considered impossible.'
+  },
+  'Greenwood Court': {
+    type: 'concept',
+    description: 'A governing body within Feldus. A champion of the Greenwood Court — a shapeshifter described as "wind given claws" — once challenged the throne of Lamoon and was defeated in a single afternoon.'
+  },
 };
 
 export const forumCategories = ['General', 'Theories', 'Character Discussion', 'Chapter Reviews', 'Fan Art', 'Questions', 'World Building'];
