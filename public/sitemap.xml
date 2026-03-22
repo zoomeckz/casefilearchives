@@ -101,11 +101,6 @@
     <priority>0.7</priority>
   </url>
   <url>
-    <loc>https://sedorium.lovable.app/manga</loc>
-    <changefreq>weekly</changefreq>
-    <priority>0.6</priority>
-  </url>
-  <url>
     <loc>https://sedorium.lovable.app/forum</loc>
     <changefreq>daily</changefreq>
     <priority>0.6</priority>
