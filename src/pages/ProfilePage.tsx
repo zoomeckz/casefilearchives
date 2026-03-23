@@ -112,7 +112,7 @@ export const ProfilePage: React.FC<ProfilePageProps> = ({
 
         <div className="space-y-8">
           {/* Avatar Section */}
-          <div className="flex items-start gap-6">
+          <div className="flex flex-col sm:flex-row items-center sm:items-start gap-6">
             <div className="relative group">
               <ProfileFrame avatarUrl={user.avatarUrl} name={user.name} frame={selectedFrame} size={128} />
               <button
