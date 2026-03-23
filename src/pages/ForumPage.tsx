@@ -1,8 +1,9 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { Icons } from "@/lib/icons";
 import { AuthUser } from "@/hooks/useAuth";
 import { dbFetch } from "@/lib/dbFetch";
 import { forumCategories } from "@/lib/data";
+import { FormatToolbar } from "@/components/FormatToolbar";
 
 function renderFormatted(text: string): string {
   let html = text
@@ -56,6 +57,10 @@ export const ForumPage: React.FC<ForumPageProps> = ({
   const [loading, setLoading] = useState(true);
   const [editingPost, setEditingPost] = useState<ForumPost | null>(null);
   const [editContent, setEditContent] = useState({ title: "", content: "", category: "" });
+
+  const newPostRef = useRef<HTMLTextAreaElement>(null);
+  const editPostRef = useRef<HTMLTextAreaElement>(null);
+  const replyRef = useRef<HTMLTextAreaElement>(null);
 
   useEffect(() => {
     const fetchPosts = async () => {
@@ -224,8 +229,6 @@ export const ForumPage: React.FC<ForumPageProps> = ({
     ? posts.filter(p => p.category === selectedCategory)
     : posts;
 
-  const formatHelp = "**bold** *italic* ![alt](image-url) [link](url)";
-
   if (loading) {
     return (
       <div className="min-h-screen py-12 px-6 flex items-center justify-center">
@@ -258,8 +261,8 @@ export const ForumPage: React.FC<ForumPageProps> = ({
             </div>
             <div>
               <label className="block text-muted-foreground text-sm mb-2">Content</label>
-              <p className="text-muted-foreground/60 text-xs mb-1">Formatting: {formatHelp}</p>
-              <textarea value={editContent.content} onChange={(e) => setEditContent({ ...editContent, content: e.target.value })}
+              <FormatToolbar textareaRef={editPostRef} value={editContent.content} onChange={(v) => setEditContent({ ...editContent, content: v })} />
+              <textarea ref={editPostRef} value={editContent.content} onChange={(e) => setEditContent({ ...editContent, content: e.target.value })}
                 className="w-full px-4 py-2 bg-secondary border border-border rounded-lg text-foreground focus:outline-none focus:border-primary resize-none font-mono text-sm" rows={12} />
             </div>
             <div className="border border-border rounded-lg p-4 bg-secondary/30">
@@ -312,8 +315,8 @@ export const ForumPage: React.FC<ForumPageProps> = ({
           </div>
           <h3 className="text-xl font-display text-accent mb-6">Replies ({replies.length})</h3>
           <form onSubmit={handleAddReply} className="mb-8">
-            <p className="text-muted-foreground/60 text-xs mb-1">Formatting: {formatHelp}</p>
-            <textarea value={replyContent} onChange={(e) => setReplyContent(e.target.value)}
+            <FormatToolbar textareaRef={replyRef} value={replyContent} onChange={setReplyContent} />
+            <textarea ref={replyRef} value={replyContent} onChange={(e) => setReplyContent(e.target.value)}
               placeholder={user ? "Add your reply..." : "Sign in to reply"}
               className="w-full px-4 py-3 bg-secondary border border-border rounded-lg text-foreground placeholder:text-muted-foreground focus:outline-none focus:border-primary resize-none"
               rows={3} disabled={!user}
@@ -386,8 +389,8 @@ export const ForumPage: React.FC<ForumPageProps> = ({
               </div>
               <div>
                 <label className="block text-muted-foreground text-sm mb-2">Content</label>
-                <p className="text-muted-foreground/60 text-xs mb-1">Formatting: {formatHelp}</p>
-                <textarea value={newPost.content} onChange={(e) => setNewPost({ ...newPost, content: e.target.value })}
+                <FormatToolbar textareaRef={newPostRef} value={newPost.content} onChange={(v) => setNewPost({ ...newPost, content: v })} />
+                <textarea ref={newPostRef} value={newPost.content} onChange={(e) => setNewPost({ ...newPost, content: e.target.value })}
                   className="w-full px-4 py-2 bg-secondary border border-border rounded-lg text-foreground focus:outline-none focus:border-primary resize-none font-mono text-sm" rows={6} placeholder="What's on your mind?" />
               </div>
               <div className="flex gap-4">
