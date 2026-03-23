@@ -48,6 +48,8 @@ export const ForumPage: React.FC<ForumPageProps> = ({
   user,
   setShowAuthModal,
 }) => {
+  const navigate = useNavigate();
+  const { postId } = useParams<{ postId?: string }>();
   const [posts, setPosts] = useState<ForumPost[]>([]);
   const [selectedPost, setSelectedPost] = useState<ForumPost | null>(null);
   const [replies, setReplies] = useState<ForumReply[]>([]);
