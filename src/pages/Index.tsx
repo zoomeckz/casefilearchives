@@ -202,6 +202,10 @@ const Index = () => {
           <AdminPanel glossary={glossary} authToken={session?.access_token} onGlossaryChange={fetchGlossary} />
         )}
 
+        {currentPage === "rewards" && user && (
+          <RewardsPage user={user} />
+        )}
+
         {currentPage === "about" && <AboutPage />}
 
         {currentPage === "manga" && (
