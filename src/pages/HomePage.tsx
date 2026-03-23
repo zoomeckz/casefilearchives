@@ -18,7 +18,7 @@ export const HomePage: React.FC<HomePageProps> = ({
     <div className="min-h-screen">
       {/* Hero Section */}
       <section 
-        className="relative py-32 px-6 text-center overflow-hidden bg-stone-950"
+        className="relative py-20 sm:py-32 px-4 sm:px-6 text-center overflow-hidden bg-stone-950"
       >
         <div className="absolute inset-0 bg-gradient-to-b from-stone-900/50 via-stone-950/80 to-stone-950" />
         <div className="relative max-w-2xl mx-auto z-10">
