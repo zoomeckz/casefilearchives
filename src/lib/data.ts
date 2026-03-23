@@ -27,6 +27,7 @@ export interface GlossaryEntry {
   type: 'character' | 'location' | 'creature' | 'concept';
   description: string;
   image?: string;
+  parentTerm?: string;
 }
 
 export interface ForumPost {
