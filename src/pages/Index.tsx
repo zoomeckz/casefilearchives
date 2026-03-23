@@ -208,6 +208,8 @@ const Index = () => {
           <RewardsPage user={user} />
         )}
 
+        {currentPage === "public-profile" && <PublicProfilePage />}
+
         {currentPage === "about" && <AboutPage />}
 
         {currentPage === "manga" && (
