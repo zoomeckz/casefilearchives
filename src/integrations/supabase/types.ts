@@ -14,6 +14,48 @@ export type Database = {
   }
   public: {
     Tables: {
+      achievements: {
+        Row: {
+          category: string
+          created_at: string
+          description: string
+          frame_style: string | null
+          icon: string
+          id: string
+          key: string
+          requirement_count: number
+          requirement_type: string
+          sort_order: number
+          title: string
+        }
+        Insert: {
+          category?: string
+          created_at?: string
+          description: string
+          frame_style?: string | null
+          icon?: string
+          id?: string
+          key: string
+          requirement_count?: number
+          requirement_type: string
+          sort_order?: number
+          title: string
+        }
+        Update: {
+          category?: string
+          created_at?: string
+          description?: string
+          frame_style?: string | null
+          icon?: string
+          id?: string
+          key?: string
+          requirement_count?: number
+          requirement_type?: string
+          sort_order?: number
+          title?: string
+        }
+        Relationships: []
+      }
       bookmarks: {
         Row: {
           chapter_id: string
@@ -358,6 +400,7 @@ export type Database = {
           id: string
           instagram: string | null
           name: string
+          selected_frame: string | null
           tiktok: string | null
           updated_at: string
           user_id: string
@@ -370,6 +413,7 @@ export type Database = {
           id?: string
           instagram?: string | null
           name: string
+          selected_frame?: string | null
           tiktok?: string | null
           updated_at?: string
           user_id: string
@@ -382,6 +426,7 @@ export type Database = {
           id?: string
           instagram?: string | null
           name?: string
+          selected_frame?: string | null
           tiktok?: string | null
           updated_at?: string
           user_id?: string
@@ -414,6 +459,35 @@ export type Database = {
             columns: ["chapter_id"]
             isOneToOne: false
             referencedRelation: "chapters"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      user_achievements: {
+        Row: {
+          achievement_id: string
+          id: string
+          unlocked_at: string
+          user_id: string
+        }
+        Insert: {
+          achievement_id: string
+          id?: string
+          unlocked_at?: string
+          user_id: string
+        }
+        Update: {
+          achievement_id?: string
+          id?: string
+          unlocked_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "user_achievements_achievement_id_fkey"
+            columns: ["achievement_id"]
+            isOneToOne: false
+            referencedRelation: "achievements"
             referencedColumns: ["id"]
           },
         ]

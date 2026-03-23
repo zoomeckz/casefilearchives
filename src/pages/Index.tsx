@@ -16,6 +16,7 @@ import { CharactersPage } from "@/pages/CharactersPage";
 import { ForumPage } from "@/pages/ForumPage";
 import { ProfilePage } from "@/pages/ProfilePage";
 import { AdminPanel } from "@/pages/AdminPanel";
+import { RewardsPage } from "@/pages/RewardsPage";
 import { AboutPage } from "@/pages/AboutPage";
 import { MangaPage } from "@/pages/MangaPage";
 import { usePageTracking } from "@/hooks/usePageTracking";
@@ -33,6 +34,7 @@ const Index = () => {
     if (path === "/chapters") return "chapters";
     if (path === "/characters") return "characters";
     if (path.startsWith("/forum")) return "forum";
+    if (path === "/rewards") return "rewards";
     if (path === "/profile") return "profile";
     if (path === "/admin") return "admin";
     if (path === "/about") return "about";
@@ -45,6 +47,7 @@ const Index = () => {
     else if (page === "chapters") navigate("/chapters");
     else if (page === "characters") navigate("/characters");
     else if (page === "forum") navigate("/forum");
+    else if (page === "rewards") navigate("/rewards");
     else if (page === "profile") navigate("/profile");
     else if (page === "admin") navigate("/admin");
     else if (page === "about") navigate("/about");
@@ -197,6 +200,10 @@ const Index = () => {
 
         {currentPage === "admin" && user?.isAdmin && (
           <AdminPanel glossary={glossary} authToken={session?.access_token} onGlossaryChange={fetchGlossary} />
+        )}
+
+        {currentPage === "rewards" && user && (
+          <RewardsPage user={user} />
         )}
 
         {currentPage === "about" && <AboutPage />}

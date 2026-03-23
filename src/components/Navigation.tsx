@@ -26,6 +26,10 @@ export const Navigation: React.FC<NavigationProps> = ({
     { id: "forum", label: "Forum", icon: Icons.Message },
   ];
 
+  if (user) {
+    navItems.push({ id: "rewards", label: "Rewards", icon: Icons.Settings });
+  }
+
   if (user?.isAdmin) {
     navItems.push({ id: "admin", label: "Admin", icon: Icons.Settings });
   }
