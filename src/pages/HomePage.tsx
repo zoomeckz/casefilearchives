@@ -39,7 +39,7 @@ export const HomePage: React.FC<HomePageProps> = ({
       </section>
 
       {/* Latest Chapter */}
-      <section className="py-20 px-6 border-t border-border/50">
+      <section className="py-12 sm:py-20 px-4 sm:px-6 border-t border-border/50">
         <div className="max-w-2xl mx-auto text-center">
           <h2 className="font-display text-sm uppercase tracking-[0.2em] text-muted-foreground mb-10">
             Latest Chapter
