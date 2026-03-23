@@ -58,12 +58,12 @@ export const CharactersPage: React.FC<CharactersPageProps> = ({ glossary }) => {
     : null;
 
   return (
-    <div className="min-h-screen py-12 px-6">
+    <div className="min-h-screen py-8 sm:py-12 px-4 sm:px-6">
       <div className="max-w-5xl mx-auto">
-        <h1 className="font-display text-4xl text-amber-100 mb-4 text-center">
+        <h1 className="font-display text-3xl sm:text-4xl text-amber-100 mb-4 text-center">
           Codex
         </h1>
-        <p className="text-stone-500 text-center mb-12">
+        <p className="text-stone-500 text-center mb-8 sm:mb-12">
           Characters, creatures, locations, and lore of Sedorium
         </p>
 
@@ -73,7 +73,7 @@ export const CharactersPage: React.FC<CharactersPageProps> = ({ glossary }) => {
             <h2 className="font-display text-2xl text-amber-100 mb-8 text-center">
               Featured Characters
             </h2>
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4 sm:gap-6">
               {charactersWithArt.map((char) => (
                 <div
                   key={char.name}
@@ -103,12 +103,12 @@ export const CharactersPage: React.FC<CharactersPageProps> = ({ glossary }) => {
 
         {/* Character Detail Modal */}
         {selected && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4">
             <div
               className="absolute inset-0 bg-black/80 backdrop-blur-sm"
               onClick={() => setSelectedCharacter(null)}
             />
-            <div className="relative bg-stone-900 rounded-2xl shadow-2xl w-full max-w-3xl max-h-[90vh] overflow-y-auto border border-stone-700 animate-fade-in">
+            <div className="relative bg-stone-900 rounded-2xl shadow-2xl w-full max-w-3xl max-h-[85vh] overflow-y-auto border border-stone-700 animate-fade-in">
           <button
             onClick={() => setSelectedCharacter(null)}
             className="absolute top-4 right-4 z-10 text-stone-400 hover:text-stone-200 bg-stone-800/80 rounded-full p-2"
@@ -126,9 +126,9 @@ export const CharactersPage: React.FC<CharactersPageProps> = ({ glossary }) => {
             </div>
           )}
 
-              <div className="p-8">
-                <div className="flex items-center gap-3 mb-4">
-                  <h2 className="font-display text-3xl text-amber-100">
+              <div className="p-5 sm:p-8">
+                <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-3 mb-4">
+                  <h2 className="font-display text-2xl sm:text-3xl text-amber-100">
                     {selected.name}
                   </h2>
                   <span className="text-xs px-3 py-1 rounded-full bg-sky-400/10 text-sky-400 border border-sky-400/30">

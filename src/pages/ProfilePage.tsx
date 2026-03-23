@@ -105,14 +105,14 @@ export const ProfilePage: React.FC<ProfilePageProps> = ({
   if (!user) return null;
 
   return (
-    <div className="min-h-screen py-12 px-6">
+    <div className="min-h-screen py-8 sm:py-12 px-4 sm:px-6">
       <div className="max-w-2xl mx-auto">
-        <h1 className="font-display text-4xl text-accent mb-2">Your Profile</h1>
-        <p className="text-muted-foreground mb-12">Manage your account and preferences</p>
+        <h1 className="font-display text-3xl sm:text-4xl text-accent mb-2">Your Profile</h1>
+        <p className="text-muted-foreground mb-8 sm:mb-12">Manage your account and preferences</p>
 
         <div className="space-y-8">
           {/* Avatar Section */}
-          <div className="flex items-start gap-6">
+          <div className="flex flex-col sm:flex-row items-center sm:items-start gap-6">
             <div className="relative group">
               <ProfileFrame avatarUrl={user.avatarUrl} name={user.name} frame={selectedFrame} size={128} />
               <button
@@ -184,8 +184,8 @@ export const ProfilePage: React.FC<ProfilePageProps> = ({
                 </div>
               ) : (
                 <>
-                  <h2 className="text-2xl text-foreground font-display">{user.name}</h2>
-                  <p className="text-muted-foreground mt-1">{user.email}</p>
+                  <h2 className="text-2xl text-foreground font-display text-center sm:text-left">{user.name}</h2>
+                  <p className="text-muted-foreground mt-1 text-center sm:text-left">{user.email}</p>
                   {profile.bio && <p className="text-foreground/70 mt-2 text-sm">{profile.bio}</p>}
                   {(profile.instagram || profile.tiktok || profile.website) && (
                     <div className="flex flex-wrap gap-3 mt-2 text-xs text-muted-foreground">
@@ -207,7 +207,7 @@ export const ProfilePage: React.FC<ProfilePageProps> = ({
           </div>
 
           {/* Actions */}
-          <div className="flex items-center gap-4 pt-6 border-t border-border">
+          <div className="flex flex-wrap items-center gap-4 pt-6 border-t border-border">
             {editing ? (
               <>
                 <button onClick={handleSave} disabled={saving} className="px-6 py-2 bg-primary hover:bg-primary/80 disabled:bg-primary/50 text-primary-foreground rounded-lg font-medium transition-colors">

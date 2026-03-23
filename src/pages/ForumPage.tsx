@@ -330,19 +330,19 @@ export const ForumPage: React.FC<ForumPageProps> = ({
 
   if (selectedPost) {
     return (
-      <div className="min-h-screen py-12 px-6">
+      <div className="min-h-screen py-8 sm:py-12 px-4 sm:px-6">
         <div className="max-w-4xl mx-auto">
-          <button onClick={() => navigate('/forum')} className="flex items-center gap-2 text-muted-foreground hover:text-foreground mb-8">
+          <button onClick={() => navigate('/forum')} className="flex items-center gap-2 text-muted-foreground hover:text-foreground mb-6 sm:mb-8">
             <Icons.ChevronLeft /> Back to forum
           </button>
           <div className="mb-12">
-            <div className="flex items-center justify-between mb-2">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 mb-2">
               <div className="flex items-center gap-2">
                 <span className="text-muted-foreground text-sm">{selectedPost.category}</span>
                 {selectedPost.isPinned && <span className="text-xs px-2 py-0.5 bg-accent/10 text-accent rounded">📌 Pinned</span>}
               </div>
               {canEdit(selectedPost) && (
-                <div className="flex items-center gap-2">
+                <div className="flex items-center gap-2 flex-wrap">
                   <button onClick={() => { setEditingPost(selectedPost); setEditContent({ title: selectedPost.title, content: selectedPost.content, category: selectedPost.category }); }}
                     className="text-muted-foreground hover:text-foreground text-sm transition-colors">✏️ Edit</button>
                   {user?.isAdmin && (
@@ -356,11 +356,11 @@ export const ForumPage: React.FC<ForumPageProps> = ({
                 </div>
               )}
             </div>
-            <h1 className="font-display text-3xl text-accent mt-2 mb-4">{selectedPost.title}</h1>
+            <h1 className="font-display text-2xl sm:text-3xl text-accent mt-2 mb-4">{selectedPost.title}</h1>
             <p className="text-muted-foreground text-sm mb-6">
               by <span className="text-primary cursor-pointer hover:underline" onClick={(e) => { e.stopPropagation(); navigate(`/user/${selectedPost.authorId}`); }}>{selectedPost.author}</span> · {new Date(selectedPost.createdAt).toLocaleDateString()}
             </p>
-            <div className="text-foreground/80 leading-relaxed whitespace-pre-wrap" dangerouslySetInnerHTML={{ __html: renderFormatted(selectedPost.content) }} />
+            <div className="text-foreground/80 leading-relaxed whitespace-pre-wrap break-words" dangerouslySetInnerHTML={{ __html: renderFormatted(selectedPost.content) }} />
           </div>
           <h3 className="text-xl font-display text-accent mb-6">Replies ({replies.length})</h3>
           <form onSubmit={handleAddReply} className="mb-8">
@@ -395,15 +395,15 @@ export const ForumPage: React.FC<ForumPageProps> = ({
   }
 
   return (
-    <div className="min-h-screen py-12 px-6">
+    <div className="min-h-screen py-8 sm:py-12 px-4 sm:px-6">
       <div className="max-w-4xl mx-auto">
-        <div className="flex items-center justify-between mb-8">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-8">
           <div>
-            <h1 className="font-display text-4xl text-accent mb-2">Forum</h1>
+            <h1 className="font-display text-3xl sm:text-4xl text-accent mb-2">Forum</h1>
             <p className="text-muted-foreground">Discuss theories and connect with fellow readers</p>
           </div>
           <button onClick={() => (user ? setShowNewPost(true) : setShowAuthModal(true))}
-            className="text-primary hover:text-primary/80 transition-colors">+ New Post</button>
+            className="text-primary hover:text-primary/80 transition-colors self-start sm:self-auto">+ New Post</button>
         </div>
 
         <div className="flex flex-wrap gap-2 mb-8">

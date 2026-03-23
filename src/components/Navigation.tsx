@@ -36,10 +36,8 @@ export const Navigation: React.FC<NavigationProps> = ({
 
   return (
     <nav className="sticky top-0 z-50 bg-stone-950/95 backdrop-blur-sm border-b border-border/50">
-      <div className="max-w-4xl mx-auto px-6">
+      <div className="max-w-4xl mx-auto px-4 sm:px-6">
         <div className="flex items-center justify-between h-14">
-          {/* Spacer for balance */}
-          <div className="w-10 md:hidden" />
 
           {/* Centered Nav */}
           <div className="hidden md:flex items-center justify-center gap-6 flex-1">

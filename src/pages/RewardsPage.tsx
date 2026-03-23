@@ -40,10 +40,10 @@ export const RewardsPage: React.FC<RewardsPageProps> = ({ user }) => {
     .map(a => a.frame_style!);
 
   return (
-    <div className="min-h-screen py-12 px-6">
+    <div className="min-h-screen py-8 sm:py-12 px-4 sm:px-6">
       <div className="max-w-3xl mx-auto">
-        <h1 className="font-display text-4xl text-accent mb-2">Rewards</h1>
-        <p className="text-muted-foreground mb-4">
+        <h1 className="font-display text-3xl sm:text-4xl text-accent mb-2">Rewards</h1>
+        <p className="text-muted-foreground mb-4 text-sm sm:text-base">
           Earn achievements by reading, commenting, and engaging with the community.
           Each achievement tracks your progress — some unlock exclusive profile frames!
         </p>

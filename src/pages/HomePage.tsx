@@ -18,11 +18,11 @@ export const HomePage: React.FC<HomePageProps> = ({
     <div className="min-h-screen">
       {/* Hero Section */}
       <section 
-        className="relative py-32 px-6 text-center overflow-hidden bg-stone-950"
+        className="relative py-20 sm:py-32 px-4 sm:px-6 text-center overflow-hidden bg-stone-950"
       >
         <div className="absolute inset-0 bg-gradient-to-b from-stone-900/50 via-stone-950/80 to-stone-950" />
         <div className="relative max-w-2xl mx-auto z-10">
-          <h1 className="font-display text-5xl sm:text-7xl text-accent mb-6 tracking-wider" style={{ WebkitTextStroke: '4px black', paintOrder: 'stroke fill', textShadow: '0 0 10px rgba(0,0,0,0.8), 0 0 20px rgba(0,0,0,0.5)' }}>
+          <h1 className="font-display text-4xl sm:text-5xl md:text-7xl text-accent mb-6 tracking-wider" style={{ WebkitTextStroke: '4px black', paintOrder: 'stroke fill', textShadow: '0 0 10px rgba(0,0,0,0.8), 0 0 20px rgba(0,0,0,0.5)' }}>
             SEDORIUM
           </h1>
           <button
@@ -39,7 +39,7 @@ export const HomePage: React.FC<HomePageProps> = ({
       </section>
 
       {/* Latest Chapter */}
-      <section className="py-20 px-6 border-t border-border/50">
+      <section className="py-12 sm:py-20 px-4 sm:px-6 border-t border-border/50">
         <div className="max-w-2xl mx-auto text-center">
           <h2 className="font-display text-sm uppercase tracking-[0.2em] text-muted-foreground mb-10">
             Latest Chapter
@@ -54,7 +54,7 @@ export const HomePage: React.FC<HomePageProps> = ({
               <span className="text-primary/70 text-xs font-medium uppercase tracking-wider">
                 Chapter {latestChapter.chapterNumber}
               </span>
-              <h3 className="font-display text-3xl text-foreground group-hover:text-primary transition-colors mt-3 mb-4">
+              <h3 className="font-display text-2xl sm:text-3xl text-foreground group-hover:text-primary transition-colors mt-3 mb-4">
                 {latestChapter.title}
               </h3>
               <p className="text-muted-foreground text-sm">
@@ -68,7 +68,7 @@ export const HomePage: React.FC<HomePageProps> = ({
       </section>
 
       {/* All Chapters Preview */}
-      <section className="py-20 px-6 border-t border-border/50">
+      <section className="py-12 sm:py-20 px-4 sm:px-6 border-t border-border/50">
         <div className="max-w-2xl mx-auto text-center">
           <h2 className="font-display text-sm uppercase tracking-[0.2em] text-muted-foreground mb-14">
             Chapters
