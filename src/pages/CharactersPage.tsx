@@ -73,7 +73,7 @@ export const CharactersPage: React.FC<CharactersPageProps> = ({ glossary }) => {
             <h2 className="font-display text-2xl text-amber-100 mb-8 text-center">
               Featured Characters
             </h2>
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4 sm:gap-6">
               {charactersWithArt.map((char) => (
                 <div
                   key={char.name}
