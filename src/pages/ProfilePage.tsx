@@ -105,10 +105,10 @@ export const ProfilePage: React.FC<ProfilePageProps> = ({
   if (!user) return null;
 
   return (
-    <div className="min-h-screen py-12 px-6">
+    <div className="min-h-screen py-8 sm:py-12 px-4 sm:px-6">
       <div className="max-w-2xl mx-auto">
-        <h1 className="font-display text-4xl text-accent mb-2">Your Profile</h1>
-        <p className="text-muted-foreground mb-12">Manage your account and preferences</p>
+        <h1 className="font-display text-3xl sm:text-4xl text-accent mb-2">Your Profile</h1>
+        <p className="text-muted-foreground mb-8 sm:mb-12">Manage your account and preferences</p>
 
         <div className="space-y-8">
           {/* Avatar Section */}
