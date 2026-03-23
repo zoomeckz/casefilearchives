@@ -103,12 +103,12 @@ export const CharactersPage: React.FC<CharactersPageProps> = ({ glossary }) => {
 
         {/* Character Detail Modal */}
         {selected && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4">
             <div
               className="absolute inset-0 bg-black/80 backdrop-blur-sm"
               onClick={() => setSelectedCharacter(null)}
             />
-            <div className="relative bg-stone-900 rounded-2xl shadow-2xl w-full max-w-3xl max-h-[90vh] overflow-y-auto border border-stone-700 animate-fade-in">
+            <div className="relative bg-stone-900 rounded-2xl shadow-2xl w-full max-w-3xl max-h-[85vh] overflow-y-auto border border-stone-700 animate-fade-in">
           <button
             onClick={() => setSelectedCharacter(null)}
             className="absolute top-4 right-4 z-10 text-stone-400 hover:text-stone-200 bg-stone-800/80 rounded-full p-2"
