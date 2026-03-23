@@ -64,7 +64,7 @@ export const Navigation: React.FC<NavigationProps> = ({
               <>
                 <button
                   onClick={() => setCurrentPage("profile")}
-                  className="w-7 h-7 rounded-full bg-gradient-to-br from-primary to-destructive flex items-center justify-center text-primary-foreground text-xs font-medium overflow-hidden"
+                  className="w-9 h-9 rounded-full bg-gradient-to-br from-primary to-destructive flex items-center justify-center text-primary-foreground text-xs font-medium overflow-hidden"
                 >
                   {user.avatarUrl ? (
                     <img src={user.avatarUrl} alt="" className="w-full h-full object-cover" />

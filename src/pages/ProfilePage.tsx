@@ -114,7 +114,7 @@ export const ProfilePage: React.FC<ProfilePageProps> = ({
           {/* Avatar Section */}
           <div className="flex items-start gap-6">
             <div className="relative group">
-              <ProfileFrame avatarUrl={user.avatarUrl} name={user.name} frame={selectedFrame} size={96} />
+              <ProfileFrame avatarUrl={user.avatarUrl} name={user.name} frame={selectedFrame} size={128} />
               <button
                 onClick={() => fileInputRef.current?.click()}
                 className="absolute bottom-0 right-0 w-8 h-8 bg-primary rounded-full flex items-center justify-center text-primary-foreground hover:bg-primary/80 transition-colors"
