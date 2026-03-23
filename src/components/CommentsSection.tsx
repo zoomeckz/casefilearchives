@@ -1,4 +1,5 @@
 import React, { useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { Icons } from "@/lib/icons";
 import { useComments, Comment } from "@/hooks/useComments";
 import { AuthUser } from "@/hooks/useAuth";
@@ -14,6 +15,7 @@ export const CommentsSection: React.FC<CommentsSectionProps> = ({
   user,
   setShowAuthModal,
 }) => {
+  const navigate = useNavigate();
   const { comments, addComment, loading } = useComments(chapterId);
   const [newComment, setNewComment] = useState("");
   const [submitting, setSubmitting] = useState(false);
@@ -70,7 +72,7 @@ export const CommentsSection: React.FC<CommentsSectionProps> = ({
                   <div className="w-8 h-8 rounded-full bg-gradient-to-br from-sky-600 to-indigo-600 flex items-center justify-center text-white text-sm font-medium">
                     {comment.author?.charAt(0).toUpperCase()}
                   </div>
-                  <span className="text-stone-200">{comment.author}</span>
+                  <span className="text-primary cursor-pointer hover:underline" onClick={() => navigate(`/user/${comment.authorId}`)}>{comment.author}</span>
                   <span className="text-stone-600 text-sm">
                     {new Date(comment.createdAt).toLocaleDateString()}
                   </span>

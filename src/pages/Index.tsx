@@ -17,6 +17,7 @@ import { ForumPage } from "@/pages/ForumPage";
 import { ProfilePage } from "@/pages/ProfilePage";
 import { AdminPanel } from "@/pages/AdminPanel";
 import { RewardsPage } from "@/pages/RewardsPage";
+import { PublicProfilePage } from "@/pages/PublicProfilePage";
 import { AboutPage } from "@/pages/AboutPage";
 import { MangaPage } from "@/pages/MangaPage";
 import { usePageTracking } from "@/hooks/usePageTracking";
@@ -35,6 +36,7 @@ const Index = () => {
     if (path === "/characters") return "characters";
     if (path.startsWith("/forum")) return "forum";
     if (path === "/rewards") return "rewards";
+    if (path.startsWith("/user/")) return "public-profile";
     if (path === "/profile") return "profile";
     if (path === "/admin") return "admin";
     if (path === "/about") return "about";
@@ -205,6 +207,8 @@ const Index = () => {
         {currentPage === "rewards" && user && (
           <RewardsPage user={user} />
         )}
+
+        {currentPage === "public-profile" && <PublicProfilePage />}
 
         {currentPage === "about" && <AboutPage />}
 

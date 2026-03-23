@@ -322,7 +322,7 @@ export const ForumPage: React.FC<ForumPageProps> = ({
             </div>
             <h1 className="font-display text-3xl text-accent mt-2 mb-4">{selectedPost.title}</h1>
             <p className="text-muted-foreground text-sm mb-6">
-              by <span className="text-foreground">{selectedPost.author}</span> · {new Date(selectedPost.createdAt).toLocaleDateString()}
+              by <span className="text-primary cursor-pointer hover:underline" onClick={(e) => { e.stopPropagation(); navigate(`/user/${selectedPost.authorId}`); }}>{selectedPost.author}</span> · {new Date(selectedPost.createdAt).toLocaleDateString()}
             </p>
             <div className="text-foreground/80 leading-relaxed whitespace-pre-wrap" dangerouslySetInnerHTML={{ __html: renderFormatted(selectedPost.content) }} />
           </div>
@@ -346,7 +346,7 @@ export const ForumPage: React.FC<ForumPageProps> = ({
                   <div className="w-8 h-8 rounded-full bg-gradient-to-br from-primary to-indigo-600 flex items-center justify-center text-primary-foreground text-sm font-medium">
                     {reply.author?.charAt(0).toUpperCase()}
                   </div>
-                  <span className="text-foreground">{reply.author}</span>
+                  <span className="text-primary cursor-pointer hover:underline" onClick={() => navigate(`/user/${reply.authorId}`)}>{reply.author}</span>
                   <span className="text-muted-foreground text-sm">{new Date(reply.createdAt).toLocaleDateString()}</span>
                 </div>
                 <div className="text-foreground/70 pl-11 whitespace-pre-wrap" dangerouslySetInnerHTML={{ __html: renderFormatted(reply.content) }} />
@@ -431,7 +431,7 @@ export const ForumPage: React.FC<ForumPageProps> = ({
                 <h3 className="text-lg text-foreground group-hover:text-primary transition-colors">{post.title}</h3>
                 <p className="text-muted-foreground text-sm mt-1 line-clamp-2" dangerouslySetInnerHTML={{ __html: renderFormatted(post.content) }} />
                 <p className="text-muted-foreground/60 text-xs mt-2">
-                  by {post.author} · {new Date(post.createdAt).toLocaleDateString()}
+                  by <span className="text-primary/80 cursor-pointer hover:underline" onClick={(e) => { e.stopPropagation(); navigate(`/user/${post.authorId}`); }}>{post.author}</span> · {new Date(post.createdAt).toLocaleDateString()}
                 </p>
               </div>
             ))
