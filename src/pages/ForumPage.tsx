@@ -19,6 +19,34 @@ function renderFormatted(text: string): string {
   return html;
 }
 
+function slugify(title: string): string {
+  return title
+    .toLowerCase()
+    .replace(/[^\w\s-]/g, '') // remove emojis/special chars
+    .trim()
+    .replace(/\s+/g, '-')
+    .replace(/-+/g, '-')
+    .slice(0, 60);
+}
+
+function postUrl(post: { id: string; title: string }): string {
+  return `/forum/${slugify(post.title)}--${post.id.slice(0, 8)}`;
+}
+
+function parsePostId(param: string | undefined, posts: { id: string; title: string }[]): string | null {
+  if (!param) return null;
+  // Extract short ID after last "--"
+  const parts = param.split('--');
+  const shortId = parts[parts.length - 1];
+  if (shortId) {
+    const match = posts.find(p => p.id.startsWith(shortId));
+    if (match) return match.id;
+  }
+  // Fallback: try as full UUID
+  const direct = posts.find(p => p.id === param);
+  return direct?.id || null;
+}
+
 interface ForumPost {
   id: string;
   title: string;
