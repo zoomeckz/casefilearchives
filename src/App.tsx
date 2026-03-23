@@ -22,6 +22,7 @@ const App = () => (
           <Route path="/forum" element={<Index />} />
           <Route path="/forum/:postId" element={<Index />} />
           <Route path="/rewards" element={<Index />} />
+          <Route path="/user/:userId" element={<Index />} />
           <Route path="/profile" element={<Index />} />
           <Route path="/admin" element={<Index />} />
           <Route path="/manga" element={<Index />} />
