@@ -34,6 +34,7 @@ const Index = () => {
     if (path === "/chapters") return "chapters";
     if (path === "/characters") return "characters";
     if (path.startsWith("/forum")) return "forum";
+    if (path === "/rewards") return "rewards";
     if (path === "/profile") return "profile";
     if (path === "/admin") return "admin";
     if (path === "/about") return "about";
