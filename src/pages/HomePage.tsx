@@ -22,7 +22,7 @@ export const HomePage: React.FC<HomePageProps> = ({
       >
         <div className="absolute inset-0 bg-gradient-to-b from-stone-900/50 via-stone-950/80 to-stone-950" />
         <div className="relative max-w-2xl mx-auto z-10">
-          <h1 className="font-display text-5xl sm:text-7xl text-accent mb-6 tracking-wider" style={{ WebkitTextStroke: '4px black', paintOrder: 'stroke fill', textShadow: '0 0 10px rgba(0,0,0,0.8), 0 0 20px rgba(0,0,0,0.5)' }}>
+          <h1 className="font-display text-4xl sm:text-5xl md:text-7xl text-accent mb-6 tracking-wider" style={{ WebkitTextStroke: '4px black', paintOrder: 'stroke fill', textShadow: '0 0 10px rgba(0,0,0,0.8), 0 0 20px rgba(0,0,0,0.5)' }}>
             SEDORIUM
           </h1>
           <button
