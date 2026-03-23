@@ -85,12 +85,12 @@ export const PublicProfilePage: React.FC = () => {
   const memberSince = new Date(profile.created_at).toLocaleDateString('en-US', { month: 'long', year: 'numeric' });
 
   return (
-    <div className="min-h-screen py-12 px-6">
+    <div className="min-h-screen py-8 sm:py-12 px-4 sm:px-6">
       <div className="max-w-2xl mx-auto">
         {/* Header */}
-        <div className="flex items-start gap-6 mb-8">
+        <div className="flex flex-col sm:flex-row items-center sm:items-start gap-4 sm:gap-6 mb-8">
           <ProfileFrame avatarUrl={profile.avatar_url} name={profile.name} frame={profile.selected_frame} size={128} />
-          <div className="flex-1">
+          <div className="flex-1 text-center sm:text-left">
             <h1 className="text-2xl text-foreground font-display">{profile.name}</h1>
             <p className="text-muted-foreground text-sm mt-1">Member since {memberSince}</p>
             {profile.bio && <p className="text-foreground/70 mt-3 text-sm">{profile.bio}</p>}
