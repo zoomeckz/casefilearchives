@@ -113,6 +113,16 @@ export const ForumPage: React.FC<ForumPageProps> = ({
     fetchPosts();
   }, []);
 
+  // Resolve post from URL param
+  useEffect(() => {
+    if (postId && posts.length > 0) {
+      const post = posts.find(p => p.id === postId);
+      if (post) setSelectedPost(post);
+    } else if (!postId) {
+      setSelectedPost(null);
+    }
+  }, [postId, posts]);
+
   useEffect(() => {
     if (!selectedPost) { setReplies([]); return; }
     const fetchReplies = async () => {
