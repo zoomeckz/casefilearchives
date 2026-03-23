@@ -54,7 +54,7 @@ export const HomePage: React.FC<HomePageProps> = ({
               <span className="text-primary/70 text-xs font-medium uppercase tracking-wider">
                 Chapter {latestChapter.chapterNumber}
               </span>
-              <h3 className="font-display text-3xl text-foreground group-hover:text-primary transition-colors mt-3 mb-4">
+              <h3 className="font-display text-2xl sm:text-3xl text-foreground group-hover:text-primary transition-colors mt-3 mb-4">
                 {latestChapter.title}
               </h3>
               <p className="text-muted-foreground text-sm">
