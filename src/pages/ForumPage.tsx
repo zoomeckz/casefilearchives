@@ -146,11 +146,18 @@ export const ForumPage: React.FC<ForumPageProps> = ({
     if (postId && posts.length > 0) {
       const resolvedId = parsePostId(postId, posts);
       const post = resolvedId ? posts.find(p => p.id === resolvedId) : null;
-      if (post) setSelectedPost(post);
+      if (post) {
+        setSelectedPost(post);
+        // Redirect old-format URLs (raw UUIDs) to new slug URLs
+        const expectedSlug = `${slugify(post.title)}--${post.id.slice(0, 8)}`;
+        if (postId !== expectedSlug) {
+          navigate(postUrl(post), { replace: true });
+        }
+      }
     } else if (!postId) {
       setSelectedPost(null);
     }
-  }, [postId, posts]);
+  }, [postId, posts, navigate]);
 
   useEffect(() => {
     if (!selectedPost) { setReplies([]); return; }
