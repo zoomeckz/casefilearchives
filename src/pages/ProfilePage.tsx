@@ -4,6 +4,9 @@ import { AuthUser } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
 import { useReadingProgress } from "@/hooks/useReadingProgress";
 import { useEmailSubscription } from "@/hooks/useEmailSubscription";
+import { useAchievements } from "@/hooks/useAchievements";
+import { AvatarCropModal } from "@/components/AvatarCropModal";
+import { ProfileFrame } from "@/components/ProfileFrame";
 
 interface ProfilePageProps {
   user: AuthUser;
@@ -20,7 +23,7 @@ export const ProfilePage: React.FC<ProfilePageProps> = ({
 }) => {
   const [editing, setEditing] = useState(false);
   const [saving, setSaving] = useState(false);
-  const [uploading, setUploading] = useState(false);
+  const [cropFile, setCropFile] = useState<File | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [profile, setProfile] = useState({
     name: user?.name || "",
@@ -33,8 +36,9 @@ export const ProfilePage: React.FC<ProfilePageProps> = ({
   const { isSubscribed, toggleSubscription, loading: subLoading } = useEmailSubscription(user);
   const [commentCount, setCommentCount] = useState(0);
   const [postCount, setPostCount] = useState(0);
+  const { selectedFrame, achievements, isUnlocked } = useAchievements(user);
+  const recentAchievements = achievements.filter(a => isUnlocked(a.id)).slice(0, 5);
 
-  // Fetch profile data & stats
   useEffect(() => {
     if (!user) return;
     const fetchData = async () => {
@@ -58,23 +62,27 @@ export const ProfilePage: React.FC<ProfilePageProps> = ({
     fetchData();
   }, [user?.id]);
 
-  const handleAvatarUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
-    if (!file || !user) return;
-    setUploading(true);
-    const ext = file.name.split('.').pop();
-    const path = `${user.id}/avatar.${ext}`;
-    
+    if (file) setCropFile(file);
+    // Reset input so same file can be selected again
+    e.target.value = '';
+  };
+
+  const handleCroppedUpload = async (blob: Blob) => {
+    if (!user) return;
+    setCropFile(null);
+    const path = `${user.id}/avatar.jpg`;
     const { error: uploadError } = await supabase.storage
       .from('avatars')
-      .upload(path, file, { upsert: true });
+      .upload(path, blob, { upsert: true, contentType: 'image/jpeg' });
 
     if (!uploadError) {
       const { data: { publicUrl } } = supabase.storage.from('avatars').getPublicUrl(path);
-      await supabase.from('profiles').update({ avatar_url: publicUrl }).eq('user_id', user.id);
+      // Bust cache with timestamp
+      await supabase.from('profiles').update({ avatar_url: `${publicUrl}?t=${Date.now()}` }).eq('user_id', user.id);
       refreshUser();
     }
-    setUploading(false);
   };
 
   const handleSave = async () => {
@@ -106,18 +114,9 @@ export const ProfilePage: React.FC<ProfilePageProps> = ({
           {/* Avatar Section */}
           <div className="flex items-start gap-6">
             <div className="relative group">
-              <div className="w-24 h-24 rounded-full overflow-hidden bg-gradient-to-br from-primary to-destructive flex items-center justify-center">
-                {user.avatarUrl ? (
-                  <img src={user.avatarUrl} alt="Avatar" className="w-full h-full object-cover" />
-                ) : (
-                  <span className="text-3xl text-primary-foreground font-display">
-                    {user.name?.charAt(0).toUpperCase()}
-                  </span>
-                )}
-              </div>
+              <ProfileFrame avatarUrl={user.avatarUrl} name={user.name} frame={selectedFrame} size={96} />
               <button
                 onClick={() => fileInputRef.current?.click()}
-                disabled={uploading}
                 className="absolute bottom-0 right-0 w-8 h-8 bg-primary rounded-full flex items-center justify-center text-primary-foreground hover:bg-primary/80 transition-colors"
               >
                 <Icons.Camera className="w-4 h-4" />
@@ -126,7 +125,7 @@ export const ProfilePage: React.FC<ProfilePageProps> = ({
                 ref={fileInputRef}
                 type="file"
                 accept="image/*"
-                onChange={handleAvatarUpload}
+                onChange={handleFileSelect}
                 className="hidden"
               />
             </div>
@@ -188,10 +187,15 @@ export const ProfilePage: React.FC<ProfilePageProps> = ({
                   <h2 className="text-2xl text-foreground font-display">{user.name}</h2>
                   <p className="text-muted-foreground mt-1">{user.email}</p>
                   {profile.bio && <p className="text-foreground/70 mt-2 text-sm">{profile.bio}</p>}
-                  {(profile.instagram || profile.tiktok) && (
-                    <div className="flex gap-3 mt-2 text-xs text-muted-foreground">
-                      {profile.instagram && <span>IG: {profile.instagram}</span>}
-                      {profile.tiktok && <span>TT: {profile.tiktok}</span>}
+                  {(profile.instagram || profile.tiktok || profile.website) && (
+                    <div className="flex flex-wrap gap-3 mt-2 text-xs text-muted-foreground">
+                      {profile.instagram && <span>📸 {profile.instagram}</span>}
+                      {profile.tiktok && <span>🎵 {profile.tiktok}</span>}
+                      {profile.website && (
+                        <a href={profile.website} target="_blank" rel="noopener noreferrer" className="text-primary hover:underline">
+                          🔗 {profile.website}
+                        </a>
+                      )}
                     </div>
                   )}
                   {user.isAdmin && (
@@ -222,8 +226,23 @@ export const ProfilePage: React.FC<ProfilePageProps> = ({
           </div>
         </div>
 
+        {/* Recent Achievements */}
+        {recentAchievements.length > 0 && (
+          <div className="mt-12 p-6 bg-card/30 rounded-xl border border-border">
+            <h3 className="font-display text-lg text-accent mb-4">Recent Achievements</h3>
+            <div className="flex flex-wrap gap-3">
+              {recentAchievements.map(ach => (
+                <div key={ach.id} className="flex items-center gap-2 px-3 py-2 bg-primary/5 border border-primary/20 rounded-lg">
+                  <span>{ach.icon}</span>
+                  <span className="text-sm text-foreground">{ach.title}</span>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
         {/* Email Notifications */}
-        <div className="mt-16 p-6 bg-card/30 rounded-xl border border-border">
+        <div className="mt-8 p-6 bg-card/30 rounded-xl border border-border">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
               <Icons.Mail className="w-5 h-5 text-muted-foreground" />
@@ -247,7 +266,7 @@ export const ProfilePage: React.FC<ProfilePageProps> = ({
         </div>
 
         {/* Activity Stats */}
-        <div className="mt-16">
+        <div className="mt-12">
           <h3 className="font-display text-xl text-accent mb-6">Your Activity</h3>
           <div className="grid grid-cols-2 md:grid-cols-4 gap-6 text-center">
             <div>
@@ -269,6 +288,15 @@ export const ProfilePage: React.FC<ProfilePageProps> = ({
           </div>
         </div>
       </div>
+
+      {/* Avatar Crop Modal */}
+      {cropFile && (
+        <AvatarCropModal
+          imageFile={cropFile}
+          onCrop={handleCroppedUpload}
+          onClose={() => setCropFile(null)}
+        />
+      )}
     </div>
   );
 };
