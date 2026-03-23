@@ -1,6 +1,12 @@
 import React, { useState } from "react";
 import { Icons } from "@/lib/icons";
 import { GlossaryEntry } from "@/lib/data";
+import {
+  Accordion,
+  AccordionContent,
+  AccordionItem,
+  AccordionTrigger,
+} from "@/components/ui/accordion";
 
 interface CharactersPageProps {
   glossary: Record<string, GlossaryEntry>;
@@ -21,14 +27,30 @@ export const CharactersPage: React.FC<CharactersPageProps> = ({ glossary }) => {
     .filter(([_, entry]) => entry.type === "character")
     .map(([name, entry]) => ({ name, ...entry }));
 
-  // Get locations
-  const locations = Object.entries(glossary)
+  // Get locations with hierarchy
+  const allLocations = Object.entries(glossary)
     .filter(([_, entry]) => entry.type === "location")
     .map(([name, entry]) => ({ name, ...entry }));
+
+  // Group: parent locations (no parentTerm) and children
+  const parentLocations = allLocations.filter((loc) => !loc.parentTerm);
+  const childLocations = allLocations.filter((loc) => !!loc.parentTerm);
+
+  const locationsByParent: Record<string, typeof allLocations> = {};
+  for (const child of childLocations) {
+    const parent = child.parentTerm!;
+    if (!locationsByParent[parent]) locationsByParent[parent] = [];
+    locationsByParent[parent].push(child);
+  }
 
   // Get creatures
   const creatures = Object.entries(glossary)
     .filter(([_, entry]) => entry.type === "creature")
+    .map(([name, entry]) => ({ name, ...entry }));
+
+  // Get concepts
+  const concepts = Object.entries(glossary)
+    .filter(([_, entry]) => entry.type === "concept")
     .map(([name, entry]) => ({ name, ...entry }));
 
   const selected = selectedCharacter
@@ -155,26 +177,68 @@ export const CharactersPage: React.FC<CharactersPageProps> = ({ glossary }) => {
           </div>
         </section>
 
-        {/* Locations */}
+        {/* Locations — Hierarchical */}
         <section className="mb-16">
           <h2 className="font-display text-xl text-stone-500 mb-6">
             Locations
           </h2>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            {locations.map((loc) => (
-              <div
-                key={loc.name}
-                className="p-4 bg-stone-900/30 rounded-lg border border-stone-800/50"
-              >
-                <h3 className="text-amber-400 font-medium">{loc.name}</h3>
-                <p className="text-stone-500 text-sm mt-1">{loc.description}</p>
-              </div>
-            ))}
-          </div>
+          <Accordion type="multiple" className="space-y-2">
+            {parentLocations.map((loc) => {
+              const children = locationsByParent[loc.name];
+              if (children && children.length > 0) {
+                return (
+                  <AccordionItem
+                    key={loc.name}
+                    value={loc.name}
+                    className="border-stone-800/50 bg-stone-900/30 rounded-lg px-4"
+                  >
+                    <AccordionTrigger className="hover:no-underline">
+                      <div className="text-left">
+                        <h3 className="text-amber-400 font-medium">
+                          {loc.name}
+                        </h3>
+                        <p className="text-stone-500 text-sm mt-1">
+                          {loc.description}
+                        </p>
+                      </div>
+                    </AccordionTrigger>
+                    <AccordionContent>
+                      <div className="space-y-2 pl-4 border-l border-stone-700/50">
+                        {children.map((child) => (
+                          <div
+                            key={child.name}
+                            className="p-3 bg-stone-900/50 rounded-lg"
+                          >
+                            <h4 className="text-amber-300/80 font-medium text-sm">
+                              {child.name}
+                            </h4>
+                            <p className="text-stone-500 text-xs mt-1">
+                              {child.description}
+                            </p>
+                          </div>
+                        ))}
+                      </div>
+                    </AccordionContent>
+                  </AccordionItem>
+                );
+              }
+              return (
+                <div
+                  key={loc.name}
+                  className="p-4 bg-stone-900/30 rounded-lg border border-stone-800/50"
+                >
+                  <h3 className="text-amber-400 font-medium">{loc.name}</h3>
+                  <p className="text-stone-500 text-sm mt-1">
+                    {loc.description}
+                  </p>
+                </div>
+              );
+            })}
+          </Accordion>
         </section>
 
         {/* Creatures */}
-        <section>
+        <section className="mb-16">
           <h2 className="font-display text-xl text-stone-500 mb-6">
             Creatures
           </h2>
@@ -192,6 +256,30 @@ export const CharactersPage: React.FC<CharactersPageProps> = ({ glossary }) => {
             ))}
           </div>
         </section>
+
+        {/* Concepts & Lore */}
+        {concepts.length > 0 && (
+          <section>
+            <h2 className="font-display text-xl text-stone-500 mb-6">
+              Concepts & Lore
+            </h2>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              {concepts.map((concept) => (
+                <div
+                  key={concept.name}
+                  className="p-4 bg-stone-900/30 rounded-lg border border-stone-800/50"
+                >
+                  <h3 className="text-purple-400 font-medium">
+                    {concept.name}
+                  </h3>
+                  <p className="text-stone-500 text-sm mt-1">
+                    {concept.description}
+                  </p>
+                </div>
+              ))}
+            </div>
+          </section>
+        )}
       </div>
     </div>
   );

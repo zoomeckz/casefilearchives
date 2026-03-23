@@ -71,7 +71,7 @@ const Index = () => {
 
   const fetchGlossary = useCallback(async () => {
     const { data } = await dbFetch<any[]>('glossary', {
-      select: 'term,description,type,image_url',
+      select: 'term,description,type,image_url,parent_term',
       order: 'term.asc',
     });
     if (data && data.length > 0) {
@@ -81,6 +81,7 @@ const Index = () => {
           type: entry.type as GlossaryEntry['type'],
           description: entry.description,
           image: entry.image_url || undefined,
+          parentTerm: entry.parent_term || undefined,
         };
       }
       // Merge: DB entries override defaults, but preserve default images if DB has none

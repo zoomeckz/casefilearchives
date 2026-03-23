@@ -27,6 +27,7 @@ export interface GlossaryEntry {
   type: 'character' | 'location' | 'creature' | 'concept';
   description: string;
   image?: string;
+  parentTerm?: string;
 }
 
 export interface ForumPost {
@@ -270,6 +271,30 @@ export const defaultGlossary: Record<string, GlossaryEntry> = {
   'Greenwood Court': {
     type: 'concept',
     description: 'A governing body within Feldus. A champion of the Greenwood Court — a shapeshifter described as "wind given claws" — once challenged the throne of Lamoon and was defeated in a single afternoon.'
+  },
+  'Quillren': {
+    type: 'creature',
+    description: 'A furred creature the size of a large cat with the body of a fox and the flat, wide face of an owl. Its tail splits into three separate plumes, each tipped with iridescent blue. Usually nocturnal scavengers that avoid people, but drawn instinctively to Sam.'
+  },
+  'Nightwader': {
+    type: 'creature',
+    description: 'A bat-like hybrid with a serpentine neck and leathery wings. Its membranes are so thin you can read through them. Typically hangs upside down from awnings and structures in Beambreak\'s districts.'
+  },
+  'Stone-jackal': {
+    type: 'creature',
+    description: 'Squat, heavy-jawed creatures with hides of overlapping mineral plates that clink softly when they move. Considered aggressive pests in Beambreak\'s lower districts, known to bite — yet they followed Sam with ear-flattening devotion.'
+  },
+  'Beamstone': {
+    type: 'concept',
+    description: 'An extremely rare teleportation artifact attuned to Beambreak castle. Only ten exist, each keyed to a specific bearer\'s essence, blood, and signature. Activated with the phrase "Brave I may be, home is what I need" while held with both hands.'
+  },
+  'Infinity Pocket Seal': {
+    type: 'concept',
+    description: 'An extraordinarily rare piece of Mezaru spatial manipulation technology. When activated, it opens into a room that does not technically exist — a pocket of folded space. Fewer than a dozen are known to exist. Rathel keeps one hidden in his quarters.'
+  },
+  'Helsimian': {
+    type: 'concept',
+    description: 'A race identifiable by faintly iridescent blue-green skin, elongated pointed ears, dark upturned eyes, and vestigial gill markings on their necks. Their voices carry a melodic, layered resonance that sounds like two notes played simultaneously.'
   },
 };
 

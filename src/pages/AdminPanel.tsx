@@ -317,7 +317,7 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ glossary, authToken, onG
                           <div key={draft.id} className="flex items-center justify-between p-4 bg-card/50 rounded-lg border border-border/50 group">
                             <div>
                               <span className="text-foreground font-medium">
-                                {draft.title ? `Ch. ${draft.chapterNumber}: ${draft.title}` : `Untitled Draft (Ch. ${draft.chapterNumber})`}
+                                {draft.title || 'Untitled Draft'}
                               </span>
                               <div className="flex gap-4 mt-1 text-xs text-muted-foreground">
                                 <span>Last saved: {new Date(draft.lastSaved).toLocaleString()}</span>

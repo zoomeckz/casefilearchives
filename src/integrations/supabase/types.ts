@@ -244,6 +244,7 @@ export type Database = {
           description: string
           id: string
           image_url: string | null
+          parent_term: string | null
           term: string
           type: string
         }
@@ -252,6 +253,7 @@ export type Database = {
           description: string
           id?: string
           image_url?: string | null
+          parent_term?: string | null
           term: string
           type: string
         }
@@ -260,6 +262,7 @@ export type Database = {
           description?: string
           id?: string
           image_url?: string | null
+          parent_term?: string | null
           term?: string
           type?: string
         }

@@ -1,0 +1,1 @@
+ALTER TABLE glossary ADD COLUMN parent_term text DEFAULT NULL;
