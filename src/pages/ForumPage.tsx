@@ -296,7 +296,7 @@ export const ForumPage: React.FC<ForumPageProps> = ({
     return (
       <div className="min-h-screen py-12 px-6">
         <div className="max-w-4xl mx-auto">
-          <button onClick={() => setSelectedPost(null)} className="flex items-center gap-2 text-muted-foreground hover:text-foreground mb-8">
+          <button onClick={() => navigate('/forum')} className="flex items-center gap-2 text-muted-foreground hover:text-foreground mb-8">
             <Icons.ChevronLeft /> Back to forum
           </button>
           <div className="mb-12">
