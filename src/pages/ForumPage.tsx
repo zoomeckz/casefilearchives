@@ -346,7 +346,7 @@ export const ForumPage: React.FC<ForumPageProps> = ({
                   <div className="w-8 h-8 rounded-full bg-gradient-to-br from-primary to-indigo-600 flex items-center justify-center text-primary-foreground text-sm font-medium">
                     {reply.author?.charAt(0).toUpperCase()}
                   </div>
-                  <span className="text-foreground">{reply.author}</span>
+                  <span className="text-primary cursor-pointer hover:underline" onClick={() => navigate(`/user/${reply.authorId}`)}>{reply.author}</span>
                   <span className="text-muted-foreground text-sm">{new Date(reply.createdAt).toLocaleDateString()}</span>
                 </div>
                 <div className="text-foreground/70 pl-11 whitespace-pre-wrap" dangerouslySetInnerHTML={{ __html: renderFormatted(reply.content) }} />
