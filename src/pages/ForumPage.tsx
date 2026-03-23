@@ -419,7 +419,7 @@ export const ForumPage: React.FC<ForumPageProps> = ({
             <p className="text-muted-foreground text-center py-12">No discussions yet. Be the first to start one!</p>
           ) : (
             filteredPosts.map((post) => (
-              <div key={post.id} onClick={() => setSelectedPost(post)}
+              <div key={post.id} onClick={() => navigate(`/forum/${post.id}`)}
                 className={`group py-5 px-5 cursor-pointer rounded-lg hover:bg-secondary/30 transition-colors ${post.isPinned ? 'border border-accent/20 bg-accent/5' : ''}`}
               >
                 <div className="flex items-center gap-2 text-sm text-muted-foreground mb-1">
