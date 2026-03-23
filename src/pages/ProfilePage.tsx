@@ -207,7 +207,7 @@ export const ProfilePage: React.FC<ProfilePageProps> = ({
           </div>
 
           {/* Actions */}
-          <div className="flex items-center gap-4 pt-6 border-t border-border">
+          <div className="flex flex-wrap items-center gap-4 pt-6 border-t border-border">
             {editing ? (
               <>
                 <button onClick={handleSave} disabled={saving} className="px-6 py-2 bg-primary hover:bg-primary/80 disabled:bg-primary/50 text-primary-foreground rounded-lg font-medium transition-colors">
