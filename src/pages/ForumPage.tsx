@@ -144,7 +144,8 @@ export const ForumPage: React.FC<ForumPageProps> = ({
   // Resolve post from URL param
   useEffect(() => {
     if (postId && posts.length > 0) {
-      const post = posts.find(p => p.id === postId);
+      const resolvedId = parsePostId(postId, posts);
+      const post = resolvedId ? posts.find(p => p.id === resolvedId) : null;
       if (post) setSelectedPost(post);
     } else if (!postId) {
       setSelectedPost(null);
