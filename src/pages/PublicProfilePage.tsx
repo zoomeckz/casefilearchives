@@ -109,7 +109,7 @@ export const PublicProfilePage: React.FC = () => {
         </div>
 
         {/* Activity Stats */}
-        <div className="grid grid-cols-3 gap-6 text-center mb-12 p-6 bg-card/30 rounded-xl border border-border">
+        <div className="grid grid-cols-3 gap-4 sm:gap-6 text-center mb-12 p-4 sm:p-6 bg-card/30 rounded-xl border border-border">
           <div>
             <div className="text-2xl font-display text-foreground">{stats.chaptersRead}</div>
             <div className="text-muted-foreground text-sm mt-1">Chapters Read</div>

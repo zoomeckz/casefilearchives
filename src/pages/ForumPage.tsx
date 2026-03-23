@@ -395,15 +395,15 @@ export const ForumPage: React.FC<ForumPageProps> = ({
   }
 
   return (
-    <div className="min-h-screen py-12 px-6">
+    <div className="min-h-screen py-8 sm:py-12 px-4 sm:px-6">
       <div className="max-w-4xl mx-auto">
-        <div className="flex items-center justify-between mb-8">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-8">
           <div>
-            <h1 className="font-display text-4xl text-accent mb-2">Forum</h1>
+            <h1 className="font-display text-3xl sm:text-4xl text-accent mb-2">Forum</h1>
             <p className="text-muted-foreground">Discuss theories and connect with fellow readers</p>
           </div>
           <button onClick={() => (user ? setShowNewPost(true) : setShowAuthModal(true))}
-            className="text-primary hover:text-primary/80 transition-colors">+ New Post</button>
+            className="text-primary hover:text-primary/80 transition-colors self-start sm:self-auto">+ New Post</button>
         </div>
 
         <div className="flex flex-wrap gap-2 mb-8">

@@ -126,9 +126,9 @@ export const CharactersPage: React.FC<CharactersPageProps> = ({ glossary }) => {
             </div>
           )}
 
-              <div className="p-8">
-                <div className="flex items-center gap-3 mb-4">
-                  <h2 className="font-display text-3xl text-amber-100">
+              <div className="p-5 sm:p-8">
+                <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-3 mb-4">
+                  <h2 className="font-display text-2xl sm:text-3xl text-amber-100">
                     {selected.name}
                   </h2>
                   <span className="text-xs px-3 py-1 rounded-full bg-sky-400/10 text-sky-400 border border-sky-400/30">
