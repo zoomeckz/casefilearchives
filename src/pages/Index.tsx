@@ -16,6 +16,7 @@ import { CharactersPage } from "@/pages/CharactersPage";
 import { ForumPage } from "@/pages/ForumPage";
 import { ProfilePage } from "@/pages/ProfilePage";
 import { AdminPanel } from "@/pages/AdminPanel";
+import { RewardsPage } from "@/pages/RewardsPage";
 import { AboutPage } from "@/pages/AboutPage";
 import { MangaPage } from "@/pages/MangaPage";
 import { usePageTracking } from "@/hooks/usePageTracking";
