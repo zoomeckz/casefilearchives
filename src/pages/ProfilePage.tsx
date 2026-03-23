@@ -184,8 +184,8 @@ export const ProfilePage: React.FC<ProfilePageProps> = ({
                 </div>
               ) : (
                 <>
-                  <h2 className="text-2xl text-foreground font-display">{user.name}</h2>
-                  <p className="text-muted-foreground mt-1">{user.email}</p>
+                  <h2 className="text-2xl text-foreground font-display text-center sm:text-left">{user.name}</h2>
+                  <p className="text-muted-foreground mt-1 text-center sm:text-left">{user.email}</p>
                   {profile.bio && <p className="text-foreground/70 mt-2 text-sm">{profile.bio}</p>}
                   {(profile.instagram || profile.tiktok || profile.website) && (
                     <div className="flex flex-wrap gap-3 mt-2 text-xs text-muted-foreground">
