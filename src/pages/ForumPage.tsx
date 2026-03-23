@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef } from "react";
+import { useNavigate, useParams } from "react-router-dom";
 import { Icons } from "@/lib/icons";
 import { AuthUser } from "@/hooks/useAuth";
 import { dbFetch } from "@/lib/dbFetch";
@@ -47,6 +48,8 @@ export const ForumPage: React.FC<ForumPageProps> = ({
   user,
   setShowAuthModal,
 }) => {
+  const navigate = useNavigate();
+  const { postId } = useParams<{ postId?: string }>();
   const [posts, setPosts] = useState<ForumPost[]>([]);
   const [selectedPost, setSelectedPost] = useState<ForumPost | null>(null);
   const [replies, setReplies] = useState<ForumReply[]>([]);
@@ -109,6 +112,16 @@ export const ForumPage: React.FC<ForumPageProps> = ({
     };
     fetchPosts();
   }, []);
+
+  // Resolve post from URL param
+  useEffect(() => {
+    if (postId && posts.length > 0) {
+      const post = posts.find(p => p.id === postId);
+      if (post) setSelectedPost(post);
+    } else if (!postId) {
+      setSelectedPost(null);
+    }
+  }, [postId, posts]);
 
   useEffect(() => {
     if (!selectedPost) { setReplies([]); return; }
@@ -200,7 +213,7 @@ export const ForumPage: React.FC<ForumPageProps> = ({
     await dbFetch('forum_replies', { method: 'DELETE', filters: `post_id=eq.${post.id}` });
     await dbFetch('forum_posts', { method: 'DELETE', filters: `id=eq.${post.id}` });
     setPosts(posts.filter(p => p.id !== post.id));
-    if (selectedPost?.id === post.id) setSelectedPost(null);
+    if (selectedPost?.id === post.id) navigate('/forum');
   };
 
   const handleAddReply = async (e: React.FormEvent) => {
@@ -283,7 +296,7 @@ export const ForumPage: React.FC<ForumPageProps> = ({
     return (
       <div className="min-h-screen py-12 px-6">
         <div className="max-w-4xl mx-auto">
-          <button onClick={() => setSelectedPost(null)} className="flex items-center gap-2 text-muted-foreground hover:text-foreground mb-8">
+          <button onClick={() => navigate('/forum')} className="flex items-center gap-2 text-muted-foreground hover:text-foreground mb-8">
             <Icons.ChevronLeft /> Back to forum
           </button>
           <div className="mb-12">
@@ -406,7 +419,7 @@ export const ForumPage: React.FC<ForumPageProps> = ({
             <p className="text-muted-foreground text-center py-12">No discussions yet. Be the first to start one!</p>
           ) : (
             filteredPosts.map((post) => (
-              <div key={post.id} onClick={() => setSelectedPost(post)}
+              <div key={post.id} onClick={() => navigate(`/forum/${post.id}`)}
                 className={`group py-5 px-5 cursor-pointer rounded-lg hover:bg-secondary/30 transition-colors ${post.isPinned ? 'border border-accent/20 bg-accent/5' : ''}`}
               >
                 <div className="flex items-center gap-2 text-sm text-muted-foreground mb-1">

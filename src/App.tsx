@@ -20,6 +20,7 @@ const App = () => (
           <Route path="/chapters/:chapterNumber" element={<Index />} />
           <Route path="/characters" element={<Index />} />
           <Route path="/forum" element={<Index />} />
+          <Route path="/forum/:postId" element={<Index />} />
           <Route path="/profile" element={<Index />} />
           <Route path="/admin" element={<Index />} />
           <Route path="/manga" element={<Index />} />
