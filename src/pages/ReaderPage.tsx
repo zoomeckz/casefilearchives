@@ -49,7 +49,7 @@ export const ReaderPage: React.FC<ReaderPageProps> = ({
   const nextChapter = currentIndex < chapters.length - 1 ? chapters[currentIndex + 1] : null;
 
   return (
-    <div className="min-h-screen py-12 px-6">
+    <div className="min-h-screen py-8 sm:py-12 px-4 sm:px-6">
       <div className="max-w-3xl mx-auto">
         <button
           onClick={() => setCurrentPage("chapters")}
