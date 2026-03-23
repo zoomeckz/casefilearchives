@@ -29,9 +29,9 @@ export const StoriesPage: React.FC<StoriesPageProps> = ({
   isBookmarked,
   toggleBookmark,
 }) => (
-  <div className="min-h-screen py-12 px-6">
+  <div className="min-h-screen py-8 sm:py-12 px-4 sm:px-6">
     <div className="max-w-2xl mx-auto">
-      <h1 className="font-display text-4xl text-accent mb-8 text-center">
+      <h1 className="font-display text-3xl sm:text-4xl text-accent mb-8 text-center">
         Chapters
       </h1>
 

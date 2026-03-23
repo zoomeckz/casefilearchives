@@ -98,29 +98,29 @@ export const ReaderPage: React.FC<ReaderPageProps> = ({
           <InteractiveContent content={chapter.content} glossary={glossary} />
         </article>
 
-        <div className="flex items-center justify-between gap-4 py-8 border-t border-b border-border mb-12">
+        <div className="flex items-center justify-between gap-2 py-8 border-t border-b border-border mb-12">
           {prevChapter ? (
             <button
               onClick={() => setSelectedChapter(prevChapter)}
-              className="flex items-center gap-2 text-muted-foreground hover:text-foreground"
+              className="flex items-center gap-2 text-muted-foreground hover:text-foreground min-w-0"
             >
-              <Icons.ChevronLeft />
-              <div className="text-left">
+              <Icons.ChevronLeft className="shrink-0" />
+              <div className="text-left min-w-0">
                 <div className="text-xs text-muted-foreground">Previous</div>
-                <div className="text-sm">{prevChapter.title}</div>
+                <div className="text-sm truncate">{prevChapter.title}</div>
               </div>
             </button>
           ) : <div />}
           {nextChapter ? (
             <button
               onClick={() => setSelectedChapter(nextChapter)}
-              className="flex items-center gap-2 text-muted-foreground hover:text-foreground text-right"
+              className="flex items-center gap-2 text-muted-foreground hover:text-foreground text-right min-w-0"
             >
-              <div>
+              <div className="min-w-0">
                 <div className="text-xs text-muted-foreground">Next</div>
-                <div className="text-sm">{nextChapter.title}</div>
+                <div className="text-sm truncate">{nextChapter.title}</div>
               </div>
-              <Icons.ChevronRight />
+              <Icons.ChevronRight className="shrink-0" />
             </button>
           ) : <div />}
         </div>
