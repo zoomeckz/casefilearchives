@@ -72,7 +72,7 @@ export const CommentsSection: React.FC<CommentsSectionProps> = ({
                   <div className="w-8 h-8 rounded-full bg-gradient-to-br from-sky-600 to-indigo-600 flex items-center justify-center text-white text-sm font-medium">
                     {comment.author?.charAt(0).toUpperCase()}
                   </div>
-                  <span className="text-stone-200">{comment.author}</span>
+                  <span className="text-primary cursor-pointer hover:underline" onClick={() => navigate(`/user/${comment.authorId}`)}>{comment.author}</span>
                   <span className="text-stone-600 text-sm">
                     {new Date(comment.createdAt).toLocaleDateString()}
                   </span>
