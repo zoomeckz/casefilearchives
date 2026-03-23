@@ -322,7 +322,7 @@ export const ForumPage: React.FC<ForumPageProps> = ({
             </div>
             <h1 className="font-display text-3xl text-accent mt-2 mb-4">{selectedPost.title}</h1>
             <p className="text-muted-foreground text-sm mb-6">
-              by <span className="text-foreground">{selectedPost.author}</span> · {new Date(selectedPost.createdAt).toLocaleDateString()}
+              by <span className="text-primary cursor-pointer hover:underline" onClick={(e) => { e.stopPropagation(); navigate(`/user/${selectedPost.authorId}`); }}>{selectedPost.author}</span> · {new Date(selectedPost.createdAt).toLocaleDateString()}
             </p>
             <div className="text-foreground/80 leading-relaxed whitespace-pre-wrap" dangerouslySetInnerHTML={{ __html: renderFormatted(selectedPost.content) }} />
           </div>
