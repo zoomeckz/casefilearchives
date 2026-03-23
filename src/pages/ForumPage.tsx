@@ -19,6 +19,34 @@ function renderFormatted(text: string): string {
   return html;
 }
 
+function slugify(title: string): string {
+  return title
+    .toLowerCase()
+    .replace(/[^\w\s-]/g, '') // remove emojis/special chars
+    .trim()
+    .replace(/\s+/g, '-')
+    .replace(/-+/g, '-')
+    .slice(0, 60);
+}
+
+function postUrl(post: { id: string; title: string }): string {
+  return `/forum/${slugify(post.title)}--${post.id.slice(0, 8)}`;
+}
+
+function parsePostId(param: string | undefined, posts: { id: string; title: string }[]): string | null {
+  if (!param) return null;
+  // Extract short ID after last "--"
+  const parts = param.split('--');
+  const shortId = parts[parts.length - 1];
+  if (shortId) {
+    const match = posts.find(p => p.id.startsWith(shortId));
+    if (match) return match.id;
+  }
+  // Fallback: try as full UUID
+  const direct = posts.find(p => p.id === param);
+  return direct?.id || null;
+}
+
 interface ForumPost {
   id: string;
   title: string;
@@ -116,7 +144,8 @@ export const ForumPage: React.FC<ForumPageProps> = ({
   // Resolve post from URL param
   useEffect(() => {
     if (postId && posts.length > 0) {
-      const post = posts.find(p => p.id === postId);
+      const resolvedId = parsePostId(postId, posts);
+      const post = resolvedId ? posts.find(p => p.id === resolvedId) : null;
       if (post) setSelectedPost(post);
     } else if (!postId) {
       setSelectedPost(null);
@@ -419,7 +448,7 @@ export const ForumPage: React.FC<ForumPageProps> = ({
             <p className="text-muted-foreground text-center py-12">No discussions yet. Be the first to start one!</p>
           ) : (
             filteredPosts.map((post) => (
-              <div key={post.id} onClick={() => navigate(`/forum/${post.id}`)}
+              <div key={post.id} onClick={() => navigate(postUrl(post))}
                 className={`group py-5 px-5 cursor-pointer rounded-lg hover:bg-secondary/30 transition-colors ${post.isPinned ? 'border border-accent/20 bg-accent/5' : ''}`}
               >
                 <div className="flex items-center gap-2 text-sm text-muted-foreground mb-1">
