@@ -1,4 +1,5 @@
 import React, { useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { Icons } from "@/lib/icons";
 import { useComments, Comment } from "@/hooks/useComments";
 import { AuthUser } from "@/hooks/useAuth";
