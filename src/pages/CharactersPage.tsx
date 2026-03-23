@@ -61,10 +61,10 @@ export const CharactersPage: React.FC<CharactersPageProps> = ({ glossary }) => {
     <div className="min-h-screen py-12 px-6">
       <div className="max-w-5xl mx-auto">
         <h1 className="font-display text-4xl text-amber-100 mb-4 text-center">
-          Characters & World
+          Codex
         </h1>
         <p className="text-stone-500 text-center mb-12">
-          Explore the characters, locations, and lore of Sedorium
+          Characters, creatures, locations, and lore of Sedorium
         </p>
 
         {/* Featured Characters with Art */}

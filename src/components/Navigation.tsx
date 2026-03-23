@@ -22,7 +22,7 @@ export const Navigation: React.FC<NavigationProps> = ({
   const navItems = [
     { id: "home", label: "Home", icon: Icons.Home },
     { id: "chapters", label: "Chapters", icon: Icons.Book },
-    { id: "characters", label: "Characters", icon: Icons.Users },
+    { id: "characters", label: "Codex", icon: Icons.Users },
     { id: "forum", label: "Forum", icon: Icons.Message },
   ];
 
