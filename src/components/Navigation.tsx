@@ -81,7 +81,7 @@ export const Navigation: React.FC<NavigationProps> = ({
                 onClick={() => setShowAuthModal(true)}
                 className="text-sm text-muted-foreground hover:text-primary transition-colors"
               >
-                Sign In
+                Register / Sign In
               </button>
             )}
           </div>
@@ -143,7 +143,7 @@ export const Navigation: React.FC<NavigationProps> = ({
                 }}
                 className="block w-full text-left py-2 text-muted-foreground hover:text-primary"
               >
-                Sign In
+                Register / Sign In
               </button>
             )}
           </div>
