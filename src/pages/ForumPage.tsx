@@ -431,7 +431,7 @@ export const ForumPage: React.FC<ForumPageProps> = ({
                 <h3 className="text-lg text-foreground group-hover:text-primary transition-colors">{post.title}</h3>
                 <p className="text-muted-foreground text-sm mt-1 line-clamp-2" dangerouslySetInnerHTML={{ __html: renderFormatted(post.content) }} />
                 <p className="text-muted-foreground/60 text-xs mt-2">
-                  by {post.author} · {new Date(post.createdAt).toLocaleDateString()}
+                  by <span className="text-primary/80 cursor-pointer hover:underline" onClick={(e) => { e.stopPropagation(); navigate(`/user/${post.authorId}`); }}>{post.author}</span> · {new Date(post.createdAt).toLocaleDateString()}
                 </p>
               </div>
             ))
