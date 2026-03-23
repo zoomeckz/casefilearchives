@@ -47,6 +47,7 @@ const Index = () => {
     else if (page === "chapters") navigate("/chapters");
     else if (page === "characters") navigate("/characters");
     else if (page === "forum") navigate("/forum");
+    else if (page === "rewards") navigate("/rewards");
     else if (page === "profile") navigate("/profile");
     else if (page === "admin") navigate("/admin");
     else if (page === "about") navigate("/about");
