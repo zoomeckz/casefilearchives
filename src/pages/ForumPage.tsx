@@ -213,7 +213,7 @@ export const ForumPage: React.FC<ForumPageProps> = ({
     await dbFetch('forum_replies', { method: 'DELETE', filters: `post_id=eq.${post.id}` });
     await dbFetch('forum_posts', { method: 'DELETE', filters: `id=eq.${post.id}` });
     setPosts(posts.filter(p => p.id !== post.id));
-    if (selectedPost?.id === post.id) setSelectedPost(null);
+    if (selectedPost?.id === post.id) navigate('/forum');
   };
 
   const handleAddReply = async (e: React.FormEvent) => {
