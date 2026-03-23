@@ -372,7 +372,7 @@ export const ForumPage: React.FC<ForumPageProps> = ({
             {replies.map((reply) => (
               <div key={reply.id} className="py-4">
                 <div className="flex items-center gap-3 mb-2">
-                  <div className="w-8 h-8 rounded-full bg-gradient-to-br from-primary to-indigo-600 flex items-center justify-center text-primary-foreground text-sm font-medium">
+                  <div className="w-10 h-10 rounded-full bg-gradient-to-br from-primary to-indigo-600 flex items-center justify-center text-primary-foreground text-sm font-medium">
                     {reply.author?.charAt(0).toUpperCase()}
                   </div>
                   <span className="text-primary cursor-pointer hover:underline" onClick={() => navigate(`/user/${reply.authorId}`)}>{reply.author}</span>
