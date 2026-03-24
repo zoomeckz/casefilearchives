@@ -8,11 +8,17 @@ interface WorldMapPageProps {
 export const WorldMapPage: React.FC<WorldMapPageProps> = ({ glossary }) => {
   const [selectedType, setSelectedType] = useState<string>("all");
   const [selectedTerm, setSelectedTerm] = useState<string | null>(null);
+  const [searchQuery, setSearchQuery] = useState("");
 
   const types = ["all", "location", "character", "creature", "concept"];
 
   const entries = Object.entries(glossary)
-    .filter(([_, v]) => selectedType === "all" || v.type === selectedType)
+    .filter(([term, v]) => selectedType === "all" || v.type === selectedType)
+    .filter(([term, v]) => {
+      if (!searchQuery.trim()) return true;
+      const q = searchQuery.toLowerCase();
+      return term.toLowerCase().includes(q) || v.description.toLowerCase().includes(q);
+    })
     .sort((a, b) => a[0].localeCompare(b[0]));
 
   // Build relationship data
