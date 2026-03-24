@@ -407,7 +407,10 @@ export const ForumPage: React.FC<ForumPageProps> = ({
                   <span className="text-primary font-medium hover:underline">{selectedPost.author}</span>
                   {selectedPost.authorId === SITE_AUTHOR_ID && <AuthorBadge />}
                 </div>
-                <p className="text-muted-foreground text-xs">{new Date(selectedPost.createdAt).toLocaleDateString()}</p>
+                <p className="text-muted-foreground text-xs">
+                  {new Date(selectedPost.createdAt).toLocaleDateString()}
+                  {selectedPost.isEdited && <span className="text-muted-foreground/50 italic ml-1">(edited)</span>}
+                </p>
               </div>
             </div>
             <div className="text-foreground/80 leading-relaxed break-words" dangerouslySetInnerHTML={{ __html: renderFormatted(selectedPost.content) }} />
