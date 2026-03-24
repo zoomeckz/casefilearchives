@@ -118,9 +118,6 @@ export const ReaderPage: React.FC<ReaderPageProps> = ({
           </div>
         )}
 
-        <div className="flex flex-wrap items-center gap-4 mb-10 text-sm">
-          <TextToSpeech content={chapter.content} />
-        </div>
 
         <p className="text-muted-foreground/60 text-sm mb-6 italic">
           Tip: Click on highlighted character and location names for more info. Use ||spoiler|| tags in comments to hide spoilers.
