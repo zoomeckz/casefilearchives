@@ -1,5 +1,8 @@
 import React, { useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { Icons } from "@/lib/icons";
+import { AuthUser } from "@/hooks/useAuth";
+import { NotificationBell } from "@/components/NotificationBell";
 import { AuthUser } from "@/hooks/useAuth";
 
 interface NavigationProps {
