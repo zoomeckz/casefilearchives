@@ -44,8 +44,6 @@ const Index = () => {
     if (path === "/about") return "about";
     if (path === "/manga") return "manga";
     if (path === "/leaderboard") return "leaderboard";
-    if (path === "/theories") return "theories";
-    if (path === "/gallery") return "gallery";
     if (path === "/world") return "world";
     return "home";
   })();
