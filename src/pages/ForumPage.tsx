@@ -215,6 +215,7 @@ export const ForumPage: React.FC<ForumPageProps> = ({
         authorAvatar: profileMap[r.user_id]?.avatar || null,
         authorFrame: profileMap[r.user_id]?.frame || null,
         createdAt: r.created_at,
+        isEdited: !!(r.updated_at && r.updated_at !== r.created_at),
       })));
     };
     fetchReplies();
