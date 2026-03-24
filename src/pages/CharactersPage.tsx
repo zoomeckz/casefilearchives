@@ -1,6 +1,7 @@
 import React, { useState } from "react";
 import { Icons } from "@/lib/icons";
 import { GlossaryEntry } from "@/lib/data";
+import { CharacterRelationshipMap } from "@/components/CharacterRelationshipMap";
 import {
   Accordion,
   AccordionContent,
