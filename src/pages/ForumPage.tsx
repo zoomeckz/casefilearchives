@@ -120,7 +120,7 @@ export const ForumPage: React.FC<ForumPageProps> = ({
     const fetchPosts = async () => {
       try {
         const { data: postsData } = await dbFetch<any[]>('forum_posts', {
-          select: 'id,title,content,category,created_at,user_id,is_pinned',
+          select: 'id,title,content,category,created_at,updated_at,user_id,is_pinned',
           order: 'is_pinned.desc,created_at.desc',
         });
 
