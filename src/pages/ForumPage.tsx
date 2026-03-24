@@ -15,9 +15,13 @@ function renderFormatted(text: string): string {
     // Image URLs on their own line: ![alt](url)
     .replace(/!\[([^\]]*)\]\(([^)]+)\)/g, '<img src="$2" alt="$1" class="max-w-full rounded-lg my-2" />')
     // Links: [text](url)
-    .replace(/\[([^\]]+)\]\(([^)]+)\)/g, '<a href="$2" target="_blank" rel="noopener noreferrer" class="text-primary underline">$1</a>');
+    .replace(/\[([^\]]+)\]\(([^)]+)\)/g, '<a href="$2" target="_blank" rel="noopener noreferrer" class="text-primary underline">$1</a>')
+    // Preserve newlines (including blank lines)
+    .replace(/\n/g, '<br>');
   return html;
 }
+
+export { renderFormatted };
 
 function slugify(title: string): string {
   return title
@@ -64,6 +68,8 @@ interface ForumReply {
   content: string;
   author: string;
   authorId: string;
+  authorBio: string;
+  authorAvatar: string | null;
   createdAt: string;
 }
 
@@ -172,21 +178,23 @@ export const ForumPage: React.FC<ForumPageProps> = ({
 
       const userIds = [...new Set(repliesData.map(r => r.user_id))];
       const profilePromises = userIds.map(uid =>
-        dbFetch<any[]>('profiles', { select: 'user_id,name', filters: `user_id=eq.${uid}` })
+        dbFetch<any[]>('profiles', { select: 'user_id,name,bio,avatar_url', filters: `user_id=eq.${uid}` })
       );
       const profileResults = await Promise.all(profilePromises);
-      const profileMap: Record<string, string> = {};
+      const profileMap: Record<string, { name: string; bio: string; avatar: string | null }> = {};
       profileResults.forEach(r => {
         if (r.data && r.data[0]) {
-          profileMap[r.data[0].user_id] = r.data[0].name;
+          profileMap[r.data[0].user_id] = { name: r.data[0].name, bio: r.data[0].bio || '', avatar: r.data[0].avatar_url };
         }
       });
 
       setReplies(repliesData.map(r => ({
         id: r.id,
         content: r.content,
-        author: profileMap[r.user_id] || 'Anonymous',
+        author: profileMap[r.user_id]?.name || 'Anonymous',
         authorId: r.user_id,
+        authorBio: profileMap[r.user_id]?.bio || '',
+        authorAvatar: profileMap[r.user_id]?.avatar || null,
         createdAt: r.created_at,
       })));
     };
@@ -264,7 +272,7 @@ export const ForumPage: React.FC<ForumPageProps> = ({
     if (data && data[0]) {
       setReplies([...replies, {
         id: data[0].id, content: data[0].content, author: user.name,
-        authorId: data[0].user_id, createdAt: data[0].created_at,
+        authorId: data[0].user_id, authorBio: '', authorAvatar: user.avatarUrl || null, createdAt: data[0].created_at,
       }]);
       setSelectedPost({ ...selectedPost, replies: selectedPost.replies + 1 });
       setPosts(posts.map(p => p.id === selectedPost.id ? { ...p, replies: p.replies + 1 } : p));
@@ -360,7 +368,7 @@ export const ForumPage: React.FC<ForumPageProps> = ({
             <p className="text-muted-foreground text-sm mb-6">
               by <span className="text-primary cursor-pointer hover:underline" onClick={(e) => { e.stopPropagation(); navigate(`/user/${selectedPost.authorId}`); }}>{selectedPost.author}</span> · {new Date(selectedPost.createdAt).toLocaleDateString()}
             </p>
-            <div className="text-foreground/80 leading-relaxed whitespace-pre-wrap break-words" dangerouslySetInnerHTML={{ __html: renderFormatted(selectedPost.content) }} />
+            <div className="text-foreground/80 leading-relaxed break-words" dangerouslySetInnerHTML={{ __html: renderFormatted(selectedPost.content) }} />
           </div>
           <h3 className="text-xl font-display text-accent mb-6">Replies ({replies.length})</h3>
           <form onSubmit={handleAddReply} className="mb-8">
@@ -378,14 +386,29 @@ export const ForumPage: React.FC<ForumPageProps> = ({
           <div className="divide-y divide-border/50">
             {replies.map((reply) => (
               <div key={reply.id} className="py-4">
-                <div className="flex items-center gap-3 mb-2">
-                  <div className="w-10 h-10 rounded-full bg-gradient-to-br from-primary to-indigo-600 flex items-center justify-center text-primary-foreground text-sm font-medium">
-                    {reply.author?.charAt(0).toUpperCase()}
+                <div className="flex items-start gap-3">
+                  <div className="flex flex-col items-center gap-1 min-w-[40px]">
+                    {reply.authorAvatar ? (
+                      <img src={reply.authorAvatar} alt={reply.author} className="w-10 h-10 rounded-full object-cover" />
+                    ) : (
+                      <div className="w-10 h-10 rounded-full bg-gradient-to-br from-primary to-indigo-600 flex items-center justify-center text-primary-foreground text-sm font-medium">
+                        {reply.author?.charAt(0).toUpperCase()}
+                      </div>
+                    )}
                   </div>
-                  <span className="text-primary cursor-pointer hover:underline" onClick={() => navigate(`/user/${reply.authorId}`)}>{reply.author}</span>
-                  <span className="text-muted-foreground text-sm">{new Date(reply.createdAt).toLocaleDateString()}</span>
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center gap-2 mb-1">
+                      <span className="text-primary cursor-pointer hover:underline font-medium" onClick={() => navigate(`/user/${reply.authorId}`)}>{reply.author}</span>
+                      <span className="text-muted-foreground text-sm">{new Date(reply.createdAt).toLocaleDateString()}</span>
+                    </div>
+                    <div className="text-foreground/70 break-words" dangerouslySetInnerHTML={{ __html: renderFormatted(reply.content) }} />
+                    {reply.authorBio && (
+                      <div className="mt-3 pt-2 border-t border-border/30">
+                        <p className="text-muted-foreground/60 text-xs italic line-clamp-2">{reply.authorBio}</p>
+                      </div>
+                    )}
+                  </div>
                 </div>
-                <div className="text-foreground/70 pl-11 whitespace-pre-wrap" dangerouslySetInnerHTML={{ __html: renderFormatted(reply.content) }} />
               </div>
             ))}
           </div>
