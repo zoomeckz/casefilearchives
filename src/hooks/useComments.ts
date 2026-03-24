@@ -8,6 +8,8 @@ export interface Comment {
   author: string;
   authorId: string;
   createdAt: string;
+  updatedAt: string;
+  isEdited: boolean;
 }
 
 export function useComments(chapterId: string | undefined) {
@@ -24,6 +26,7 @@ export function useComments(chapterId: string | undefined) {
         id,
         content,
         created_at,
+        updated_at,
         user_id,
         profiles!inner(name)
       `)
@@ -37,6 +40,8 @@ export function useComments(chapterId: string | undefined) {
         author: (c.profiles as any)?.name || 'Anonymous',
         authorId: c.user_id,
         createdAt: c.created_at,
+        updatedAt: c.updated_at || c.created_at,
+        isEdited: !!(c.updated_at && c.updated_at !== c.created_at),
       })));
     }
     setLoading(false);
@@ -60,21 +65,37 @@ export function useComments(chapterId: string | undefined) {
       .single();
 
     if (!error && data) {
-      // Add to local state
       setComments(prev => [...prev, {
         id: data.id,
         content: data.content,
         author: user.name,
         authorId: data.user_id,
         createdAt: data.created_at,
+        updatedAt: data.created_at,
+        isEdited: false,
       }]);
     }
   }, [chapterId]);
+
+  const updateComment = useCallback(async (commentId: string, newContent: string) => {
+    const now = new Date().toISOString();
+    const { error } = await supabase
+      .from('comments')
+      .update({ content: newContent, updated_at: now })
+      .eq('id', commentId);
+
+    if (!error) {
+      setComments(prev => prev.map(c =>
+        c.id === commentId ? { ...c, content: newContent, updatedAt: now, isEdited: true } : c
+      ));
+    }
+  }, []);
 
   return {
     comments,
     loading,
     addComment,
+    updateComment,
     refetch: fetchComments,
   };
 }

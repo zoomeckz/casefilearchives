@@ -17,10 +17,14 @@ export const CommentsSection: React.FC<CommentsSectionProps> = ({
   setShowAuthModal,
 }) => {
   const navigate = useNavigate();
-  const { comments, addComment, loading } = useComments(chapterId);
+  const { comments, addComment, updateComment, loading } = useComments(chapterId);
   const [newComment, setNewComment] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
+  const editTextareaRef = useRef<HTMLTextAreaElement>(null);
+
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [editContent, setEditContent] = useState("");
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -34,6 +38,18 @@ export const CommentsSection: React.FC<CommentsSectionProps> = ({
       setNewComment("");
       setSubmitting(false);
     }
+  };
+
+  const handleEdit = (comment: { id: string; content: string }) => {
+    setEditingId(comment.id);
+    setEditContent(comment.content);
+  };
+
+  const handleSaveEdit = async () => {
+    if (!editingId || !editContent.trim()) return;
+    await updateComment(editingId, editContent);
+    setEditingId(null);
+    setEditContent("");
   };
 
   return (
@@ -80,8 +96,43 @@ export const CommentsSection: React.FC<CommentsSectionProps> = ({
                   <span className="text-muted-foreground text-sm">
                     {new Date(comment.createdAt).toLocaleDateString()}
                   </span>
+                  {comment.isEdited && (
+                    <span className="text-muted-foreground/50 text-xs italic">(edited)</span>
+                  )}
                 </div>
-                <div className="text-foreground/70 pl-11 break-words" dangerouslySetInnerHTML={{ __html: renderFormatted(comment.content) }} />
+
+                {editingId === comment.id ? (
+                  <div className="pl-11 space-y-2">
+                    <FormatToolbar textareaRef={editTextareaRef} value={editContent} onChange={setEditContent} />
+                    <textarea
+                      ref={editTextareaRef}
+                      value={editContent}
+                      onChange={(e) => setEditContent(e.target.value)}
+                      className="w-full px-4 py-3 bg-secondary border border-border rounded-lg text-foreground focus:outline-none focus:border-primary resize-none"
+                      rows={3}
+                    />
+                    <div className="flex gap-2">
+                      <button onClick={handleSaveEdit}
+                        className="px-4 py-1.5 bg-primary hover:bg-primary/80 text-primary-foreground rounded-lg text-sm font-medium transition-colors">
+                        Save
+                      </button>
+                      <button onClick={() => setEditingId(null)}
+                        className="px-4 py-1.5 text-muted-foreground hover:text-foreground text-sm transition-colors">
+                        Cancel
+                      </button>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="pl-11">
+                    <div className="text-foreground/70 break-words" dangerouslySetInnerHTML={{ __html: renderFormatted(comment.content) }} />
+                    {user?.id === comment.authorId && (
+                      <button onClick={() => handleEdit(comment)}
+                        className="text-muted-foreground hover:text-foreground text-xs mt-1 transition-colors">
+                        ✏️ Edit
+                      </button>
+                    )}
+                  </div>
+                )}
               </div>
             ))}
 
