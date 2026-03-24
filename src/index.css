@@ -163,6 +163,24 @@
     content: attr(data-placeholder);
     @apply text-stone-500;
   }
+
+  /* Spoiler tags */
+  .spoiler-tag {
+    background: hsl(var(--muted));
+    color: transparent;
+    padding: 0.1em 0.4em;
+    border-radius: 0.25em;
+    cursor: pointer;
+    transition: all 0.2s;
+    user-select: none;
+  }
+  .spoiler-tag:hover {
+    background: hsl(var(--muted-foreground) / 0.3);
+  }
+  .spoiler-tag.revealed {
+    background: hsl(var(--secondary));
+    color: hsl(var(--foreground));
+  }
 }
 
 @layer utilities {

@@ -1,4 +1,4 @@
-import React, { useEffect } from "react";
+import React, { useEffect, useState } from "react";
 import { Icons } from "@/lib/icons";
 import { Chapter } from "@/hooks/useChapters";
 import { GlossaryEntry } from "@/lib/data";
@@ -7,6 +7,22 @@ import { CommentsSection } from "@/components/CommentsSection";
 import { TextToSpeech } from "@/components/TextToSpeech";
 import { AuthUser } from "@/hooks/useAuth";
 import { BookmarkButton } from "@/components/BookmarkButton";
+import { ChapterReactions } from "@/components/ChapterReactions";
+import { ChapterPoll } from "@/components/ChapterPoll";
+import { ReadingModeSelector, getReadingModeStyles, useReadingMode } from "@/components/ReadingModeSelector";
+
+function estimateReadingTime(content: string): number {
+  const words = content.replace(/<[^>]*>/g, "").split(/\s+/).length;
+  return Math.max(1, Math.ceil(words / 220));
+}
+
+const discussionPrompts = [
+  "What do you think will happen next?",
+  "Which character stood out most in this chapter?",
+  "Did anything surprise you?",
+  "What's your theory about the ending?",
+  "How did this chapter change your view of the story?",
+];
 
 interface ReaderPageProps {
   chapter: Chapter | null;
@@ -35,6 +51,9 @@ export const ReaderPage: React.FC<ReaderPageProps> = ({
   isBookmarked,
   toggleBookmark,
 }) => {
+  const [readingMode, setReadingMode] = useReadingMode();
+  const [randomPrompt] = useState(() => discussionPrompts[Math.floor(Math.random() * discussionPrompts.length)]);
+
   useEffect(() => {
     if (chapter) {
       incrementViews(chapter.id);
@@ -47,6 +66,10 @@ export const ReaderPage: React.FC<ReaderPageProps> = ({
   const currentIndex = chapters.findIndex((c) => c.id === chapter.id);
   const prevChapter = currentIndex > 0 ? chapters[currentIndex - 1] : null;
   const nextChapter = currentIndex < chapters.length - 1 ? chapters[currentIndex + 1] : null;
+  const readTime = estimateReadingTime(chapter.content);
+
+  // "Previously on..." — show last chapter title
+  const prevSummary = prevChapter ? prevChapter.title : null;
 
   return (
     <div className="min-h-screen py-8 sm:py-12 px-4 sm:px-6">
@@ -83,20 +106,45 @@ export const ReaderPage: React.FC<ReaderPageProps> = ({
             <span className="flex items-center gap-1">
               <Icons.Eye className="w-4 h-4" /> {chapter.views} views
             </span>
+            <span>📖 ~{readTime} min read</span>
           </div>
         </header>
 
+        {/* Previously on... */}
+        {prevSummary && (
+          <div className="mb-8 p-4 bg-card/30 rounded-lg border border-border/50">
+            <p className="text-xs text-muted-foreground uppercase tracking-wider mb-1">Previously...</p>
+            <p className="text-foreground/70 text-sm italic">
+              Chapter {prevChapter!.chapterNumber}: {prevSummary}
+            </p>
+          </div>
+        )}
+
         <div className="flex flex-wrap items-center gap-4 mb-10 text-sm">
           <TextToSpeech content={chapter.content} />
+          <ReadingModeSelector mode={readingMode} setMode={setReadingMode} />
         </div>
 
         <p className="text-muted-foreground/60 text-sm mb-6 italic">
-          Tip: Click on highlighted character and location names for more info
+          Tip: Click on highlighted character and location names for more info. Use ||spoiler|| tags in comments to hide spoilers.
         </p>
 
-        <article className="mb-12">
+        <article
+          className="mb-12 rounded-xl p-6 sm:p-8 transition-colors"
+          style={getReadingModeStyles(readingMode)}
+        >
           <InteractiveContent content={chapter.content} glossary={glossary} />
         </article>
+
+        {/* Chapter Reactions */}
+        <div className="mb-8">
+          <ChapterReactions chapterId={chapter.id} user={user} setShowAuthModal={setShowAuthModal} />
+        </div>
+
+        {/* Chapter Poll (if any) */}
+        <div className="mb-8">
+          <ChapterPoll chapterId={chapter.id} user={user} setShowAuthModal={setShowAuthModal} />
+        </div>
 
         <div className="flex items-center justify-between gap-2 py-8 border-t border-b border-border mb-12">
           {prevChapter ? (
@@ -123,6 +171,12 @@ export const ReaderPage: React.FC<ReaderPageProps> = ({
               <Icons.ChevronRight className="shrink-0" />
             </button>
           ) : <div />}
+        </div>
+
+        {/* Discussion Prompt */}
+        <div className="mb-8 p-4 bg-primary/5 rounded-lg border border-primary/20 text-center">
+          <p className="text-primary text-sm font-medium">💬 Discussion Prompt</p>
+          <p className="text-foreground/80 mt-1">{randomPrompt}</p>
         </div>
 
         <CommentsSection

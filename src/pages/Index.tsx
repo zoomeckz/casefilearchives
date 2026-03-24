@@ -20,6 +20,10 @@ import { RewardsPage } from "@/pages/RewardsPage";
 import { PublicProfilePage } from "@/pages/PublicProfilePage";
 import { AboutPage } from "@/pages/AboutPage";
 import { MangaPage } from "@/pages/MangaPage";
+import { LeaderboardPage } from "@/pages/LeaderboardPage";
+import { TheoriesPage } from "@/pages/TheoriesPage";
+import { GalleryPage } from "@/pages/GalleryPage";
+import { WorldMapPage } from "@/pages/WorldMapPage";
 import { usePageTracking } from "@/hooks/usePageTracking";
 
 const Index = () => {
@@ -41,6 +45,10 @@ const Index = () => {
     if (path === "/admin") return "admin";
     if (path === "/about") return "about";
     if (path === "/manga") return "manga";
+    if (path === "/leaderboard") return "leaderboard";
+    if (path === "/theories") return "theories";
+    if (path === "/gallery") return "gallery";
+    if (path === "/world") return "world";
     return "home";
   })();
 
@@ -54,6 +62,10 @@ const Index = () => {
     else if (page === "admin") navigate("/admin");
     else if (page === "about") navigate("/about");
     else if (page === "manga") navigate("/manga");
+    else if (page === "leaderboard") navigate("/leaderboard");
+    else if (page === "theories") navigate("/theories");
+    else if (page === "gallery") navigate("/gallery");
+    else if (page === "world") navigate("/world");
     else if (page === "reader" && selectedChapter) {
       navigate(`/chapters/${selectedChapter.chapterNumber}`);
     }
@@ -89,7 +101,6 @@ const Index = () => {
           parentTerm: entry.parent_term || undefined,
         };
       }
-      // Merge: DB entries override defaults, but preserve default images if DB has none
       const merged: Record<string, GlossaryEntry> = { ...defaultGlossary };
       for (const [term, entry] of Object.entries(mapped)) {
         merged[term] = {
@@ -128,8 +139,6 @@ const Index = () => {
     await signOut();
     navigate("/");
   };
-
-  // Don't block rendering — show the page immediately
 
   return (
     <div className="min-h-screen bg-background text-foreground flex flex-col">
@@ -214,6 +223,20 @@ const Index = () => {
 
         {currentPage === "manga" && (
           <MangaPage user={user} setCurrentPage={setCurrentPage} />
+        )}
+
+        {currentPage === "leaderboard" && <LeaderboardPage />}
+
+        {currentPage === "theories" && (
+          <TheoriesPage user={user} setShowAuthModal={setShowAuthModal} />
+        )}
+
+        {currentPage === "gallery" && (
+          <GalleryPage user={user} setShowAuthModal={setShowAuthModal} />
+        )}
+
+        {currentPage === "world" && (
+          <WorldMapPage glossary={glossary} />
         )}
       </main>
 

@@ -9,6 +9,8 @@ import { FormatToolbar } from "@/components/FormatToolbar";
 
 function renderFormatted(text: string): string {
   let html = text
+    // Spoiler tags: ||text||
+    .replace(/\|\|(.+?)\|\|/g, '<span class="spoiler-tag" onclick="this.classList.toggle(\'revealed\')" title="Click to reveal spoiler">$1</span>')
     // Bold
     .replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
     // Italic

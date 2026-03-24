@@ -27,6 +27,10 @@ const App = () => (
           <Route path="/admin" element={<Index />} />
           <Route path="/manga" element={<Index />} />
           <Route path="/about" element={<Index />} />
+          <Route path="/leaderboard" element={<Index />} />
+          <Route path="/theories" element={<Index />} />
+          <Route path="/gallery" element={<Index />} />
+          <Route path="/world" element={<Index />} />
           {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
           <Route path="*" element={<NotFound />} />
         </Routes>
