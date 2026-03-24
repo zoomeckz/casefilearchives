@@ -122,7 +122,6 @@ export const ReaderPage: React.FC<ReaderPageProps> = ({
 
         <div className="flex flex-wrap items-center gap-4 mb-10 text-sm">
           <TextToSpeech content={chapter.content} />
-          <ReadingModeSelector mode={readingMode} setMode={setReadingMode} />
         </div>
 
         <p className="text-muted-foreground/60 text-sm mb-6 italic">
