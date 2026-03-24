@@ -3,6 +3,7 @@ import { useParams } from "react-router-dom";
 import { Icons } from "@/lib/icons";
 import { supabase } from "@/integrations/supabase/client";
 import { ProfileFrame } from "@/components/ProfileFrame";
+import { SavedQuotesSection } from "@/components/SavedQuotesSection";
 
 interface PublicProfile {
   name: string;
