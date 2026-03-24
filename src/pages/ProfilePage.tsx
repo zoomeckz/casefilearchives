@@ -10,6 +10,7 @@ import { ProfileFrame } from "@/components/ProfileFrame";
 import { ReadingStreak } from "@/components/ReadingStreak";
 import { UserRankBadge, calculateXP, getRank, getNextRank } from "@/components/UserRank";
 import { ReferralSection } from "@/components/ReferralSection";
+import { SavedQuotesSection } from "@/components/SavedQuotesSection";
 
 interface ProfilePageProps {
   user: AuthUser;
