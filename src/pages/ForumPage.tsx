@@ -51,6 +51,13 @@ function parsePostId(param: string | undefined, posts: { id: string; title: stri
   const direct = posts.find(p => p.id === param);
   return direct?.id || null;
 }
+const SITE_AUTHOR_ID = '64ff6be9-cdcb-4690-8857-0adbbe5e7574';
+
+const AuthorBadge = () => (
+  <span className="text-amber-400 text-[10px] tracking-widest uppercase" style={{ fontFamily: "'Cinzel Decorative', serif" }}>
+    Author
+  </span>
+);
 
 interface ForumPost {
   id: string;
@@ -375,7 +382,10 @@ export const ForumPage: React.FC<ForumPageProps> = ({
             <div className="flex items-center gap-3 mb-6 cursor-pointer" onClick={() => navigate(`/user/${selectedPost.authorId}`)}>
               <ProfileFrame avatarUrl={selectedPost.authorAvatar} name={selectedPost.author} frame={selectedPost.authorFrame} size={48} />
               <div>
-                <span className="text-primary font-medium hover:underline">{selectedPost.author}</span>
+                <div className="flex items-center gap-2">
+                  <span className="text-primary font-medium hover:underline">{selectedPost.author}</span>
+                  {selectedPost.authorId === SITE_AUTHOR_ID && <AuthorBadge />}
+                </div>
                 <p className="text-muted-foreground text-xs">{new Date(selectedPost.createdAt).toLocaleDateString()}</p>
               </div>
             </div>
@@ -404,6 +414,7 @@ export const ForumPage: React.FC<ForumPageProps> = ({
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-2 mb-1">
                       <span className="text-primary cursor-pointer hover:underline font-medium" onClick={() => navigate(`/user/${reply.authorId}`)}>{reply.author}</span>
+                      {reply.authorId === SITE_AUTHOR_ID && <AuthorBadge />}
                       <span className="text-muted-foreground text-sm">{new Date(reply.createdAt).toLocaleDateString()}</span>
                     </div>
                     <div className="text-foreground/70 break-words" dangerouslySetInnerHTML={{ __html: renderFormatted(reply.content) }} />
