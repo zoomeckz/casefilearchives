@@ -71,6 +71,7 @@ interface ForumPost {
   replies: number;
   createdAt: string;
   isPinned: boolean;
+  isEdited: boolean;
 }
 
 interface ForumReply {
@@ -82,6 +83,7 @@ interface ForumReply {
   authorAvatar: string | null;
   authorFrame: string | null;
   createdAt: string;
+  isEdited: boolean;
 }
 
 interface ForumPageProps {
@@ -109,12 +111,16 @@ export const ForumPage: React.FC<ForumPageProps> = ({
   const newPostRef = useRef<HTMLTextAreaElement>(null);
   const editPostRef = useRef<HTMLTextAreaElement>(null);
   const replyRef = useRef<HTMLTextAreaElement>(null);
+  const editReplyRef = useRef<HTMLTextAreaElement>(null);
+
+  const [editingReplyId, setEditingReplyId] = useState<string | null>(null);
+  const [editReplyContent, setEditReplyContent] = useState("");
 
   useEffect(() => {
     const fetchPosts = async () => {
       try {
         const { data: postsData } = await dbFetch<any[]>('forum_posts', {
-          select: 'id,title,content,category,created_at,user_id,is_pinned',
+          select: 'id,title,content,category,created_at,updated_at,user_id,is_pinned',
           order: 'is_pinned.desc,created_at.desc',
         });
 
@@ -149,6 +155,7 @@ export const ForumPage: React.FC<ForumPageProps> = ({
           replies: replyCounts[i].count || 0,
           createdAt: post.created_at,
           isPinned: post.is_pinned || false,
+          isEdited: !!(post.updated_at && post.updated_at !== post.created_at),
         }));
 
         setPosts(mappedPosts);
@@ -182,7 +189,7 @@ export const ForumPage: React.FC<ForumPageProps> = ({
     if (!selectedPost) { setReplies([]); return; }
     const fetchReplies = async () => {
       const { data: repliesData } = await dbFetch<any[]>('forum_replies', {
-        select: 'id,content,created_at,user_id',
+        select: 'id,content,created_at,updated_at,user_id',
         filters: `post_id=eq.${selectedPost.id}`,
         order: 'created_at.asc',
       });
@@ -210,6 +217,7 @@ export const ForumPage: React.FC<ForumPageProps> = ({
         authorAvatar: profileMap[r.user_id]?.avatar || null,
         authorFrame: profileMap[r.user_id]?.frame || null,
         createdAt: r.created_at,
+        isEdited: !!(r.updated_at && r.updated_at !== r.created_at),
       })));
     };
     fetchReplies();
@@ -229,7 +237,7 @@ export const ForumPage: React.FC<ForumPageProps> = ({
       setPosts([{
         id: data[0].id, title: data[0].title, content: data[0].content, category: data[0].category,
         author: user.name, authorId: data[0].user_id, authorAvatar: user.avatarUrl || null, authorFrame: null,
-        replies: 0, createdAt: data[0].created_at, isPinned: false,
+        replies: 0, createdAt: data[0].created_at, isPinned: false, isEdited: false,
       }, ...posts]);
       setNewPost({ title: "", content: "", category: "General" });
       setShowNewPost(false);
@@ -246,7 +254,7 @@ export const ForumPage: React.FC<ForumPageProps> = ({
       body: { title: editContent.title, content: editContent.content, category: editContent.category },
     });
 
-    const updated = { ...editingPost, ...editContent };
+    const updated = { ...editingPost, ...editContent, isEdited: true };
     setPosts(posts.map(p => p.id === editingPost.id ? updated : p));
     if (selectedPost?.id === editingPost.id) {
       setSelectedPost(updated);
@@ -286,7 +294,7 @@ export const ForumPage: React.FC<ForumPageProps> = ({
     if (data && data[0]) {
       setReplies([...replies, {
         id: data[0].id, content: data[0].content, author: user.name,
-        authorId: data[0].user_id, authorBio: '', authorAvatar: user.avatarUrl || null, authorFrame: null, createdAt: data[0].created_at,
+        authorId: data[0].user_id, authorBio: '', authorAvatar: user.avatarUrl || null, authorFrame: null, createdAt: data[0].created_at, isEdited: false,
       }]);
       setSelectedPost({ ...selectedPost, replies: selectedPost.replies + 1 });
       setPosts(posts.map(p => p.id === selectedPost.id ? { ...p, replies: p.replies + 1 } : p));
@@ -295,6 +303,19 @@ export const ForumPage: React.FC<ForumPageProps> = ({
   };
 
   const canEdit = (post: ForumPost) => user?.isAdmin || user?.id === post.authorId;
+
+  const handleEditReply = async () => {
+    if (!editingReplyId || !editReplyContent.trim()) return;
+    const now = new Date().toISOString();
+    await dbFetch('forum_replies', {
+      method: 'PATCH',
+      filters: `id=eq.${editingReplyId}`,
+      body: { content: editReplyContent, updated_at: now },
+    });
+    setReplies(replies.map(r => r.id === editingReplyId ? { ...r, content: editReplyContent, isEdited: true } : r));
+    setEditingReplyId(null);
+    setEditReplyContent("");
+  };
 
   const filteredPosts = selectedCategory
     ? posts.filter(p => p.category === selectedCategory)
@@ -386,7 +407,10 @@ export const ForumPage: React.FC<ForumPageProps> = ({
                   <span className="text-primary font-medium hover:underline">{selectedPost.author}</span>
                   {selectedPost.authorId === SITE_AUTHOR_ID && <AuthorBadge />}
                 </div>
-                <p className="text-muted-foreground text-xs">{new Date(selectedPost.createdAt).toLocaleDateString()}</p>
+                <p className="text-muted-foreground text-xs">
+                  {new Date(selectedPost.createdAt).toLocaleDateString()}
+                  {selectedPost.isEdited && <span className="text-muted-foreground/50 italic ml-1">(edited)</span>}
+                </p>
               </div>
             </div>
             <div className="text-foreground/80 leading-relaxed break-words" dangerouslySetInnerHTML={{ __html: renderFormatted(selectedPost.content) }} />
@@ -416,9 +440,28 @@ export const ForumPage: React.FC<ForumPageProps> = ({
                       <span className="text-primary cursor-pointer hover:underline font-medium" onClick={() => navigate(`/user/${reply.authorId}`)}>{reply.author}</span>
                       {reply.authorId === SITE_AUTHOR_ID && <AuthorBadge />}
                       <span className="text-muted-foreground text-sm">{new Date(reply.createdAt).toLocaleDateString()}</span>
+                      {reply.isEdited && <span className="text-muted-foreground/50 text-xs italic">(edited)</span>}
                     </div>
-                    <div className="text-foreground/70 break-words" dangerouslySetInnerHTML={{ __html: renderFormatted(reply.content) }} />
-                    {reply.authorBio && (
+                    {editingReplyId === reply.id ? (
+                      <div className="space-y-2">
+                        <FormatToolbar textareaRef={editReplyRef} value={editReplyContent} onChange={setEditReplyContent} />
+                        <textarea ref={editReplyRef} value={editReplyContent} onChange={(e) => setEditReplyContent(e.target.value)}
+                          className="w-full px-4 py-3 bg-secondary border border-border rounded-lg text-foreground focus:outline-none focus:border-primary resize-none" rows={3} />
+                        <div className="flex gap-2">
+                          <button onClick={handleEditReply} className="px-4 py-1.5 bg-primary hover:bg-primary/80 text-primary-foreground rounded-lg text-sm font-medium transition-colors">Save</button>
+                          <button onClick={() => setEditingReplyId(null)} className="px-4 py-1.5 text-muted-foreground hover:text-foreground text-sm transition-colors">Cancel</button>
+                        </div>
+                      </div>
+                    ) : (
+                      <>
+                        <div className="text-foreground/70 break-words" dangerouslySetInnerHTML={{ __html: renderFormatted(reply.content) }} />
+                        {(user?.id === reply.authorId || user?.isAdmin) && (
+                          <button onClick={() => { setEditingReplyId(reply.id); setEditReplyContent(reply.content); }}
+                            className="text-muted-foreground hover:text-foreground text-xs mt-1 transition-colors">✏️ Edit</button>
+                        )}
+                      </>
+                    )}
+                    {reply.authorBio && editingReplyId !== reply.id && (
                       <div className="mt-3 pt-2 border-t border-border/30">
                         <p className="text-muted-foreground/60 text-xs italic line-clamp-2">{reply.authorBio}</p>
                       </div>
