@@ -711,6 +711,38 @@ export type Database = {
         }
         Relationships: []
       }
+      saved_quotes: {
+        Row: {
+          chapter_id: string
+          created_at: string
+          id: string
+          quote_text: string
+          user_id: string
+        }
+        Insert: {
+          chapter_id: string
+          created_at?: string
+          id?: string
+          quote_text: string
+          user_id: string
+        }
+        Update: {
+          chapter_id?: string
+          created_at?: string
+          id?: string
+          quote_text?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "saved_quotes_chapter_id_fkey"
+            columns: ["chapter_id"]
+            isOneToOne: false
+            referencedRelation: "chapters"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       text_highlights: {
         Row: {
           chapter_id: string
