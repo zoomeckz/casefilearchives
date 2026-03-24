@@ -9,7 +9,7 @@ import { AuthUser } from "@/hooks/useAuth";
 import { BookmarkButton } from "@/components/BookmarkButton";
 import { ChapterReactions } from "@/components/ChapterReactions";
 import { ChapterPoll } from "@/components/ChapterPoll";
-import { ReadingModeSelector, getReadingModeStyles, useReadingMode } from "@/components/ReadingModeSelector";
+
 
 function estimateReadingTime(content: string): number {
   const words = content.replace(/<[^>]*>/g, "").split(/\s+/).length;
@@ -51,7 +51,6 @@ export const ReaderPage: React.FC<ReaderPageProps> = ({
   isBookmarked,
   toggleBookmark,
 }) => {
-  const [readingMode, setReadingMode] = useReadingMode();
   const [randomPrompt] = useState(() => discussionPrompts[Math.floor(Math.random() * discussionPrompts.length)]);
 
   useEffect(() => {
@@ -122,7 +121,6 @@ export const ReaderPage: React.FC<ReaderPageProps> = ({
 
         <div className="flex flex-wrap items-center gap-4 mb-10 text-sm">
           <TextToSpeech content={chapter.content} />
-          <ReadingModeSelector mode={readingMode} setMode={setReadingMode} />
         </div>
 
         <p className="text-muted-foreground/60 text-sm mb-6 italic">
@@ -130,8 +128,7 @@ export const ReaderPage: React.FC<ReaderPageProps> = ({
         </p>
 
         <article
-          className="mb-12 rounded-xl p-6 sm:p-8 transition-colors"
-          style={getReadingModeStyles(readingMode)}
+          className="mb-12 rounded-xl p-6 sm:p-8"
         >
           <InteractiveContent content={chapter.content} glossary={glossary} />
         </article>
