@@ -251,6 +251,9 @@ export const ProfilePage: React.FC<ProfilePageProps> = ({
           </div>
         )}
 
+        {/* Saved Quotes */}
+        <SavedQuotesSection userId={user.id} isOwner />
+
         {/* Referral Section */}
         <div className="mt-8">
           <ReferralSection user={user} />
