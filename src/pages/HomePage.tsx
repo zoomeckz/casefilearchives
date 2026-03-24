@@ -47,7 +47,7 @@ export const HomePage: React.FC<HomePageProps> = ({
       const { data: postsData } = await dbFetch<any[]>('forum_posts', {
         select: 'id,title,category,created_at,user_id,is_pinned',
         order: 'created_at.desc',
-        limit: 5,
+        filters: 'limit=5',
       });
       if (!postsData) return;
 
