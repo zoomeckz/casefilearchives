@@ -129,8 +129,7 @@ export const ReaderPage: React.FC<ReaderPageProps> = ({
         </p>
 
         <article
-          className="mb-12 rounded-xl p-6 sm:p-8 transition-colors"
-          style={getReadingModeStyles(readingMode)}
+          className="mb-12 rounded-xl p-6 sm:p-8"
         >
           <InteractiveContent content={chapter.content} glossary={glossary} />
         </article>
