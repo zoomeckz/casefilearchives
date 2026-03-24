@@ -201,6 +201,7 @@ export const ForumPage: React.FC<ForumPageProps> = ({
         authorId: r.user_id,
         authorBio: profileMap[r.user_id]?.bio || '',
         authorAvatar: profileMap[r.user_id]?.avatar || null,
+        authorFrame: profileMap[r.user_id]?.frame || null,
         createdAt: r.created_at,
       })));
     };
