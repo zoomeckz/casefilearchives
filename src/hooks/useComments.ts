@@ -91,11 +91,23 @@ export function useComments(chapterId: string | undefined) {
     }
   }, []);
 
+  const deleteComment = useCallback(async (commentId: string) => {
+    const { error } = await supabase
+      .from('comments')
+      .delete()
+      .eq('id', commentId);
+
+    if (!error) {
+      setComments(prev => prev.filter(c => c.id !== commentId));
+    }
+  }, []);
+
   return {
     comments,
     loading,
     addComment,
     updateComment,
+    deleteComment,
     refetch: fetchComments,
   };
 }
