@@ -59,7 +59,7 @@ const AuthorBadge = () => (
   </span>
 );
 
-
+interface ForumPost {
   id: string;
   title: string;
   content: string;
