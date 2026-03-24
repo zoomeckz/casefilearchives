@@ -219,8 +219,8 @@ export const ForumPage: React.FC<ForumPageProps> = ({
     if (data && data[0]) {
       setPosts([{
         id: data[0].id, title: data[0].title, content: data[0].content, category: data[0].category,
-        author: user.name, authorId: data[0].user_id, replies: 0, createdAt: data[0].created_at,
-        isPinned: false,
+        author: user.name, authorId: data[0].user_id, authorAvatar: user.avatarUrl || null, authorFrame: null,
+        replies: 0, createdAt: data[0].created_at, isPinned: false,
       }, ...posts]);
       setNewPost({ title: "", content: "", category: "General" });
       setShowNewPost(false);
