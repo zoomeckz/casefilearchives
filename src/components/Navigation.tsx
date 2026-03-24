@@ -19,6 +19,7 @@ export const Navigation: React.FC<NavigationProps> = ({
   setShowAuthModal,
   onSignOut,
 }) => {
+  const navigate = useNavigate();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [communityOpen, setCommunityOpen] = useState(false);
 
