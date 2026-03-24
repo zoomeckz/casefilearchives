@@ -59,6 +59,8 @@ interface ForumPost {
   category: string;
   author: string;
   authorId: string;
+  authorAvatar: string | null;
+  authorFrame: string | null;
   replies: number;
   createdAt: string;
   isPinned: boolean;
