@@ -221,13 +221,6 @@ const Index = () => {
 
         {currentPage === "leaderboard" && <LeaderboardPage />}
 
-        {currentPage === "theories" && (
-          <TheoriesPage user={user} setShowAuthModal={setShowAuthModal} />
-        )}
-
-        {currentPage === "gallery" && (
-          <GalleryPage user={user} setShowAuthModal={setShowAuthModal} />
-        )}
 
         {currentPage === "world" && (
           <WorldMapPage glossary={glossary} />
