@@ -114,13 +114,13 @@ export const ForumPage: React.FC<ForumPageProps> = ({
 
         const userIds = [...new Set(postsData.map(p => p.user_id))];
         const profilePromises = userIds.map(uid =>
-          dbFetch<any[]>('profiles', { select: 'user_id,name', filters: `user_id=eq.${uid}` })
+          dbFetch<any[]>('profiles', { select: 'user_id,name,avatar_url,selected_frame', filters: `user_id=eq.${uid}` })
         );
         const profileResults = await Promise.all(profilePromises);
-        const profileMap: Record<string, string> = {};
+        const profileMap: Record<string, { name: string; avatar: string | null; frame: string | null }> = {};
         profileResults.forEach(r => {
           if (r.data && r.data[0]) {
-            profileMap[r.data[0].user_id] = r.data[0].name;
+            profileMap[r.data[0].user_id] = { name: r.data[0].name, avatar: r.data[0].avatar_url, frame: r.data[0].selected_frame };
           }
         });
 
