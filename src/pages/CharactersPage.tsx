@@ -68,6 +68,9 @@ export const CharactersPage: React.FC<CharactersPageProps> = ({ glossary }) => {
           Characters, creatures, locations, and lore of Sedorium
         </p>
 
+        {/* Character Relationship Map */}
+        <CharacterRelationshipMap glossary={glossary} />
+
         {/* Featured Characters with Art */}
         {charactersWithArt.length > 0 && (
           <section className="mb-16">

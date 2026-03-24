@@ -126,6 +126,9 @@ export const ReaderPage: React.FC<ReaderPageProps> = ({
           Tip: Click on highlighted character and location names for more info. Use ||spoiler|| tags in comments to hide spoilers.
         </p>
 
+        {/* Text highlight bookmarks */}
+        <TextHighlightBookmark chapterId={chapter.id} user={user} setShowAuthModal={setShowAuthModal} />
+
         <article
           className="mb-12 rounded-xl p-6 sm:p-8"
         >
