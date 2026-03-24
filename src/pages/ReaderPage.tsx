@@ -9,6 +9,7 @@ import { AuthUser } from "@/hooks/useAuth";
 import { BookmarkButton } from "@/components/BookmarkButton";
 import { ChapterReactions } from "@/components/ChapterReactions";
 import { ChapterPoll } from "@/components/ChapterPoll";
+import { TextHighlightBookmark } from "@/components/TextHighlightBookmark";
 
 
 function estimateReadingTime(content: string): number {
@@ -81,14 +82,19 @@ export const ReaderPage: React.FC<ReaderPageProps> = ({
           Back to chapters
         </button>
 
-        <header className="mb-12">
+        <header className="mb-12 text-center">
           <span className="text-primary text-sm font-medium">
             Chapter {chapter.chapterNumber}
           </span>
-          <div className="flex items-start justify-between gap-4 mt-2 mb-4">
-            <h1 className="font-display text-4xl sm:text-5xl text-accent">
-              {chapter.title}
-            </h1>
+          <h1 className="font-display text-4xl sm:text-5xl text-accent mt-2 mb-4">
+            {chapter.title}
+          </h1>
+          <div className="flex flex-wrap items-center justify-center gap-4 text-muted-foreground text-sm">
+            <span>{new Date(chapter.publishedAt).toLocaleDateString()}</span>
+            <span className="flex items-center gap-1">
+              <Icons.Eye className="w-4 h-4" /> {chapter.views} views
+            </span>
+            <span>📖 ~{readTime} min read</span>
             {user && (
               <BookmarkButton
                 isBookmarked={isBookmarked(chapter.id)}
@@ -99,13 +105,6 @@ export const ReaderPage: React.FC<ReaderPageProps> = ({
                 size="md"
               />
             )}
-          </div>
-          <div className="flex flex-wrap items-center gap-4 text-muted-foreground text-sm">
-            <span>{new Date(chapter.publishedAt).toLocaleDateString()}</span>
-            <span className="flex items-center gap-1">
-              <Icons.Eye className="w-4 h-4" /> {chapter.views} views
-            </span>
-            <span>📖 ~{readTime} min read</span>
           </div>
         </header>
 
@@ -126,6 +125,9 @@ export const ReaderPage: React.FC<ReaderPageProps> = ({
         <p className="text-muted-foreground/60 text-sm mb-6 italic">
           Tip: Click on highlighted character and location names for more info. Use ||spoiler|| tags in comments to hide spoilers.
         </p>
+
+        {/* Text highlight bookmarks */}
+        <TextHighlightBookmark chapterId={chapter.id} user={user} setShowAuthModal={setShowAuthModal} />
 
         <article
           className="mb-12 rounded-xl p-6 sm:p-8"

@@ -1,6 +1,7 @@
 import React, { useState } from "react";
 import { Icons } from "@/lib/icons";
 import { GlossaryEntry } from "@/lib/data";
+import { CharacterRelationshipMap } from "@/components/CharacterRelationshipMap";
 import {
   Accordion,
   AccordionContent,
@@ -66,6 +67,9 @@ export const CharactersPage: React.FC<CharactersPageProps> = ({ glossary }) => {
         <p className="text-stone-500 text-center mb-8 sm:mb-12">
           Characters, creatures, locations, and lore of Sedorium
         </p>
+
+        {/* Character Relationship Map */}
+        <CharacterRelationshipMap glossary={glossary} />
 
         {/* Featured Characters with Art */}
         {charactersWithArt.length > 0 && (

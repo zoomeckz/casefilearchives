@@ -4,6 +4,7 @@ import { useNavigate, useParams } from "react-router-dom";
 import { Icons } from "@/lib/icons";
 import { AuthUser } from "@/hooks/useAuth";
 import { dbFetch } from "@/lib/dbFetch";
+import { supabase } from "@/integrations/supabase/client";
 import { forumCategories } from "@/lib/data";
 import { FormatToolbar } from "@/components/FormatToolbar";
 
@@ -19,6 +20,9 @@ function renderFormatted(text: string): string {
     .replace(/!\[([^\]]*)\]\(([^)]+)\)/g, '<img src="$2" alt="$1" class="max-w-full rounded-lg my-2" />')
     // Links: [text](url)
     .replace(/\[([^\]]+)\]\(([^)]+)\)/g, '<a href="$2" target="_blank" rel="noopener noreferrer" class="text-primary underline">$1</a>')
+    // Blockquotes: lines starting with >
+    .replace(/^&gt; (.+)$/gm, '<span class="block border-l-2 border-primary/40 pl-3 text-muted-foreground italic text-sm">$1</span>')
+    .replace(/^> (.+)$/gm, '<span class="block border-l-2 border-primary/40 pl-3 text-muted-foreground italic text-sm">$1</span>')
     // Preserve newlines (including blank lines)
     .replace(/\n/g, '<br>');
   return html;
@@ -301,6 +305,18 @@ export const ForumPage: React.FC<ForumPageProps> = ({
       setSelectedPost({ ...selectedPost, replies: selectedPost.replies + 1 });
       setPosts(posts.map(p => p.id === selectedPost.id ? { ...p, replies: p.replies + 1 } : p));
       setReplyContent("");
+
+      // Notify the post author (if not replying to own post)
+      if (selectedPost.authorId !== user.id) {
+        const slug = `${slugify(selectedPost.title)}--${selectedPost.id.slice(0, 8)}`;
+        await supabase.from("notifications").insert({
+          user_id: selectedPost.authorId,
+          type: "reply",
+          title: `${user.name} replied to "${selectedPost.title}"`,
+          message: replyContent.slice(0, 100),
+          link: `/forum/${slug}`,
+        });
+      }
     }
   };
 
@@ -457,25 +473,35 @@ export const ForumPage: React.FC<ForumPageProps> = ({
                     ) : (
                       <>
                         <div className="text-foreground/70 break-words" dangerouslySetInnerHTML={{ __html: renderFormatted(reply.content) }} />
-                        {(user?.id === reply.authorId || user?.isAdmin) && (
-                          <div className="flex gap-3 mt-1">
-                            <button onClick={() => { setEditingReplyId(reply.id); setEditReplyContent(reply.content); }}
-                              className="text-muted-foreground hover:text-foreground text-xs transition-colors">✏️ Edit</button>
+                        <div className="flex gap-3 mt-1">
+                          {user && (
                             <button onClick={() => {
-                              if (confirm('Delete this reply?')) {
-                                dbFetch('forum_replies', { method: 'DELETE', filters: `id=eq.${reply.id}` }).then(() => {
-                                  setReplies(replies.filter(r => r.id !== reply.id));
-                                  if (selectedPost) {
-                                    const updated = { ...selectedPost, replies: selectedPost.replies - 1 };
-                                    setSelectedPost(updated);
-                                    setPosts(posts.map(p => p.id === selectedPost.id ? updated : p));
-                                  }
-                                });
-                              }
+                              const quoted = `> **${reply.author}** wrote:\n> ${reply.content.split('\n').join('\n> ')}\n\n`;
+                              setReplyContent(prev => quoted + prev);
+                              replyRef.current?.focus();
                             }}
-                              className="text-muted-foreground hover:text-destructive text-xs transition-colors">🗑️ Delete</button>
-                          </div>
-                        )}
+                              className="text-muted-foreground hover:text-primary text-xs transition-colors">💬 Quote</button>
+                          )}
+                          {(user?.id === reply.authorId || user?.isAdmin) && (
+                            <>
+                              <button onClick={() => { setEditingReplyId(reply.id); setEditReplyContent(reply.content); }}
+                                className="text-muted-foreground hover:text-foreground text-xs transition-colors">✏️ Edit</button>
+                              <button onClick={() => {
+                                if (confirm('Delete this reply?')) {
+                                  dbFetch('forum_replies', { method: 'DELETE', filters: `id=eq.${reply.id}` }).then(() => {
+                                    setReplies(replies.filter(r => r.id !== reply.id));
+                                    if (selectedPost) {
+                                      const updated = { ...selectedPost, replies: selectedPost.replies - 1 };
+                                      setSelectedPost(updated);
+                                      setPosts(posts.map(p => p.id === selectedPost.id ? updated : p));
+                                    }
+                                  });
+                                }
+                              }}
+                                className="text-muted-foreground hover:text-destructive text-xs transition-colors">🗑️ Delete</button>
+                            </>
+                          )}
+                        </div>
                       </>
                     )}
                     {reply.authorBio && editingReplyId !== reply.id && (

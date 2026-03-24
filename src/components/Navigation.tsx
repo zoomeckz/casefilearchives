@@ -1,6 +1,8 @@
 import React, { useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { Icons } from "@/lib/icons";
 import { AuthUser } from "@/hooks/useAuth";
+import { NotificationBell } from "@/components/NotificationBell";
 
 interface NavigationProps {
   currentPage: string;
@@ -17,6 +19,7 @@ export const Navigation: React.FC<NavigationProps> = ({
   setShowAuthModal,
   onSignOut,
 }) => {
+  const navigate = useNavigate();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [communityOpen, setCommunityOpen] = useState(false);
 
@@ -113,6 +116,7 @@ export const Navigation: React.FC<NavigationProps> = ({
           <div className="hidden md:flex items-center gap-3">
             {user ? (
               <>
+                <NotificationBell user={user} onNavigate={(path) => navigate(path)} />
                 <button
                   onClick={() => setCurrentPage("profile")}
                   className="w-9 h-9 rounded-full bg-gradient-to-br from-primary to-destructive flex items-center justify-center text-primary-foreground text-xs font-medium overflow-hidden"
