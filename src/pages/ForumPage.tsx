@@ -279,7 +279,7 @@ export const ForumPage: React.FC<ForumPageProps> = ({
     if (data && data[0]) {
       setReplies([...replies, {
         id: data[0].id, content: data[0].content, author: user.name,
-        authorId: data[0].user_id, authorBio: '', authorAvatar: user.avatarUrl || null, createdAt: data[0].created_at,
+        authorId: data[0].user_id, authorBio: '', authorAvatar: user.avatarUrl || null, authorFrame: null, createdAt: data[0].created_at,
       }]);
       setSelectedPost({ ...selectedPost, replies: selectedPost.replies + 1 });
       setPosts(posts.map(p => p.id === selectedPost.id ? { ...p, replies: p.replies + 1 } : p));
