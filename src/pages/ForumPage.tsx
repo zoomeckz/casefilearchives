@@ -4,6 +4,7 @@ import { useNavigate, useParams } from "react-router-dom";
 import { Icons } from "@/lib/icons";
 import { AuthUser } from "@/hooks/useAuth";
 import { dbFetch } from "@/lib/dbFetch";
+import { supabase } from "@/integrations/supabase/client";
 import { forumCategories } from "@/lib/data";
 import { FormatToolbar } from "@/components/FormatToolbar";
 
