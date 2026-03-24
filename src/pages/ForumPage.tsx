@@ -68,6 +68,8 @@ interface ForumReply {
   content: string;
   author: string;
   authorId: string;
+  authorBio: string;
+  authorAvatar: string | null;
   createdAt: string;
 }
 
