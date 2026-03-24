@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef } from "react";
+import { ProfileFrame } from "@/components/ProfileFrame";
 import { useNavigate, useParams } from "react-router-dom";
 import { Icons } from "@/lib/icons";
 import { AuthUser } from "@/hooks/useAuth";
