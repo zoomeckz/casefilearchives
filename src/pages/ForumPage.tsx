@@ -254,7 +254,7 @@ export const ForumPage: React.FC<ForumPageProps> = ({
       body: { title: editContent.title, content: editContent.content, category: editContent.category },
     });
 
-    const updated = { ...editingPost, ...editContent };
+    const updated = { ...editingPost, ...editContent, isEdited: true };
     setPosts(posts.map(p => p.id === editingPost.id ? updated : p));
     if (selectedPost?.id === editingPost.id) {
       setSelectedPost(updated);
