@@ -51,8 +51,15 @@ function parsePostId(param: string | undefined, posts: { id: string; title: stri
   const direct = posts.find(p => p.id === param);
   return direct?.id || null;
 }
+const SITE_AUTHOR_ID = '64ff6be9-cdcb-4690-8857-0adbbe5e7574';
 
-interface ForumPost {
+const AuthorBadge = () => (
+  <span className="text-amber-400 text-[10px] tracking-widest uppercase" style={{ fontFamily: "'Cinzel Decorative', serif" }}>
+    Author
+  </span>
+);
+
+
   id: string;
   title: string;
   content: string;
