@@ -178,21 +178,23 @@ export const ForumPage: React.FC<ForumPageProps> = ({
 
       const userIds = [...new Set(repliesData.map(r => r.user_id))];
       const profilePromises = userIds.map(uid =>
-        dbFetch<any[]>('profiles', { select: 'user_id,name', filters: `user_id=eq.${uid}` })
+        dbFetch<any[]>('profiles', { select: 'user_id,name,bio,avatar_url', filters: `user_id=eq.${uid}` })
       );
       const profileResults = await Promise.all(profilePromises);
-      const profileMap: Record<string, string> = {};
+      const profileMap: Record<string, { name: string; bio: string; avatar: string | null }> = {};
       profileResults.forEach(r => {
         if (r.data && r.data[0]) {
-          profileMap[r.data[0].user_id] = r.data[0].name;
+          profileMap[r.data[0].user_id] = { name: r.data[0].name, bio: r.data[0].bio || '', avatar: r.data[0].avatar_url };
         }
       });
 
       setReplies(repliesData.map(r => ({
         id: r.id,
         content: r.content,
-        author: profileMap[r.user_id] || 'Anonymous',
+        author: profileMap[r.user_id]?.name || 'Anonymous',
         authorId: r.user_id,
+        authorBio: profileMap[r.user_id]?.bio || '',
+        authorAvatar: profileMap[r.user_id]?.avatar || null,
         createdAt: r.created_at,
       })));
     };
