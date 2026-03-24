@@ -7,6 +7,9 @@ import { useEmailSubscription } from "@/hooks/useEmailSubscription";
 import { useAchievements } from "@/hooks/useAchievements";
 import { AvatarCropModal } from "@/components/AvatarCropModal";
 import { ProfileFrame } from "@/components/ProfileFrame";
+import { ReadingStreak } from "@/components/ReadingStreak";
+import { UserRankBadge, calculateXP, getRank, getNextRank } from "@/components/UserRank";
+import { ReferralSection } from "@/components/ReferralSection";
 
 interface ProfilePageProps {
   user: AuthUser;
@@ -36,16 +39,22 @@ export const ProfilePage: React.FC<ProfilePageProps> = ({
   const { isSubscribed, toggleSubscription, loading: subLoading } = useEmailSubscription(user);
   const [commentCount, setCommentCount] = useState(0);
   const [postCount, setPostCount] = useState(0);
+  const [replyCount, setReplyCount] = useState(0);
   const { selectedFrame, achievements, isUnlocked } = useAchievements(user);
   const recentAchievements = achievements.filter(a => isUnlocked(a.id)).slice(0, 5);
+
+  const xp = calculateXP({ chaptersRead: readCount, comments: commentCount, forumPosts: postCount, forumReplies: replyCount, bookmarks: bookmarkCount });
+  const rank = getRank(xp);
+  const nextRank = getNextRank(xp);
 
   useEffect(() => {
     if (!user) return;
     const fetchData = async () => {
-      const [{ data: profileData }, { count: comments }, { count: posts }] = await Promise.all([
+      const [{ data: profileData }, { count: comments }, { count: posts }, { count: replies }] = await Promise.all([
         supabase.from('profiles').select('bio, instagram, tiktok, website').eq('user_id', user.id).maybeSingle(),
         supabase.from('comments').select('*', { count: 'exact', head: true }).eq('user_id', user.id),
         supabase.from('forum_posts').select('*', { count: 'exact', head: true }).eq('user_id', user.id),
+        supabase.from('forum_replies').select('*', { count: 'exact', head: true }).eq('user_id', user.id),
       ]);
       if (profileData) {
         setProfile(p => ({
@@ -58,6 +67,7 @@ export const ProfilePage: React.FC<ProfilePageProps> = ({
       }
       setCommentCount(comments || 0);
       setPostCount(posts || 0);
+      setReplyCount(replies || 0);
     };
     fetchData();
   }, [user?.id]);
@@ -65,7 +75,6 @@ export const ProfilePage: React.FC<ProfilePageProps> = ({
   const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) setCropFile(file);
-    // Reset input so same file can be selected again
     e.target.value = '';
   };
 
@@ -79,7 +88,6 @@ export const ProfilePage: React.FC<ProfilePageProps> = ({
 
     if (!uploadError) {
       const { data: { publicUrl } } = supabase.storage.from('avatars').getPublicUrl(path);
-      // Bust cache with timestamp
       await supabase.from('profiles').update({ avatar_url: `${publicUrl}?t=${Date.now()}` }).eq('user_id', user.id);
       refreshUser();
     }
@@ -134,57 +142,37 @@ export const ProfilePage: React.FC<ProfilePageProps> = ({
                 <div className="space-y-4">
                   <div>
                     <label className="block text-muted-foreground text-xs mb-1">Display Name</label>
-                    <input
-                      type="text"
-                      value={profile.name}
-                      onChange={(e) => setProfile({ ...profile, name: e.target.value })}
-                      className="w-full px-3 py-2 bg-secondary border border-border rounded-lg text-foreground focus:outline-none focus:border-primary"
-                    />
+                    <input type="text" value={profile.name} onChange={(e) => setProfile({ ...profile, name: e.target.value })}
+                      className="w-full px-3 py-2 bg-secondary border border-border rounded-lg text-foreground focus:outline-none focus:border-primary" />
                   </div>
                   <div>
                     <label className="block text-muted-foreground text-xs mb-1">Bio</label>
-                    <textarea
-                      value={profile.bio}
-                      onChange={(e) => setProfile({ ...profile, bio: e.target.value })}
+                    <textarea value={profile.bio} onChange={(e) => setProfile({ ...profile, bio: e.target.value })}
                       className="w-full px-3 py-2 bg-secondary border border-border rounded-lg text-foreground focus:outline-none focus:border-primary resize-none"
-                      rows={3}
-                      placeholder="Tell us about yourself..."
-                    />
+                      rows={3} placeholder="Tell us about yourself..." />
                   </div>
                   <div>
                     <label className="block text-muted-foreground text-xs mb-1">Instagram</label>
-                    <input
-                      type="text"
-                      value={profile.instagram}
-                      onChange={(e) => setProfile({ ...profile, instagram: e.target.value })}
-                      className="w-full px-3 py-2 bg-secondary border border-border rounded-lg text-foreground focus:outline-none focus:border-primary"
-                      placeholder="@username"
-                    />
+                    <input type="text" value={profile.instagram} onChange={(e) => setProfile({ ...profile, instagram: e.target.value })}
+                      className="w-full px-3 py-2 bg-secondary border border-border rounded-lg text-foreground focus:outline-none focus:border-primary" placeholder="@username" />
                   </div>
                   <div>
                     <label className="block text-muted-foreground text-xs mb-1">TikTok</label>
-                    <input
-                      type="text"
-                      value={profile.tiktok}
-                      onChange={(e) => setProfile({ ...profile, tiktok: e.target.value })}
-                      className="w-full px-3 py-2 bg-secondary border border-border rounded-lg text-foreground focus:outline-none focus:border-primary"
-                      placeholder="@username"
-                    />
+                    <input type="text" value={profile.tiktok} onChange={(e) => setProfile({ ...profile, tiktok: e.target.value })}
+                      className="w-full px-3 py-2 bg-secondary border border-border rounded-lg text-foreground focus:outline-none focus:border-primary" placeholder="@username" />
                   </div>
                   <div>
                     <label className="block text-muted-foreground text-xs mb-1">Website</label>
-                    <input
-                      type="text"
-                      value={profile.website}
-                      onChange={(e) => setProfile({ ...profile, website: e.target.value })}
-                      className="w-full px-3 py-2 bg-secondary border border-border rounded-lg text-foreground focus:outline-none focus:border-primary"
-                      placeholder="https://..."
-                    />
+                    <input type="text" value={profile.website} onChange={(e) => setProfile({ ...profile, website: e.target.value })}
+                      className="w-full px-3 py-2 bg-secondary border border-border rounded-lg text-foreground focus:outline-none focus:border-primary" placeholder="https://..." />
                   </div>
                 </div>
               ) : (
                 <>
                   <h2 className="text-2xl text-foreground font-display text-center sm:text-left">{user.name}</h2>
+                  <div className="flex items-center gap-2 mt-1 justify-center sm:justify-start">
+                    <UserRankBadge xp={xp} showXp size="md" />
+                  </div>
                   <p className="text-muted-foreground mt-1 text-center sm:text-left">{user.email}</p>
                   {profile.bio && <p className="text-foreground/70 mt-2 text-sm">{profile.bio}</p>}
                   {(profile.instagram || profile.tiktok || profile.website) && (
@@ -204,6 +192,27 @@ export const ProfilePage: React.FC<ProfilePageProps> = ({
                 </>
               )}
             </div>
+          </div>
+
+          {/* XP Progress to next rank */}
+          {nextRank && (
+            <div className="p-4 bg-card/30 rounded-xl border border-border">
+              <div className="flex items-center justify-between text-sm mb-2">
+                <span className="text-muted-foreground">Progress to {nextRank.icon} {nextRank.title}</span>
+                <span className="text-foreground">{xp} / {nextRank.minXp} XP</span>
+              </div>
+              <div className="w-full h-2 bg-secondary rounded-full overflow-hidden">
+                <div
+                  className="h-full bg-primary rounded-full transition-all"
+                  style={{ width: `${Math.min(100, (xp / nextRank.minXp) * 100)}%` }}
+                />
+              </div>
+            </div>
+          )}
+
+          {/* Reading Streak */}
+          <div className="p-4 bg-card/30 rounded-xl border border-border">
+            <ReadingStreak user={user} />
           </div>
 
           {/* Actions */}
@@ -240,6 +249,11 @@ export const ProfilePage: React.FC<ProfilePageProps> = ({
             </div>
           </div>
         )}
+
+        {/* Referral Section */}
+        <div className="mt-8">
+          <ReferralSection user={user} />
+        </div>
 
         {/* Email Notifications */}
         <div className="mt-8 p-6 bg-card/30 rounded-xl border border-border">
