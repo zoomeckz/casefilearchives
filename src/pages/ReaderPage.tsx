@@ -9,6 +9,7 @@ import { AuthUser } from "@/hooks/useAuth";
 import { BookmarkButton } from "@/components/BookmarkButton";
 import { ChapterReactions } from "@/components/ChapterReactions";
 import { ChapterPoll } from "@/components/ChapterPoll";
+import { TextHighlightBookmark } from "@/components/TextHighlightBookmark";
 
 
 function estimateReadingTime(content: string): number {

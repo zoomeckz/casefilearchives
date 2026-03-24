@@ -457,25 +457,35 @@ export const ForumPage: React.FC<ForumPageProps> = ({
                     ) : (
                       <>
                         <div className="text-foreground/70 break-words" dangerouslySetInnerHTML={{ __html: renderFormatted(reply.content) }} />
-                        {(user?.id === reply.authorId || user?.isAdmin) && (
-                          <div className="flex gap-3 mt-1">
-                            <button onClick={() => { setEditingReplyId(reply.id); setEditReplyContent(reply.content); }}
-                              className="text-muted-foreground hover:text-foreground text-xs transition-colors">✏️ Edit</button>
+                        <div className="flex gap-3 mt-1">
+                          {user && (
                             <button onClick={() => {
-                              if (confirm('Delete this reply?')) {
-                                dbFetch('forum_replies', { method: 'DELETE', filters: `id=eq.${reply.id}` }).then(() => {
-                                  setReplies(replies.filter(r => r.id !== reply.id));
-                                  if (selectedPost) {
-                                    const updated = { ...selectedPost, replies: selectedPost.replies - 1 };
-                                    setSelectedPost(updated);
-                                    setPosts(posts.map(p => p.id === selectedPost.id ? updated : p));
-                                  }
-                                });
-                              }
+                              const quoted = `> **${reply.author}** wrote:\n> ${reply.content.split('\n').join('\n> ')}\n\n`;
+                              setReplyContent(prev => quoted + prev);
+                              replyRef.current?.focus();
                             }}
-                              className="text-muted-foreground hover:text-destructive text-xs transition-colors">🗑️ Delete</button>
-                          </div>
-                        )}
+                              className="text-muted-foreground hover:text-primary text-xs transition-colors">💬 Quote</button>
+                          )}
+                          {(user?.id === reply.authorId || user?.isAdmin) && (
+                            <>
+                              <button onClick={() => { setEditingReplyId(reply.id); setEditReplyContent(reply.content); }}
+                                className="text-muted-foreground hover:text-foreground text-xs transition-colors">✏️ Edit</button>
+                              <button onClick={() => {
+                                if (confirm('Delete this reply?')) {
+                                  dbFetch('forum_replies', { method: 'DELETE', filters: `id=eq.${reply.id}` }).then(() => {
+                                    setReplies(replies.filter(r => r.id !== reply.id));
+                                    if (selectedPost) {
+                                      const updated = { ...selectedPost, replies: selectedPost.replies - 1 };
+                                      setSelectedPost(updated);
+                                      setPosts(posts.map(p => p.id === selectedPost.id ? updated : p));
+                                    }
+                                  });
+                                }
+                              }}
+                                className="text-muted-foreground hover:text-destructive text-xs transition-colors">🗑️ Delete</button>
+                            </>
+                          )}
+                        </div>
                       </>
                     )}
                     {reply.authorBio && editingReplyId !== reply.id && (
