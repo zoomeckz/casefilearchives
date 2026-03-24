@@ -386,14 +386,29 @@ export const ForumPage: React.FC<ForumPageProps> = ({
           <div className="divide-y divide-border/50">
             {replies.map((reply) => (
               <div key={reply.id} className="py-4">
-                <div className="flex items-center gap-3 mb-2">
-                  <div className="w-10 h-10 rounded-full bg-gradient-to-br from-primary to-indigo-600 flex items-center justify-center text-primary-foreground text-sm font-medium">
-                    {reply.author?.charAt(0).toUpperCase()}
+                <div className="flex items-start gap-3">
+                  <div className="flex flex-col items-center gap-1 min-w-[40px]">
+                    {reply.authorAvatar ? (
+                      <img src={reply.authorAvatar} alt={reply.author} className="w-10 h-10 rounded-full object-cover" />
+                    ) : (
+                      <div className="w-10 h-10 rounded-full bg-gradient-to-br from-primary to-indigo-600 flex items-center justify-center text-primary-foreground text-sm font-medium">
+                        {reply.author?.charAt(0).toUpperCase()}
+                      </div>
+                    )}
                   </div>
-                  <span className="text-primary cursor-pointer hover:underline" onClick={() => navigate(`/user/${reply.authorId}`)}>{reply.author}</span>
-                  <span className="text-muted-foreground text-sm">{new Date(reply.createdAt).toLocaleDateString()}</span>
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center gap-2 mb-1">
+                      <span className="text-primary cursor-pointer hover:underline font-medium" onClick={() => navigate(`/user/${reply.authorId}`)}>{reply.author}</span>
+                      <span className="text-muted-foreground text-sm">{new Date(reply.createdAt).toLocaleDateString()}</span>
+                    </div>
+                    <div className="text-foreground/70 break-words" dangerouslySetInnerHTML={{ __html: renderFormatted(reply.content) }} />
+                    {reply.authorBio && (
+                      <div className="mt-3 pt-2 border-t border-border/30">
+                        <p className="text-muted-foreground/60 text-xs italic line-clamp-2">{reply.authorBio}</p>
+                      </div>
+                    )}
+                  </div>
                 </div>
-                <div className="text-foreground/70 pl-11 whitespace-pre-wrap" dangerouslySetInnerHTML={{ __html: renderFormatted(reply.content) }} />
               </div>
             ))}
           </div>
