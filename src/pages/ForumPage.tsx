@@ -414,6 +414,7 @@ export const ForumPage: React.FC<ForumPageProps> = ({
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-2 mb-1">
                       <span className="text-primary cursor-pointer hover:underline font-medium" onClick={() => navigate(`/user/${reply.authorId}`)}>{reply.author}</span>
+                      {reply.authorId === SITE_AUTHOR_ID && <AuthorBadge />}
                       <span className="text-muted-foreground text-sm">{new Date(reply.createdAt).toLocaleDateString()}</span>
                     </div>
                     <div className="text-foreground/70 break-words" dangerouslySetInnerHTML={{ __html: renderFormatted(reply.content) }} />
