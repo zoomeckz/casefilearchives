@@ -398,14 +398,8 @@ export const ForumPage: React.FC<ForumPageProps> = ({
             {replies.map((reply) => (
               <div key={reply.id} className="py-4">
                 <div className="flex items-start gap-3">
-                  <div className="flex flex-col items-center gap-1 min-w-[40px]">
-                    {reply.authorAvatar ? (
-                      <img src={reply.authorAvatar} alt={reply.author} className="w-10 h-10 rounded-full object-cover" />
-                    ) : (
-                      <div className="w-10 h-10 rounded-full bg-gradient-to-br from-primary to-indigo-600 flex items-center justify-center text-primary-foreground text-sm font-medium">
-                        {reply.author?.charAt(0).toUpperCase()}
-                      </div>
-                    )}
+                  <div className="flex-shrink-0 cursor-pointer" onClick={() => navigate(`/user/${reply.authorId}`)}>
+                    <ProfileFrame avatarUrl={reply.authorAvatar} name={reply.author} frame={reply.authorFrame} size={40} />
                   </div>
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-2 mb-1">
