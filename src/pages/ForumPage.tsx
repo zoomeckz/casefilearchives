@@ -305,6 +305,18 @@ export const ForumPage: React.FC<ForumPageProps> = ({
       setSelectedPost({ ...selectedPost, replies: selectedPost.replies + 1 });
       setPosts(posts.map(p => p.id === selectedPost.id ? { ...p, replies: p.replies + 1 } : p));
       setReplyContent("");
+
+      // Notify the post author (if not replying to own post)
+      if (selectedPost.authorId !== user.id) {
+        const slug = `${slugify(selectedPost.title)}--${selectedPost.id.slice(0, 8)}`;
+        await supabase.from("notifications").insert({
+          user_id: selectedPost.authorId,
+          type: "reply",
+          title: `${user.name} replied to "${selectedPost.title}"`,
+          message: replyContent.slice(0, 100),
+          link: `/forum/${slug}`,
+        });
+      }
     }
   };
 
