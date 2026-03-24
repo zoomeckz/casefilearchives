@@ -368,7 +368,7 @@ export const ForumPage: React.FC<ForumPageProps> = ({
             <p className="text-muted-foreground text-sm mb-6">
               by <span className="text-primary cursor-pointer hover:underline" onClick={(e) => { e.stopPropagation(); navigate(`/user/${selectedPost.authorId}`); }}>{selectedPost.author}</span> · {new Date(selectedPost.createdAt).toLocaleDateString()}
             </p>
-            <div className="text-foreground/80 leading-relaxed whitespace-pre-wrap break-words" dangerouslySetInnerHTML={{ __html: renderFormatted(selectedPost.content) }} />
+            <div className="text-foreground/80 leading-relaxed break-words" dangerouslySetInnerHTML={{ __html: renderFormatted(selectedPost.content) }} />
           </div>
           <h3 className="text-xl font-display text-accent mb-6">Replies ({replies.length})</h3>
           <form onSubmit={handleAddReply} className="mb-8">
