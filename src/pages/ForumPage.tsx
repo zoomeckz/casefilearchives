@@ -71,6 +71,7 @@ interface ForumPost {
   replies: number;
   createdAt: string;
   isPinned: boolean;
+  isEdited: boolean;
 }
 
 interface ForumReply {
