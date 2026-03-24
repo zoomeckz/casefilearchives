@@ -51,7 +51,6 @@ export const ReaderPage: React.FC<ReaderPageProps> = ({
   isBookmarked,
   toggleBookmark,
 }) => {
-  const [readingMode, setReadingMode] = useReadingMode();
   const [randomPrompt] = useState(() => discussionPrompts[Math.floor(Math.random() * discussionPrompts.length)]);
 
   useEffect(() => {
