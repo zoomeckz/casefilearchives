@@ -116,6 +116,7 @@ export const Navigation: React.FC<NavigationProps> = ({
           <div className="hidden md:flex items-center gap-3">
             {user ? (
               <>
+                <NotificationBell user={user} onNavigate={(path) => navigate(path)} />
                 <button
                   onClick={() => setCurrentPage("profile")}
                   className="w-9 h-9 rounded-full bg-gradient-to-br from-primary to-destructive flex items-center justify-center text-primary-foreground text-xs font-medium overflow-hidden"
