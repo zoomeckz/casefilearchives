@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef } from "react";
+import { ProfileFrame } from "@/components/ProfileFrame";
 import { useNavigate, useParams } from "react-router-dom";
 import { Icons } from "@/lib/icons";
 import { AuthUser } from "@/hooks/useAuth";
@@ -58,6 +59,8 @@ interface ForumPost {
   category: string;
   author: string;
   authorId: string;
+  authorAvatar: string | null;
+  authorFrame: string | null;
   replies: number;
   createdAt: string;
   isPinned: boolean;
@@ -70,6 +73,7 @@ interface ForumReply {
   authorId: string;
   authorBio: string;
   authorAvatar: string | null;
+  authorFrame: string | null;
   createdAt: string;
 }
 
@@ -111,13 +115,13 @@ export const ForumPage: React.FC<ForumPageProps> = ({
 
         const userIds = [...new Set(postsData.map(p => p.user_id))];
         const profilePromises = userIds.map(uid =>
-          dbFetch<any[]>('profiles', { select: 'user_id,name', filters: `user_id=eq.${uid}` })
+          dbFetch<any[]>('profiles', { select: 'user_id,name,avatar_url,selected_frame', filters: `user_id=eq.${uid}` })
         );
         const profileResults = await Promise.all(profilePromises);
-        const profileMap: Record<string, string> = {};
+        const profileMap: Record<string, { name: string; avatar: string | null; frame: string | null }> = {};
         profileResults.forEach(r => {
           if (r.data && r.data[0]) {
-            profileMap[r.data[0].user_id] = r.data[0].name;
+            profileMap[r.data[0].user_id] = { name: r.data[0].name, avatar: r.data[0].avatar_url, frame: r.data[0].selected_frame };
           }
         });
 
@@ -131,8 +135,10 @@ export const ForumPage: React.FC<ForumPageProps> = ({
           title: post.title,
           content: post.content,
           category: post.category,
-          author: profileMap[post.user_id] || 'Anonymous',
+          author: profileMap[post.user_id]?.name || 'Anonymous',
           authorId: post.user_id,
+          authorAvatar: profileMap[post.user_id]?.avatar || null,
+          authorFrame: profileMap[post.user_id]?.frame || null,
           replies: replyCounts[i].count || 0,
           createdAt: post.created_at,
           isPinned: post.is_pinned || false,
@@ -178,15 +184,15 @@ export const ForumPage: React.FC<ForumPageProps> = ({
 
       const userIds = [...new Set(repliesData.map(r => r.user_id))];
       const profilePromises = userIds.map(uid =>
-        dbFetch<any[]>('profiles', { select: 'user_id,name,bio,avatar_url', filters: `user_id=eq.${uid}` })
-      );
-      const profileResults = await Promise.all(profilePromises);
-      const profileMap: Record<string, { name: string; bio: string; avatar: string | null }> = {};
-      profileResults.forEach(r => {
-        if (r.data && r.data[0]) {
-          profileMap[r.data[0].user_id] = { name: r.data[0].name, bio: r.data[0].bio || '', avatar: r.data[0].avatar_url };
-        }
-      });
+          dbFetch<any[]>('profiles', { select: 'user_id,name,bio,avatar_url,selected_frame', filters: `user_id=eq.${uid}` })
+        );
+        const profileResults = await Promise.all(profilePromises);
+        const profileMap: Record<string, { name: string; bio: string; avatar: string | null; frame: string | null }> = {};
+        profileResults.forEach(r => {
+          if (r.data && r.data[0]) {
+            profileMap[r.data[0].user_id] = { name: r.data[0].name, bio: r.data[0].bio || '', avatar: r.data[0].avatar_url, frame: r.data[0].selected_frame };
+          }
+        });
 
       setReplies(repliesData.map(r => ({
         id: r.id,
@@ -195,6 +201,7 @@ export const ForumPage: React.FC<ForumPageProps> = ({
         authorId: r.user_id,
         authorBio: profileMap[r.user_id]?.bio || '',
         authorAvatar: profileMap[r.user_id]?.avatar || null,
+        authorFrame: profileMap[r.user_id]?.frame || null,
         createdAt: r.created_at,
       })));
     };
@@ -214,8 +221,8 @@ export const ForumPage: React.FC<ForumPageProps> = ({
     if (data && data[0]) {
       setPosts([{
         id: data[0].id, title: data[0].title, content: data[0].content, category: data[0].category,
-        author: user.name, authorId: data[0].user_id, replies: 0, createdAt: data[0].created_at,
-        isPinned: false,
+        author: user.name, authorId: data[0].user_id, authorAvatar: user.avatarUrl || null, authorFrame: null,
+        replies: 0, createdAt: data[0].created_at, isPinned: false,
       }, ...posts]);
       setNewPost({ title: "", content: "", category: "General" });
       setShowNewPost(false);
@@ -272,7 +279,7 @@ export const ForumPage: React.FC<ForumPageProps> = ({
     if (data && data[0]) {
       setReplies([...replies, {
         id: data[0].id, content: data[0].content, author: user.name,
-        authorId: data[0].user_id, authorBio: '', authorAvatar: user.avatarUrl || null, createdAt: data[0].created_at,
+        authorId: data[0].user_id, authorBio: '', authorAvatar: user.avatarUrl || null, authorFrame: null, createdAt: data[0].created_at,
       }]);
       setSelectedPost({ ...selectedPost, replies: selectedPost.replies + 1 });
       setPosts(posts.map(p => p.id === selectedPost.id ? { ...p, replies: p.replies + 1 } : p));
@@ -364,10 +371,14 @@ export const ForumPage: React.FC<ForumPageProps> = ({
                 </div>
               )}
             </div>
-            <h1 className="font-display text-2xl sm:text-3xl text-accent mt-2 mb-4">{selectedPost.title}</h1>
-            <p className="text-muted-foreground text-sm mb-6">
-              by <span className="text-primary cursor-pointer hover:underline" onClick={(e) => { e.stopPropagation(); navigate(`/user/${selectedPost.authorId}`); }}>{selectedPost.author}</span> · {new Date(selectedPost.createdAt).toLocaleDateString()}
-            </p>
+            <h1 className="font-display text-2xl sm:text-3xl text-accent mb-4">{selectedPost.title}</h1>
+            <div className="flex items-center gap-3 mb-6 cursor-pointer" onClick={() => navigate(`/user/${selectedPost.authorId}`)}>
+              <ProfileFrame avatarUrl={selectedPost.authorAvatar} name={selectedPost.author} frame={selectedPost.authorFrame} size={48} />
+              <div>
+                <span className="text-primary font-medium hover:underline">{selectedPost.author}</span>
+                <p className="text-muted-foreground text-xs">{new Date(selectedPost.createdAt).toLocaleDateString()}</p>
+              </div>
+            </div>
             <div className="text-foreground/80 leading-relaxed break-words" dangerouslySetInnerHTML={{ __html: renderFormatted(selectedPost.content) }} />
           </div>
           <h3 className="text-xl font-display text-accent mb-6">Replies ({replies.length})</h3>
@@ -387,14 +398,8 @@ export const ForumPage: React.FC<ForumPageProps> = ({
             {replies.map((reply) => (
               <div key={reply.id} className="py-4">
                 <div className="flex items-start gap-3">
-                  <div className="flex flex-col items-center gap-1 min-w-[40px]">
-                    {reply.authorAvatar ? (
-                      <img src={reply.authorAvatar} alt={reply.author} className="w-10 h-10 rounded-full object-cover" />
-                    ) : (
-                      <div className="w-10 h-10 rounded-full bg-gradient-to-br from-primary to-indigo-600 flex items-center justify-center text-primary-foreground text-sm font-medium">
-                        {reply.author?.charAt(0).toUpperCase()}
-                      </div>
-                    )}
+                  <div className="flex-shrink-0 cursor-pointer" onClick={() => navigate(`/user/${reply.authorId}`)}>
+                    <ProfileFrame avatarUrl={reply.authorAvatar} name={reply.author} frame={reply.authorFrame} size={40} />
                   </div>
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-2 mb-1">
