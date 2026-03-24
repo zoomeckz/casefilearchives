@@ -17,7 +17,7 @@ export const CommentsSection: React.FC<CommentsSectionProps> = ({
   setShowAuthModal,
 }) => {
   const navigate = useNavigate();
-  const { comments, addComment, updateComment, loading } = useComments(chapterId);
+  const { comments, addComment, updateComment, deleteComment, loading } = useComments(chapterId);
   const [newComment, setNewComment] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
