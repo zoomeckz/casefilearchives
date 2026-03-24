@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from "react";
+import React, { useState, useEffect, useCallback, useMemo } from "react";
 import { Icons } from "@/lib/icons";
 import { GlossaryEntry } from "@/lib/data";
 import { dbFetch } from "@/lib/dbFetch";
@@ -7,6 +7,9 @@ import { ChapterEditor, getAllDrafts, deleteDraft, type ChapterDraft } from "@/c
 import { GlossaryManager } from "@/components/GlossaryManager";
 import { AnalyticsDashboard } from "@/components/AnalyticsDashboard";
 import { toast } from "sonner";
+import { useIsMobile } from "@/hooks/use-mobile";
+import { Input } from "@/components/ui/input";
+import { Menu, X, Search, ArrowUpDown } from "lucide-react";
 
 interface AdminPanelProps {
   glossary: Record<string, GlossaryEntry>;
@@ -24,10 +27,19 @@ interface AnalyticsData {
   chapterStats: Array<{ id: string; title: string; views: number; chapter_number: number }>;
 }
 
+type ChapterSortKey = 'number-asc' | 'number-desc' | 'views-desc' | 'views-asc' | 'newest' | 'oldest';
+
 export const AdminPanel: React.FC<AdminPanelProps> = ({ glossary, authToken, onGlossaryChange }) => {
   const [activeTab, setActiveTab] = useState("dashboard");
   const [analytics, setAnalytics] = useState<AnalyticsData | null>(null);
   const [loading, setLoading] = useState(true);
+  const [sidebarOpen, setSidebarOpen] = useState(false);
+  const isMobile = useIsMobile();
+
+  // Search & sort
+  const [chapterSearch, setChapterSearch] = useState("");
+  const [chapterSort, setChapterSort] = useState<ChapterSortKey>('number-asc');
+  const [dashboardSearch, setDashboardSearch] = useState("");
 
   // Chapter editor state
   const [editorMode, setEditorMode] = useState<'list' | 'new' | 'edit' | 'draft'>('list');
@@ -150,10 +162,43 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ glossary, authToken, onG
     refreshDrafts();
   }, [refreshDrafts]);
 
+  // Filtered & sorted chapters
+  const filteredChapters = useMemo(() => {
+    let list = [...chapters];
+    if (chapterSearch.trim()) {
+      const q = chapterSearch.toLowerCase();
+      list = list.filter(ch => ch.title?.toLowerCase().includes(q) || String(ch.chapter_number).includes(q));
+    }
+    switch (chapterSort) {
+      case 'number-asc': return list.sort((a, b) => a.chapter_number - b.chapter_number);
+      case 'number-desc': return list.sort((a, b) => b.chapter_number - a.chapter_number);
+      case 'views-desc': return list.sort((a, b) => b.views - a.views);
+      case 'views-asc': return list.sort((a, b) => a.views - b.views);
+      case 'newest': return list.sort((a, b) => new Date(b.published_at).getTime() - new Date(a.published_at).getTime());
+      case 'oldest': return list.sort((a, b) => new Date(a.published_at).getTime() - new Date(b.published_at).getTime());
+      default: return list;
+    }
+  }, [chapters, chapterSearch, chapterSort]);
+
+  // Filtered dashboard chapter stats
+  const filteredDashboardStats = useMemo(() => {
+    if (!analytics) return [];
+    if (!dashboardSearch.trim()) return analytics.chapterStats;
+    const q = dashboardSearch.toLowerCase();
+    return analytics.chapterStats.filter(ch => ch.title?.toLowerCase().includes(q) || String(ch.chapter_number).includes(q));
+  }, [analytics, dashboardSearch]);
+
+  // Filtered drafts
+  const filteredDrafts = useMemo(() => {
+    if (!chapterSearch.trim()) return drafts;
+    const q = chapterSearch.toLowerCase();
+    return drafts.filter(d => (d.title || 'Untitled Draft').toLowerCase().includes(q));
+  }, [drafts, chapterSearch]);
+
   // If in editor mode, render full-screen editor
   if (activeTab === 'chapters' && editorMode !== 'list') {
     return (
-      <div className="min-h-screen p-8">
+      <div className="min-h-screen p-4 md:p-8">
         <ChapterEditor
           authToken={authToken}
           glossary={glossary}
@@ -171,37 +216,67 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ glossary, authToken, onG
     );
   }
 
-  return (
-    <div className="min-h-screen flex">
-      <aside className="w-64 bg-card border-r border-border p-6">
-        <h2 className="font-display text-xl text-accent mb-8">Admin Panel</h2>
-        <nav className="space-y-2">
-          {tabs.map((tab) => (
-            <button
-              key={tab.id}
-              onClick={() => setActiveTab(tab.id)}
-              className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg text-left transition-colors ${
-                activeTab === tab.id
-                  ? "bg-primary/20 text-primary"
-                  : "text-muted-foreground hover:text-foreground hover:bg-secondary"
-              }`}
-            >
-              <tab.icon className="w-5 h-5" />
-              {tab.label}
-            </button>
-          ))}
-        </nav>
-      </aside>
+  const handleTabClick = (tabId: string) => {
+    setActiveTab(tabId);
+    if (isMobile) setSidebarOpen(false);
+  };
 
-      <main className="flex-1 p-8 overflow-y-auto">
+  const sortOptions: { value: ChapterSortKey; label: string }[] = [
+    { value: 'number-asc', label: 'Ch. # ↑' },
+    { value: 'number-desc', label: 'Ch. # ↓' },
+    { value: 'views-desc', label: 'Most Viewed' },
+    { value: 'views-asc', label: 'Least Viewed' },
+    { value: 'newest', label: 'Newest' },
+    { value: 'oldest', label: 'Oldest' },
+  ];
+
+  return (
+    <div className="min-h-screen flex flex-col md:flex-row">
+      {/* Mobile header */}
+      {isMobile && (
+        <div className="flex items-center justify-between p-4 bg-card border-b border-border sticky top-0 z-30">
+          <h2 className="font-display text-lg text-accent">Admin Panel</h2>
+          <button onClick={() => setSidebarOpen(!sidebarOpen)} className="p-2 rounded-lg hover:bg-secondary transition-colors">
+            {sidebarOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
+          </button>
+        </div>
+      )}
+
+      {/* Sidebar / Mobile drawer */}
+      {(sidebarOpen || !isMobile) && (
+        <>
+          {isMobile && <div className="fixed inset-0 bg-black/50 z-30" onClick={() => setSidebarOpen(false)} />}
+          <aside className={`${isMobile ? 'fixed top-0 left-0 h-full z-40 w-64 animate-in slide-in-from-left' : 'w-64 sticky top-0 h-screen'} bg-card border-r border-border p-6 overflow-y-auto`}>
+            <h2 className="font-display text-xl text-accent mb-8">{isMobile ? '' : 'Admin Panel'}</h2>
+            <nav className="space-y-2">
+              {tabs.map((tab) => (
+                <button
+                  key={tab.id}
+                  onClick={() => handleTabClick(tab.id)}
+                  className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg text-left transition-colors ${
+                    activeTab === tab.id
+                      ? "bg-primary/20 text-primary"
+                      : "text-muted-foreground hover:text-foreground hover:bg-secondary"
+                  }`}
+                >
+                  <tab.icon className="w-5 h-5" />
+                  {tab.label}
+                </button>
+              ))}
+            </nav>
+          </aside>
+        </>
+      )}
+
+      <main className="flex-1 p-4 md:p-8 overflow-y-auto">
         {loading ? (
           <p className="text-muted-foreground">Loading...</p>
         ) : (
           <>
             {activeTab === "dashboard" && analytics && (
               <div>
-                <h1 className="font-display text-3xl text-accent mb-8">Dashboard</h1>
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-12">
+                <h1 className="font-display text-2xl md:text-3xl text-accent mb-6 md:mb-8">Dashboard</h1>
+                <div className="grid grid-cols-2 md:grid-cols-3 gap-3 md:gap-6 mb-8 md:mb-12">
                   <StatCard label="Total Chapter Views" value={analytics.totalViews} />
                   <StatCard label="Registered Readers" value={analytics.totalReaders} />
                   <StatCard label="Email Subscribers" value={analytics.totalSubscribers} />
@@ -210,22 +285,33 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ glossary, authToken, onG
                   <StatCard label="Glossary Terms" value={Object.keys(glossary).length} />
                 </div>
 
-                <div className="flex items-center justify-between mb-4">
+                <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 mb-4">
                   <h2 className="font-display text-xl text-accent">Chapter Performance</h2>
-                  <button
-                    onClick={handleDownload}
-                    disabled={downloading}
-                    className="flex items-center gap-2 px-4 py-2 bg-primary/20 hover:bg-primary/30 text-primary rounded-lg text-sm transition-colors disabled:opacity-50"
-                  >
-                    <Icons.Save className="w-4 h-4" />
-                    {downloading ? "Downloading..." : "Download All Chapters"}
-                  </button>
+                  <div className="flex items-center gap-2 w-full sm:w-auto">
+                    <div className="relative flex-1 sm:flex-initial sm:w-48">
+                      <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                      <Input
+                        placeholder="Search chapters..."
+                        value={dashboardSearch}
+                        onChange={(e) => setDashboardSearch(e.target.value)}
+                        className="pl-9 h-9 text-sm"
+                      />
+                    </div>
+                    <button
+                      onClick={handleDownload}
+                      disabled={downloading}
+                      className="flex items-center gap-2 px-3 py-2 bg-primary/20 hover:bg-primary/30 text-primary rounded-lg text-sm transition-colors disabled:opacity-50 whitespace-nowrap"
+                    >
+                      <Icons.Save className="w-4 h-4" />
+                      <span className="hidden sm:inline">{downloading ? "Downloading..." : "Download All"}</span>
+                    </button>
+                  </div>
                 </div>
                 <div className="space-y-2">
-                  {analytics.chapterStats.map(ch => (
-                    <div key={ch.chapter_number} className="flex items-center justify-between p-4 bg-card/50 rounded-lg border border-border/50">
-                      <span className="text-foreground">Ch. {ch.chapter_number}: {ch.title}</span>
-                      <span className="text-muted-foreground text-sm">{ch.views} views</span>
+                  {filteredDashboardStats.map(ch => (
+                    <div key={ch.chapter_number} className="flex items-center justify-between p-3 md:p-4 bg-card/50 rounded-lg border border-border/50">
+                      <span className="text-foreground text-sm md:text-base truncate mr-2">Ch. {ch.chapter_number}: {ch.title}</span>
+                      <span className="text-muted-foreground text-xs md:text-sm whitespace-nowrap">{ch.views} views</span>
                     </div>
                   ))}
                 </div>
@@ -234,68 +320,92 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ glossary, authToken, onG
 
             {activeTab === "chapters" && (
               <div>
-                <div className="flex items-center justify-between mb-6">
-                  <h1 className="font-display text-3xl text-accent">Chapters</h1>
+                <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 mb-4">
+                  <h1 className="font-display text-2xl md:text-3xl text-accent">Chapters</h1>
                   <button
                     onClick={() => setEditorMode('new')}
-                    className="flex items-center gap-2 px-5 py-2.5 bg-primary hover:bg-primary/90 text-primary-foreground rounded-lg font-medium transition-colors"
+                    className="flex items-center gap-2 px-4 py-2.5 bg-primary hover:bg-primary/90 text-primary-foreground rounded-lg font-medium transition-colors text-sm"
                   >
                     <Icons.Plus className="w-4 h-4" />
                     New Chapter
                   </button>
                 </div>
 
+                {/* Search & Sort bar */}
+                <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 mb-4">
+                  <div className="relative flex-1">
+                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                    <Input
+                      placeholder="Search by title or chapter number..."
+                      value={chapterSearch}
+                      onChange={(e) => setChapterSearch(e.target.value)}
+                      className="pl-9 h-9 text-sm"
+                    />
+                  </div>
+                  <div className="flex items-center gap-1">
+                    <ArrowUpDown className="w-4 h-4 text-muted-foreground shrink-0" />
+                    <select
+                      value={chapterSort}
+                      onChange={(e) => setChapterSort(e.target.value as ChapterSortKey)}
+                      className="h-9 rounded-md border border-input bg-background px-3 text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-ring"
+                    >
+                      {sortOptions.map(opt => (
+                        <option key={opt.value} value={opt.value}>{opt.label}</option>
+                      ))}
+                    </select>
+                  </div>
+                </div>
+
                 {/* Sub-tabs */}
-                <div className="flex gap-1 mb-6 bg-card/30 p-1 rounded-lg w-fit">
+                <div className="flex gap-1 mb-4 bg-card/30 p-1 rounded-lg w-fit">
                   {(['published', 'drafts'] as const).map(tab => (
                     <button
                       key={tab}
                       onClick={() => { setChapterSubTab(tab); if (tab === 'drafts') refreshDrafts(); }}
-                      className={`px-4 py-2 rounded-md text-sm font-medium transition-colors ${
+                      className={`px-3 md:px-4 py-2 rounded-md text-xs md:text-sm font-medium transition-colors ${
                         chapterSubTab === tab
                           ? 'bg-primary/20 text-primary'
                           : 'text-muted-foreground hover:text-foreground'
                       }`}
                     >
-                      {tab === 'published' ? `Published (${chapters.length})` : `Drafts (${drafts.length})`}
+                      {tab === 'published' ? `Published (${filteredChapters.length})` : `Drafts (${filteredDrafts.length})`}
                     </button>
                   ))}
                 </div>
 
                 {chapterSubTab === 'published' && (
                   <>
-                    {chapters.length === 0 ? (
-                      <p className="text-muted-foreground">No chapters yet. Create your first one!</p>
+                    {filteredChapters.length === 0 ? (
+                      <p className="text-muted-foreground text-sm">
+                        {chapterSearch ? 'No chapters match your search.' : 'No chapters yet. Create your first one!'}
+                      </p>
                     ) : (
                       <div className="space-y-2">
-                        {chapters.map(ch => (
-                          <div key={ch.id} className="flex items-center justify-between p-4 bg-card/50 rounded-lg border border-border/50 group">
-                            <div>
-                              <span className="text-foreground font-medium">Ch. {ch.chapter_number}: {ch.title}</span>
-                              <div className="flex gap-4 mt-1 text-xs text-muted-foreground">
+                        {filteredChapters.map(ch => (
+                          <div key={ch.id} className="flex flex-col sm:flex-row sm:items-center justify-between p-3 md:p-4 bg-card/50 rounded-lg border border-border/50 gap-2 group">
+                            <div className="min-w-0">
+                              <span className="text-foreground font-medium text-sm md:text-base block truncate">Ch. {ch.chapter_number}: {ch.title}</span>
+                              <div className="flex gap-3 mt-1 text-xs text-muted-foreground">
                                 <span>{ch.views} views</span>
-                                <span>Published: {new Date(ch.published_at).toLocaleDateString()}</span>
+                                <span>{new Date(ch.published_at).toLocaleDateString()}</span>
                               </div>
                             </div>
-                            <div className="flex items-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                            <div className="flex items-center gap-2 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity shrink-0">
                               <button
                                 onClick={() => window.open(`/chapters/${ch.chapter_number}`, '_blank')}
-                                className="px-3 py-1.5 bg-accent/20 hover:bg-accent/30 text-accent rounded text-sm transition-colors"
+                                className="px-3 py-1.5 bg-accent/20 hover:bg-accent/30 text-accent rounded text-xs transition-colors"
                               >
                                 Preview
                               </button>
                               <button
-                                onClick={() => {
-                                  setEditChapterId(ch.id);
-                                  setEditorMode('edit');
-                                }}
-                                className="px-3 py-1.5 bg-secondary hover:bg-secondary/80 text-foreground rounded text-sm transition-colors"
+                                onClick={() => { setEditChapterId(ch.id); setEditorMode('edit'); }}
+                                className="px-3 py-1.5 bg-secondary hover:bg-secondary/80 text-foreground rounded text-xs transition-colors"
                               >
                                 Edit
                               </button>
                               <button
                                 onClick={() => handleDeleteChapter(ch.id, ch.title)}
-                                className="px-3 py-1.5 bg-destructive/20 hover:bg-destructive/30 text-destructive rounded text-sm transition-colors"
+                                className="px-3 py-1.5 bg-destructive/20 hover:bg-destructive/30 text-destructive rounded text-xs transition-colors"
                               >
                                 Delete
                               </button>
@@ -309,28 +419,27 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ glossary, authToken, onG
 
                 {chapterSubTab === 'drafts' && (
                   <>
-                    {drafts.length === 0 ? (
-                      <p className="text-muted-foreground">No drafts saved. Drafts auto-save every 10 seconds while editing.</p>
+                    {filteredDrafts.length === 0 ? (
+                      <p className="text-muted-foreground text-sm">
+                        {chapterSearch ? 'No drafts match your search.' : 'No drafts saved. Drafts auto-save every 10 seconds while editing.'}
+                      </p>
                     ) : (
                       <div className="space-y-2">
-                        {drafts.sort((a, b) => new Date(b.lastSaved).getTime() - new Date(a.lastSaved).getTime()).map(draft => (
-                          <div key={draft.id} className="flex items-center justify-between p-4 bg-card/50 rounded-lg border border-border/50 group">
-                            <div>
-                              <span className="text-foreground font-medium">
+                        {filteredDrafts.sort((a, b) => new Date(b.lastSaved).getTime() - new Date(a.lastSaved).getTime()).map(draft => (
+                          <div key={draft.id} className="flex flex-col sm:flex-row sm:items-center justify-between p-3 md:p-4 bg-card/50 rounded-lg border border-border/50 gap-2 group">
+                            <div className="min-w-0">
+                              <span className="text-foreground font-medium text-sm block truncate">
                                 {draft.title || 'Untitled Draft'}
                               </span>
-                              <div className="flex gap-4 mt-1 text-xs text-muted-foreground">
-                                <span>Last saved: {new Date(draft.lastSaved).toLocaleString()}</span>
+                              <div className="flex gap-3 mt-1 text-xs text-muted-foreground">
+                                <span>Saved: {new Date(draft.lastSaved).toLocaleString()}</span>
                                 <span>{draft.content.replace(/<[^>]*>/g, '').trim().split(/\s+/).filter(Boolean).length} words</span>
                               </div>
                             </div>
-                            <div className="flex items-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                            <div className="flex items-center gap-2 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity shrink-0">
                               <button
-                                onClick={() => {
-                                  setResumeDraftId(draft.id);
-                                  setEditorMode('draft');
-                                }}
-                                className="px-3 py-1.5 bg-primary/20 hover:bg-primary/30 text-primary rounded text-sm transition-colors"
+                                onClick={() => { setResumeDraftId(draft.id); setEditorMode('draft'); }}
+                                className="px-3 py-1.5 bg-primary/20 hover:bg-primary/30 text-primary rounded text-xs transition-colors"
                               >
                                 Resume
                               </button>
@@ -342,7 +451,7 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ glossary, authToken, onG
                                     toast.success('Draft deleted');
                                   }
                                 }}
-                                className="px-3 py-1.5 bg-destructive/20 hover:bg-destructive/30 text-destructive rounded text-sm transition-colors"
+                                className="px-3 py-1.5 bg-destructive/20 hover:bg-destructive/30 text-destructive rounded text-xs transition-colors"
                               >
                                 Delete
                               </button>
@@ -375,9 +484,9 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ glossary, authToken, onG
 };
 
 const StatCard = ({ label, value }: { label: string; value: number }) => (
-  <div className="p-6 bg-card/50 rounded-xl border border-border">
-    <div className="text-3xl font-display text-foreground">{value.toLocaleString()}</div>
-    <div className="text-muted-foreground mt-1">{label}</div>
+  <div className="p-4 md:p-6 bg-card/50 rounded-xl border border-border">
+    <div className="text-2xl md:text-3xl font-display text-foreground">{value.toLocaleString()}</div>
+    <div className="text-muted-foreground text-xs md:text-sm mt-1">{label}</div>
   </div>
 );
 
