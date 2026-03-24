@@ -187,7 +187,7 @@ export const ForumPage: React.FC<ForumPageProps> = ({
     if (!selectedPost) { setReplies([]); return; }
     const fetchReplies = async () => {
       const { data: repliesData } = await dbFetch<any[]>('forum_replies', {
-        select: 'id,content,created_at,user_id',
+        select: 'id,content,created_at,updated_at,user_id',
         filters: `post_id=eq.${selectedPost.id}`,
         order: 'created_at.asc',
       });
