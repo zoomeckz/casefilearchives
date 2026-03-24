@@ -131,7 +131,7 @@ export const ForumPage: React.FC<ForumPageProps> = ({
           title: post.title,
           content: post.content,
           category: post.category,
-          author: profileMap[post.user_id] || 'Anonymous',
+          author: profileMap[post.user_id]?.name || 'Anonymous',
           authorId: post.user_id,
           replies: replyCounts[i].count || 0,
           createdAt: post.created_at,
