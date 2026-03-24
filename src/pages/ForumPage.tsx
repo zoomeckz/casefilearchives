@@ -19,6 +19,9 @@ function renderFormatted(text: string): string {
     .replace(/!\[([^\]]*)\]\(([^)]+)\)/g, '<img src="$2" alt="$1" class="max-w-full rounded-lg my-2" />')
     // Links: [text](url)
     .replace(/\[([^\]]+)\]\(([^)]+)\)/g, '<a href="$2" target="_blank" rel="noopener noreferrer" class="text-primary underline">$1</a>')
+    // Blockquotes: lines starting with >
+    .replace(/^&gt; (.+)$/gm, '<span class="block border-l-2 border-primary/40 pl-3 text-muted-foreground italic text-sm">$1</span>')
+    .replace(/^> (.+)$/gm, '<span class="block border-l-2 border-primary/40 pl-3 text-muted-foreground italic text-sm">$1</span>')
     // Preserve newlines (including blank lines)
     .replace(/\n/g, '<br>');
   return html;
