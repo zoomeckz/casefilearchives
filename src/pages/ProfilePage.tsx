@@ -10,6 +10,7 @@ import { ProfileFrame } from "@/components/ProfileFrame";
 import { ReadingStreak } from "@/components/ReadingStreak";
 import { UserRankBadge, calculateXP, getRank, getNextRank } from "@/components/UserRank";
 import { ReferralSection } from "@/components/ReferralSection";
+import { SavedQuotesSection } from "@/components/SavedQuotesSection";
 
 interface ProfilePageProps {
   user: AuthUser;
@@ -249,6 +250,9 @@ export const ProfilePage: React.FC<ProfilePageProps> = ({
             </div>
           </div>
         )}
+
+        {/* Saved Quotes */}
+        <SavedQuotesSection userId={user.id} isOwner />
 
         {/* Referral Section */}
         <div className="mt-8">

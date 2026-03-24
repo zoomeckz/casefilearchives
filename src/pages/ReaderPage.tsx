@@ -127,7 +127,7 @@ export const ReaderPage: React.FC<ReaderPageProps> = ({
         </p>
 
         {/* Text highlight bookmarks */}
-        <TextHighlightBookmark chapterId={chapter.id} user={user} setShowAuthModal={setShowAuthModal} />
+        <TextHighlightBookmark chapterId={chapter.id} chapterNumber={chapter.chapterNumber} user={user} setShowAuthModal={setShowAuthModal} />
 
         <article
           className="mb-12 rounded-xl p-6 sm:p-8"

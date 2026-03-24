@@ -3,6 +3,7 @@ import { useParams } from "react-router-dom";
 import { Icons } from "@/lib/icons";
 import { supabase } from "@/integrations/supabase/client";
 import { ProfileFrame } from "@/components/ProfileFrame";
+import { SavedQuotesSection } from "@/components/SavedQuotesSection";
 
 interface PublicProfile {
   name: string;
@@ -145,6 +146,9 @@ export const PublicProfilePage: React.FC = () => {
         {achievements.length === 0 && (
           <p className="text-muted-foreground text-center py-8">No achievements yet</p>
         )}
+
+        {/* Saved Quotes */}
+        {userId && <SavedQuotesSection userId={userId} />}
       </div>
     </div>
   );
