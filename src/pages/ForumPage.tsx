@@ -369,10 +369,14 @@ export const ForumPage: React.FC<ForumPageProps> = ({
                 </div>
               )}
             </div>
-            <h1 className="font-display text-2xl sm:text-3xl text-accent mt-2 mb-4">{selectedPost.title}</h1>
-            <p className="text-muted-foreground text-sm mb-6">
-              by <span className="text-primary cursor-pointer hover:underline" onClick={(e) => { e.stopPropagation(); navigate(`/user/${selectedPost.authorId}`); }}>{selectedPost.author}</span> · {new Date(selectedPost.createdAt).toLocaleDateString()}
-            </p>
+            <h1 className="font-display text-2xl sm:text-3xl text-accent mb-4">{selectedPost.title}</h1>
+            <div className="flex items-center gap-3 mb-6 cursor-pointer" onClick={() => navigate(`/user/${selectedPost.authorId}`)}>
+              <ProfileFrame avatarUrl={selectedPost.authorAvatar} name={selectedPost.author} frame={selectedPost.authorFrame} size={48} />
+              <div>
+                <span className="text-primary font-medium hover:underline">{selectedPost.author}</span>
+                <p className="text-muted-foreground text-xs">{new Date(selectedPost.createdAt).toLocaleDateString()}</p>
+              </div>
+            </div>
             <div className="text-foreground/80 leading-relaxed break-words" dangerouslySetInnerHTML={{ __html: renderFormatted(selectedPost.content) }} />
           </div>
           <h3 className="text-xl font-display text-accent mb-6">Replies ({replies.length})</h3>
