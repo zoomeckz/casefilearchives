@@ -382,7 +382,10 @@ export const ForumPage: React.FC<ForumPageProps> = ({
             <div className="flex items-center gap-3 mb-6 cursor-pointer" onClick={() => navigate(`/user/${selectedPost.authorId}`)}>
               <ProfileFrame avatarUrl={selectedPost.authorAvatar} name={selectedPost.author} frame={selectedPost.authorFrame} size={48} />
               <div>
-                <span className="text-primary font-medium hover:underline">{selectedPost.author}</span>
+                <div className="flex items-center gap-2">
+                  <span className="text-primary font-medium hover:underline">{selectedPost.author}</span>
+                  {selectedPost.authorId === SITE_AUTHOR_ID && <AuthorBadge />}
+                </div>
                 <p className="text-muted-foreground text-xs">{new Date(selectedPost.createdAt).toLocaleDateString()}</p>
               </div>
             </div>
