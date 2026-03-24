@@ -82,6 +82,7 @@ interface ForumReply {
   authorAvatar: string | null;
   authorFrame: string | null;
   createdAt: string;
+  isEdited: boolean;
 }
 
 interface ForumPageProps {
