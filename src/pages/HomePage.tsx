@@ -44,11 +44,11 @@ export const HomePage: React.FC<HomePageProps> = ({
 
   useEffect(() => {
     const fetchPosts = async () => {
-      const { data: postsData } = await dbFetch<any[]>('forum_posts', {
+      const { data: allPosts } = await dbFetch<any[]>('forum_posts', {
         select: 'id,title,category,created_at,user_id,is_pinned',
         order: 'created_at.desc',
-        filters: 'limit=5',
       });
+      const postsData = allPosts?.slice(0, 5) || null;
       if (!postsData) return;
 
       const userIds = [...new Set(postsData.map(p => p.user_id))];
