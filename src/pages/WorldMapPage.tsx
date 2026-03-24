@@ -8,11 +8,17 @@ interface WorldMapPageProps {
 export const WorldMapPage: React.FC<WorldMapPageProps> = ({ glossary }) => {
   const [selectedType, setSelectedType] = useState<string>("all");
   const [selectedTerm, setSelectedTerm] = useState<string | null>(null);
+  const [searchQuery, setSearchQuery] = useState("");
 
   const types = ["all", "location", "character", "creature", "concept"];
 
   const entries = Object.entries(glossary)
-    .filter(([_, v]) => selectedType === "all" || v.type === selectedType)
+    .filter(([term, v]) => selectedType === "all" || v.type === selectedType)
+    .filter(([term, v]) => {
+      if (!searchQuery.trim()) return true;
+      const q = searchQuery.toLowerCase();
+      return term.toLowerCase().includes(q) || v.description.toLowerCase().includes(q);
+    })
     .sort((a, b) => a[0].localeCompare(b[0]));
 
   // Build relationship data
@@ -57,6 +63,16 @@ export const WorldMapPage: React.FC<WorldMapPageProps> = ({ glossary }) => {
       <div className="max-w-6xl mx-auto">
         <h1 className="font-display text-3xl sm:text-4xl text-accent mb-2">🗺️ World Atlas</h1>
         <p className="text-muted-foreground mb-8">Explore the world of Sedorium and its connections</p>
+
+        <div className="mb-6">
+          <input
+            type="text"
+            value={searchQuery}
+            onChange={e => setSearchQuery(e.target.value)}
+            placeholder="Search terms, descriptions..."
+            className="w-full px-4 py-2.5 bg-secondary border border-border rounded-lg text-foreground placeholder:text-muted-foreground focus:outline-none focus:border-primary"
+          />
+        </div>
 
         <div className="flex flex-wrap gap-2 mb-8">
           {types.map(t => (

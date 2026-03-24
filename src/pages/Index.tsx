@@ -21,8 +21,6 @@ import { PublicProfilePage } from "@/pages/PublicProfilePage";
 import { AboutPage } from "@/pages/AboutPage";
 import { MangaPage } from "@/pages/MangaPage";
 import { LeaderboardPage } from "@/pages/LeaderboardPage";
-import { TheoriesPage } from "@/pages/TheoriesPage";
-import { GalleryPage } from "@/pages/GalleryPage";
 import { WorldMapPage } from "@/pages/WorldMapPage";
 import { usePageTracking } from "@/hooks/usePageTracking";
 
@@ -46,8 +44,6 @@ const Index = () => {
     if (path === "/about") return "about";
     if (path === "/manga") return "manga";
     if (path === "/leaderboard") return "leaderboard";
-    if (path === "/theories") return "theories";
-    if (path === "/gallery") return "gallery";
     if (path === "/world") return "world";
     return "home";
   })();
@@ -63,8 +59,6 @@ const Index = () => {
     else if (page === "about") navigate("/about");
     else if (page === "manga") navigate("/manga");
     else if (page === "leaderboard") navigate("/leaderboard");
-    else if (page === "theories") navigate("/theories");
-    else if (page === "gallery") navigate("/gallery");
     else if (page === "world") navigate("/world");
     else if (page === "reader" && selectedChapter) {
       navigate(`/chapters/${selectedChapter.chapterNumber}`);
@@ -227,13 +221,6 @@ const Index = () => {
 
         {currentPage === "leaderboard" && <LeaderboardPage />}
 
-        {currentPage === "theories" && (
-          <TheoriesPage user={user} setShowAuthModal={setShowAuthModal} />
-        )}
-
-        {currentPage === "gallery" && (
-          <GalleryPage user={user} setShowAuthModal={setShowAuthModal} />
-        )}
 
         {currentPage === "world" && (
           <WorldMapPage glossary={glossary} />
