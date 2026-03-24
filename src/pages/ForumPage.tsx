@@ -73,6 +73,7 @@ interface ForumReply {
   authorId: string;
   authorBio: string;
   authorAvatar: string | null;
+  authorFrame: string | null;
   createdAt: string;
 }
 
