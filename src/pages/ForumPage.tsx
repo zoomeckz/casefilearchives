@@ -435,9 +435,28 @@ export const ForumPage: React.FC<ForumPageProps> = ({
                       <span className="text-primary cursor-pointer hover:underline font-medium" onClick={() => navigate(`/user/${reply.authorId}`)}>{reply.author}</span>
                       {reply.authorId === SITE_AUTHOR_ID && <AuthorBadge />}
                       <span className="text-muted-foreground text-sm">{new Date(reply.createdAt).toLocaleDateString()}</span>
+                      {reply.isEdited && <span className="text-muted-foreground/50 text-xs italic">(edited)</span>}
                     </div>
-                    <div className="text-foreground/70 break-words" dangerouslySetInnerHTML={{ __html: renderFormatted(reply.content) }} />
-                    {reply.authorBio && (
+                    {editingReplyId === reply.id ? (
+                      <div className="space-y-2">
+                        <FormatToolbar textareaRef={editReplyRef} value={editReplyContent} onChange={setEditReplyContent} />
+                        <textarea ref={editReplyRef} value={editReplyContent} onChange={(e) => setEditReplyContent(e.target.value)}
+                          className="w-full px-4 py-3 bg-secondary border border-border rounded-lg text-foreground focus:outline-none focus:border-primary resize-none" rows={3} />
+                        <div className="flex gap-2">
+                          <button onClick={handleEditReply} className="px-4 py-1.5 bg-primary hover:bg-primary/80 text-primary-foreground rounded-lg text-sm font-medium transition-colors">Save</button>
+                          <button onClick={() => setEditingReplyId(null)} className="px-4 py-1.5 text-muted-foreground hover:text-foreground text-sm transition-colors">Cancel</button>
+                        </div>
+                      </div>
+                    ) : (
+                      <>
+                        <div className="text-foreground/70 break-words" dangerouslySetInnerHTML={{ __html: renderFormatted(reply.content) }} />
+                        {(user?.id === reply.authorId || user?.isAdmin) && (
+                          <button onClick={() => { setEditingReplyId(reply.id); setEditReplyContent(reply.content); }}
+                            className="text-muted-foreground hover:text-foreground text-xs mt-1 transition-colors">✏️ Edit</button>
+                        )}
+                      </>
+                    )}
+                    {reply.authorBio && editingReplyId !== reply.id && (
                       <div className="mt-3 pt-2 border-t border-border/30">
                         <p className="text-muted-foreground/60 text-xs italic line-clamp-2">{reply.authorBio}</p>
                       </div>
