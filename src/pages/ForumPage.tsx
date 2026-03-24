@@ -15,9 +15,13 @@ function renderFormatted(text: string): string {
     // Image URLs on their own line: ![alt](url)
     .replace(/!\[([^\]]*)\]\(([^)]+)\)/g, '<img src="$2" alt="$1" class="max-w-full rounded-lg my-2" />')
     // Links: [text](url)
-    .replace(/\[([^\]]+)\]\(([^)]+)\)/g, '<a href="$2" target="_blank" rel="noopener noreferrer" class="text-primary underline">$1</a>');
+    .replace(/\[([^\]]+)\]\(([^)]+)\)/g, '<a href="$2" target="_blank" rel="noopener noreferrer" class="text-primary underline">$1</a>')
+    // Preserve newlines (including blank lines)
+    .replace(/\n/g, '<br>');
   return html;
 }
+
+export { renderFormatted };
 
 function slugify(title: string): string {
   return title
