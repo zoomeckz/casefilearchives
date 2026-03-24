@@ -126,10 +126,16 @@ export const CommentsSection: React.FC<CommentsSectionProps> = ({
                   <div className="pl-11">
                     <div className="text-foreground/70 break-words" dangerouslySetInnerHTML={{ __html: renderFormatted(comment.content) }} />
                     {user?.id === comment.authorId && (
-                      <button onClick={() => handleEdit(comment)}
-                        className="text-muted-foreground hover:text-foreground text-xs mt-1 transition-colors">
-                        ✏️ Edit
-                      </button>
+                      <div className="flex gap-3 mt-1">
+                        <button onClick={() => handleEdit(comment)}
+                          className="text-muted-foreground hover:text-foreground text-xs transition-colors">
+                          ✏️ Edit
+                        </button>
+                        <button onClick={() => { if (confirm('Delete this comment?')) deleteComment(comment.id); }}
+                          className="text-muted-foreground hover:text-destructive text-xs transition-colors">
+                          🗑️ Delete
+                        </button>
+                      </div>
                     )}
                   </div>
                 )}
