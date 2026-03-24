@@ -21,8 +21,6 @@ import { PublicProfilePage } from "@/pages/PublicProfilePage";
 import { AboutPage } from "@/pages/AboutPage";
 import { MangaPage } from "@/pages/MangaPage";
 import { LeaderboardPage } from "@/pages/LeaderboardPage";
-import { TheoriesPage } from "@/pages/TheoriesPage";
-import { GalleryPage } from "@/pages/GalleryPage";
 import { WorldMapPage } from "@/pages/WorldMapPage";
 import { usePageTracking } from "@/hooks/usePageTracking";
 

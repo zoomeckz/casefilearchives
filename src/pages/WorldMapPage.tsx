@@ -64,6 +64,16 @@ export const WorldMapPage: React.FC<WorldMapPageProps> = ({ glossary }) => {
         <h1 className="font-display text-3xl sm:text-4xl text-accent mb-2">🗺️ World Atlas</h1>
         <p className="text-muted-foreground mb-8">Explore the world of Sedorium and its connections</p>
 
+        <div className="mb-6">
+          <input
+            type="text"
+            value={searchQuery}
+            onChange={e => setSearchQuery(e.target.value)}
+            placeholder="Search terms, descriptions..."
+            className="w-full px-4 py-2.5 bg-secondary border border-border rounded-lg text-foreground placeholder:text-muted-foreground focus:outline-none focus:border-primary"
+          />
+        </div>
+
         <div className="flex flex-wrap gap-2 mb-8">
           {types.map(t => (
             <button

@@ -28,8 +28,6 @@ export const Navigation: React.FC<NavigationProps> = ({
 
   const communityItems = [
     { id: "forum", label: "Forum" },
-    { id: "theories", label: "Theories" },
-    { id: "gallery", label: "Fan Art" },
     { id: "leaderboard", label: "Leaderboard" },
     { id: "world", label: "World Atlas" },
   ];
