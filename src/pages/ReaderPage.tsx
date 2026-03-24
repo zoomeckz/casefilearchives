@@ -81,14 +81,19 @@ export const ReaderPage: React.FC<ReaderPageProps> = ({
           Back to chapters
         </button>
 
-        <header className="mb-12">
+        <header className="mb-12 text-center">
           <span className="text-primary text-sm font-medium">
             Chapter {chapter.chapterNumber}
           </span>
-          <div className="flex items-start justify-between gap-4 mt-2 mb-4">
-            <h1 className="font-display text-4xl sm:text-5xl text-accent">
-              {chapter.title}
-            </h1>
+          <h1 className="font-display text-4xl sm:text-5xl text-accent mt-2 mb-4">
+            {chapter.title}
+          </h1>
+          <div className="flex flex-wrap items-center justify-center gap-4 text-muted-foreground text-sm">
+            <span>{new Date(chapter.publishedAt).toLocaleDateString()}</span>
+            <span className="flex items-center gap-1">
+              <Icons.Eye className="w-4 h-4" /> {chapter.views} views
+            </span>
+            <span>📖 ~{readTime} min read</span>
             {user && (
               <BookmarkButton
                 isBookmarked={isBookmarked(chapter.id)}
@@ -99,13 +104,6 @@ export const ReaderPage: React.FC<ReaderPageProps> = ({
                 size="md"
               />
             )}
-          </div>
-          <div className="flex flex-wrap items-center gap-4 text-muted-foreground text-sm">
-            <span>{new Date(chapter.publishedAt).toLocaleDateString()}</span>
-            <span className="flex items-center gap-1">
-              <Icons.Eye className="w-4 h-4" /> {chapter.views} views
-            </span>
-            <span>📖 ~{readTime} min read</span>
           </div>
         </header>
 
