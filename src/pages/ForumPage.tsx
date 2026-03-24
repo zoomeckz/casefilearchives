@@ -110,6 +110,10 @@ export const ForumPage: React.FC<ForumPageProps> = ({
   const newPostRef = useRef<HTMLTextAreaElement>(null);
   const editPostRef = useRef<HTMLTextAreaElement>(null);
   const replyRef = useRef<HTMLTextAreaElement>(null);
+  const editReplyRef = useRef<HTMLTextAreaElement>(null);
+
+  const [editingReplyId, setEditingReplyId] = useState<string | null>(null);
+  const [editReplyContent, setEditReplyContent] = useState("");
 
   useEffect(() => {
     const fetchPosts = async () => {
