@@ -302,6 +302,19 @@ export const ForumPage: React.FC<ForumPageProps> = ({
 
   const canEdit = (post: ForumPost) => user?.isAdmin || user?.id === post.authorId;
 
+  const handleEditReply = async () => {
+    if (!editingReplyId || !editReplyContent.trim()) return;
+    const now = new Date().toISOString();
+    await dbFetch('forum_replies', {
+      method: 'PATCH',
+      filters: `id=eq.${editingReplyId}`,
+      body: { content: editReplyContent, updated_at: now },
+    });
+    setReplies(replies.map(r => r.id === editingReplyId ? { ...r, content: editReplyContent, isEdited: true } : r));
+    setEditingReplyId(null);
+    setEditReplyContent("");
+  };
+
   const filteredPosts = selectedCategory
     ? posts.filter(p => p.category === selectedCategory)
     : posts;
