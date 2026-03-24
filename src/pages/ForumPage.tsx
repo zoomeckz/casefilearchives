@@ -155,6 +155,7 @@ export const ForumPage: React.FC<ForumPageProps> = ({
           replies: replyCounts[i].count || 0,
           createdAt: post.created_at,
           isPinned: post.is_pinned || false,
+          isEdited: !!(post.updated_at && post.updated_at !== post.created_at),
         }));
 
         setPosts(mappedPosts);
