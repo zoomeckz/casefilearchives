@@ -150,8 +150,7 @@ export const HomePage: React.FC<HomePageProps> = ({
 
           {/* Latest Forum Posts */}
           <div>
-            <h2 className="font-display text-sm uppercase tracking-[0.2em] text-muted-foreground mb-8 text-center lg:text-left">
-              Latest Discussions
+            <h2 className="font-display text-sm uppercase tracking-[0.2em] text-muted-foreground mb-8 text-center">
             </h2>
 
             {forumPosts.length === 0 ? (
