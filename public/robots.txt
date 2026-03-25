@@ -29,3 +29,7 @@ User-agent: *
 Allow: /
 
 Sitemap: https://sedorium.lovable.app/sitemap.xml
+
+# Full content feed for AI crawlers (always up-to-date, dynamically generated)
+# HTML: https://iiezbdlmikvgxjlozwlc.supabase.co/functions/v1/content-feed
+# JSON: https://iiezbdlmikvgxjlozwlc.supabase.co/functions/v1/content-feed?format=json
