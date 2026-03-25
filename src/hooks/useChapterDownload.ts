@@ -34,32 +34,27 @@ function stripHtml(html: string): string {
 }
 
 export async function downloadAllChapters() {
-  // Fetch directly with no row limit by paginating
-  const allChapters: any[] = [];
-  let offset = 0;
-  const limit = 500;
-
-  while (true) {
-    const response = await fetch(
-      `${url}/rest/v1/chapters?select=title,content,chapter_number&order=chapter_number.asc&offset=${offset}&limit=${limit}`,
-      {
-        headers: {
-          'apikey': key,
-          'Authorization': `Bearer ${key}`,
-        },
-      }
-    );
-
-    if (!response.ok) {
-      throw new Error("Failed to fetch chapters");
+  // Fetch all chapters in a single request with explicit high limit
+  const response = await fetch(
+    `${url}/rest/v1/chapters?select=title,content,chapter_number&order=chapter_number.asc&limit=1000`,
+    {
+      headers: {
+        'apikey': key,
+        'Authorization': `Bearer ${key}`,
+      },
     }
+  );
 
-    const batch = await response.json();
-    if (!Array.isArray(batch) || batch.length === 0) break;
-    allChapters.push(...batch);
-    if (batch.length < limit) break;
-    offset += limit;
+  if (!response.ok) {
+    throw new Error("Failed to fetch chapters");
   }
+
+  const allChapters = await response.json();
+  if (!Array.isArray(allChapters) || allChapters.length === 0) {
+    throw new Error("No chapters found");
+  }
+
+  console.log(`[Download] Fetched ${allChapters.length} chapters`);
 
   if (allChapters.length === 0) {
     throw new Error("No chapters found");
