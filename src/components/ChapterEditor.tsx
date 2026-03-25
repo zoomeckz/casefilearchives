@@ -226,13 +226,14 @@ export const ChapterEditor: React.FC<ChapterEditorProps> = ({ authToken, glossar
     <div className="min-h-screen">
       {/* Top bar */}
       <div className="flex items-center justify-between mb-6">
-        <button
-          onClick={onBack}
+        <a
+          href="/admin"
+          onClick={(e) => { e.preventDefault(); onBack(); }}
           className="flex items-center gap-2 text-muted-foreground hover:text-foreground transition-colors"
         >
           <Icons.ChevronLeft className="w-4 h-4" />
           Back to Chapters
-        </button>
+        </a>
         <div className="flex items-center gap-3">
           {draftStatus && (
             <span className="text-xs text-muted-foreground">{draftStatus}</span>
