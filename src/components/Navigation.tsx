@@ -99,7 +99,6 @@ export const Navigation: React.FC<NavigationProps> = ({
                     </button>
                   ))}
                 </div>
-              )}
             </div>
 
             {extraItems.map((item) => (
