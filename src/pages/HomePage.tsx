@@ -161,18 +161,18 @@ export const HomePage: React.FC<HomePageProps> = ({
                   <div
                     key={post.id}
                     onClick={() => navigate(`/forum/${slugify(post.title)}--${post.id.slice(0, 8)}`)}
-                    className="group cursor-pointer py-4 px-4 rounded-lg hover:bg-secondary/30 transition-all duration-200"
+                    className="group cursor-pointer py-4 px-4 rounded-lg hover:bg-secondary/30 transition-all duration-200 text-center"
                   >
-                    <div className="flex items-center gap-2 text-xs text-muted-foreground mb-1">
+                    <div className="flex items-center justify-center gap-2 text-xs text-muted-foreground mb-1">
                       {post.isPinned && <span className="text-accent">📌</span>}
                       <span>{post.category}</span>
                       <span>·</span>
                       <span>{post.replies} replies</span>
                     </div>
-                    <h3 className="font-display text-base text-foreground/80 group-hover:text-primary transition-colors truncate">
+                    <h3 className="font-display text-base text-foreground/80 group-hover:text-primary transition-colors">
                       {post.title}
                     </h3>
-                    <div className="flex items-center gap-2 mt-1.5">
+                    <div className="flex items-center justify-center gap-2 mt-1.5">
                       <ProfileFrame avatarUrl={post.authorAvatar} name={post.author} frame={post.authorFrame} size={20} />
                       <span className="text-muted-foreground/60 text-xs">{post.author}</span>
                       <span className="text-muted-foreground/40 text-xs">·</span>
