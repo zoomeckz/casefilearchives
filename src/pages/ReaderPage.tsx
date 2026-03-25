@@ -95,6 +95,19 @@ export const ReaderPage: React.FC<ReaderPageProps> = ({
               <Icons.Eye className="w-4 h-4" /> {chapter.views} views
             </span>
             <span>📖 ~{readTime} min read</span>
+            {user?.isAdmin && (
+              <button
+                onClick={() => {
+                  setCurrentPage("admin");
+                  // Store the chapter id so AdminPanel can open the editor
+                  sessionStorage.setItem('admin-edit-chapter', chapter.id);
+                }}
+                className="flex items-center gap-1 px-3 py-1 bg-primary/20 hover:bg-primary/30 text-primary rounded-full text-xs font-medium transition-colors"
+              >
+                <Icons.Edit className="w-3.5 h-3.5" />
+                Edit Chapter
+              </button>
+            )}
             {user && (
               <BookmarkButton
                 isBookmarked={isBookmarked(chapter.id)}
