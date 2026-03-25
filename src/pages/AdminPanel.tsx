@@ -73,7 +73,7 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ glossary, authToken, onG
     const fetchAnalytics = async () => {
       try {
         const [chaptersRes, readersRes, commentsRes, forumRes, subscribersRes, pageViewsRes] = await Promise.all([
-          dbFetch<any[]>('chapters', { select: 'id,title,views,chapter_number', order: 'chapter_number.asc', token: authToken }),
+          dbFetch<any[]>('chapters', { select: 'id,title,views,chapter_number,published_at', order: 'chapter_number.asc', token: authToken }),
           dbFetch<any[]>('profiles', { select: '*', head: true, token: authToken }),
           dbFetch<any[]>('comments', { select: '*', head: true, token: authToken }),
           dbFetch<any[]>('forum_posts', { select: '*', head: true, token: authToken }),
@@ -398,16 +398,18 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ glossary, authToken, onG
                               <span className="text-foreground font-medium text-sm md:text-base block truncate">Ch. {ch.chapter_number}: {ch.title}</span>
                               <div className="flex gap-3 mt-1 text-xs text-muted-foreground">
                                 <span>{ch.views} views</span>
-                                <span>{new Date(ch.published_at).toLocaleDateString()}</span>
+                                <span>{ch.published_at ? new Date(ch.published_at).toLocaleDateString() : 'No date'}</span>
                               </div>
                             </div>
                             <div className="flex items-center gap-2 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity shrink-0">
-                              <button
-                                onClick={() => window.open(`/chapters/${ch.chapter_number}`, '_blank')}
-                                className="px-3 py-1.5 bg-accent/20 hover:bg-accent/30 text-accent rounded text-xs transition-colors"
+                              <a
+                                href={`/chapters/${ch.chapter_number}`}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="px-3 py-1.5 bg-accent/20 hover:bg-accent/30 text-accent rounded text-xs transition-colors inline-block"
                               >
                                 Preview
-                              </button>
+                              </a>
                               <button
                                 onClick={() => { setEditChapterId(ch.id); setEditorMode('edit'); }}
                                 className="px-3 py-1.5 bg-secondary hover:bg-secondary/80 text-foreground rounded text-xs transition-colors"
@@ -430,6 +432,52 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ glossary, authToken, onG
 
                 {chapterSubTab === 'drafts' && (
                   <>
+                    {filteredDrafts.length > 0 && (
+                      <div className="flex justify-end mb-3">
+                        <button
+                          onClick={() => {
+                            const allDrafts = getAllDrafts();
+                            if (allDrafts.length === 0) { toast.error('No drafts to download'); return; }
+                            const separator = '═'.repeat(60);
+                            const lines: string[] = [
+                              'SEDORIUM — DRAFTS',
+                              separator,
+                              `Exported: ${new Date().toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })}`,
+                              `Total Drafts: ${allDrafts.length}`,
+                              separator, '', '',
+                            ];
+                            for (const d of allDrafts.sort((a, b) => (a.chapterNumber || 0) - (b.chapterNumber || 0))) {
+                              lines.push(separator);
+                              lines.push(`DRAFT — ${d.title || 'Untitled'} (Ch. ${d.chapterNumber || '?'})`);
+                              lines.push(`Last saved: ${new Date(d.lastSaved).toLocaleString()}`);
+                              lines.push(separator, '');
+                              const div = document.createElement('div');
+                              div.innerHTML = d.content || '';
+                              ['p','div','h1','h2','h3','h4','h5','h6','li','blockquote'].forEach(tag => {
+                                div.querySelectorAll(tag).forEach(el => { el.insertAdjacentText('beforebegin', '\n'); el.insertAdjacentText('afterend', '\n'); });
+                              });
+                              div.querySelectorAll('br').forEach(br => br.replaceWith('\n'));
+                              const text = (div.textContent || '').replace(/[ \t]+/g, ' ').replace(/\n{3,}/g, '\n\n').trim();
+                              lines.push(text, '', '');
+                            }
+                            lines.push(separator, 'END OF DRAFTS', separator);
+                            const blob = new Blob([lines.join('\n')], { type: 'text/plain;charset=utf-8' });
+                            const url = URL.createObjectURL(blob);
+                            const a = document.createElement('a');
+                            a.href = url;
+                            a.download = 'Sedorium_Drafts.txt';
+                            document.body.appendChild(a);
+                            a.click();
+                            setTimeout(() => { document.body.removeChild(a); URL.revokeObjectURL(url); }, 3000);
+                            toast.success('Drafts downloaded');
+                          }}
+                          className="flex items-center gap-2 px-3 py-1.5 bg-primary/20 hover:bg-primary/30 text-primary rounded-lg text-xs transition-colors"
+                        >
+                          <Icons.Save className="w-3.5 h-3.5" />
+                          Download All Drafts
+                        </button>
+                      </div>
+                    )}
                     {filteredDrafts.length === 0 ? (
                       <p className="text-muted-foreground text-sm">
                         {chapterSearch ? 'No drafts match your search.' : 'No drafts saved. Drafts auto-save every 10 seconds while editing.'}
