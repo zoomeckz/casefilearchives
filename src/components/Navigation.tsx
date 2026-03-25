@@ -80,8 +80,13 @@ export const Navigation: React.FC<NavigationProps> = ({
                   <polyline points="6 9 12 15 18 9" />
                 </svg>
               </button>
-              {communityOpen && (
-                <div className="absolute top-full left-1/2 -translate-x-1/2 mt-2 w-44 bg-card border border-border rounded-lg shadow-xl overflow-hidden animate-fade-in">
+              <div
+                className={`absolute top-full left-1/2 -translate-x-1/2 mt-1 w-44 bg-card border border-border rounded-lg shadow-xl overflow-hidden transition-all duration-200 ease-out origin-top ${
+                  communityOpen
+                    ? "opacity-100 scale-y-100 pointer-events-auto"
+                    : "opacity-0 scale-y-90 pointer-events-none"
+                }`}
+              >
                   {communityItems.map(item => (
                     <button
                       key={item.id}
@@ -94,7 +99,6 @@ export const Navigation: React.FC<NavigationProps> = ({
                     </button>
                   ))}
                 </div>
-              )}
             </div>
 
             {extraItems.map((item) => (
