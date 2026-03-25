@@ -185,7 +185,7 @@ export const HomePage: React.FC<HomePageProps> = ({
               </div>
             )}
 
-            <div className="text-center lg:text-left mt-6">
+            <div className="text-center mt-6">
               <button
                 onClick={() => setCurrentPage("forum")}
                 className="text-muted-foreground hover:text-primary text-sm transition-colors"
