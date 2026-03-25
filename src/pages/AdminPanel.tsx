@@ -432,6 +432,52 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ glossary, authToken, onG
 
                 {chapterSubTab === 'drafts' && (
                   <>
+                    {filteredDrafts.length > 0 && (
+                      <div className="flex justify-end mb-3">
+                        <button
+                          onClick={() => {
+                            const allDrafts = getAllDrafts();
+                            if (allDrafts.length === 0) { toast.error('No drafts to download'); return; }
+                            const separator = '═'.repeat(60);
+                            const lines: string[] = [
+                              'SEDORIUM — DRAFTS',
+                              separator,
+                              `Exported: ${new Date().toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })}`,
+                              `Total Drafts: ${allDrafts.length}`,
+                              separator, '', '',
+                            ];
+                            for (const d of allDrafts.sort((a, b) => (a.chapterNumber || 0) - (b.chapterNumber || 0))) {
+                              lines.push(separator);
+                              lines.push(`DRAFT — ${d.title || 'Untitled'} (Ch. ${d.chapterNumber || '?'})`);
+                              lines.push(`Last saved: ${new Date(d.lastSaved).toLocaleString()}`);
+                              lines.push(separator, '');
+                              const div = document.createElement('div');
+                              div.innerHTML = d.content || '';
+                              ['p','div','h1','h2','h3','h4','h5','h6','li','blockquote'].forEach(tag => {
+                                div.querySelectorAll(tag).forEach(el => { el.insertAdjacentText('beforebegin', '\n'); el.insertAdjacentText('afterend', '\n'); });
+                              });
+                              div.querySelectorAll('br').forEach(br => br.replaceWith('\n'));
+                              const text = (div.textContent || '').replace(/[ \t]+/g, ' ').replace(/\n{3,}/g, '\n\n').trim();
+                              lines.push(text, '', '');
+                            }
+                            lines.push(separator, 'END OF DRAFTS', separator);
+                            const blob = new Blob([lines.join('\n')], { type: 'text/plain;charset=utf-8' });
+                            const url = URL.createObjectURL(blob);
+                            const a = document.createElement('a');
+                            a.href = url;
+                            a.download = 'Sedorium_Drafts.txt';
+                            document.body.appendChild(a);
+                            a.click();
+                            setTimeout(() => { document.body.removeChild(a); URL.revokeObjectURL(url); }, 3000);
+                            toast.success('Drafts downloaded');
+                          }}
+                          className="flex items-center gap-2 px-3 py-1.5 bg-primary/20 hover:bg-primary/30 text-primary rounded-lg text-xs transition-colors"
+                        >
+                          <Icons.Save className="w-3.5 h-3.5" />
+                          Download All Drafts
+                        </button>
+                      </div>
+                    )}
                     {filteredDrafts.length === 0 ? (
                       <p className="text-muted-foreground text-sm">
                         {chapterSearch ? 'No drafts match your search.' : 'No drafts saved. Drafts auto-save every 10 seconds while editing.'}
