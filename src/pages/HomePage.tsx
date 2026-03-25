@@ -111,7 +111,7 @@ export const HomePage: React.FC<HomePageProps> = ({
         <div className="max-w-5xl mx-auto grid grid-cols-1 lg:grid-cols-2 gap-8 lg:gap-12">
           {/* Latest Chapters */}
           <div>
-            <h2 className="font-display text-sm uppercase tracking-[0.2em] text-muted-foreground mb-8 text-center lg:text-left">
+            <h2 className="font-display text-sm uppercase tracking-[0.2em] text-muted-foreground mb-8 text-center">
               Latest Chapters
             </h2>
 
