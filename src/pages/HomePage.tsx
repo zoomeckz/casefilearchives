@@ -111,7 +111,7 @@ export const HomePage: React.FC<HomePageProps> = ({
         <div className="max-w-5xl mx-auto grid grid-cols-1 lg:grid-cols-2 gap-8 lg:gap-12">
           {/* Latest Chapters */}
           <div>
-            <h2 className="font-display text-sm uppercase tracking-[0.2em] text-muted-foreground mb-8 text-center lg:text-left">
+            <h2 className="font-display text-sm uppercase tracking-[0.2em] text-muted-foreground mb-8 text-center">
               Latest Chapters
             </h2>
 
@@ -123,28 +123,21 @@ export const HomePage: React.FC<HomePageProps> = ({
                   <div
                     key={chapter.id}
                     onClick={() => setSelectedChapter(chapter)}
-                    className="group cursor-pointer py-4 px-4 rounded-lg hover:bg-secondary/30 transition-all duration-200"
+                    className="group cursor-pointer py-4 px-4 rounded-lg hover:bg-secondary/30 transition-all duration-200 text-center"
                   >
-                    <div className="flex items-baseline justify-between gap-3">
-                      <div className="min-w-0">
-                        <span className="text-muted-foreground text-xs uppercase tracking-wider">
-                          Chapter {chapter.chapterNumber}
-                        </span>
-                        <h3 className="font-display text-lg text-foreground/80 group-hover:text-primary transition-colors mt-0.5 truncate">
-                          {chapter.title}
-                        </h3>
-                      </div>
-                      <span className="text-muted-foreground/60 text-xs whitespace-nowrap flex-shrink-0">
-                        {new Date(chapter.publishedAt).toLocaleDateString("en-US", { month: "short", day: "numeric" })}
-                      </span>
-                    </div>
+                    <span className="text-muted-foreground text-xs uppercase tracking-wider">
+                      Chapter {chapter.chapterNumber} · {new Date(chapter.publishedAt).toLocaleDateString("en-US", { month: "short", day: "numeric" })}
+                    </span>
+                    <h3 className="font-display text-lg text-foreground/80 group-hover:text-primary transition-colors mt-0.5">
+                      {chapter.title}
+                    </h3>
                   </div>
                 ))}
               </div>
             )}
 
             {chapters.length > 5 && (
-              <div className="text-center lg:text-left mt-6">
+              <div className="text-center mt-6">
                 <button
                   onClick={() => setCurrentPage("chapters")}
                   className="text-muted-foreground hover:text-primary text-sm transition-colors"
@@ -157,8 +150,7 @@ export const HomePage: React.FC<HomePageProps> = ({
 
           {/* Latest Forum Posts */}
           <div>
-            <h2 className="font-display text-sm uppercase tracking-[0.2em] text-muted-foreground mb-8 text-center lg:text-left">
-              Latest Discussions
+            <h2 className="font-display text-sm uppercase tracking-[0.2em] text-muted-foreground mb-8 text-center">
             </h2>
 
             {forumPosts.length === 0 ? (
@@ -169,18 +161,18 @@ export const HomePage: React.FC<HomePageProps> = ({
                   <div
                     key={post.id}
                     onClick={() => navigate(`/forum/${slugify(post.title)}--${post.id.slice(0, 8)}`)}
-                    className="group cursor-pointer py-4 px-4 rounded-lg hover:bg-secondary/30 transition-all duration-200"
+                    className="group cursor-pointer py-4 px-4 rounded-lg hover:bg-secondary/30 transition-all duration-200 text-center"
                   >
-                    <div className="flex items-center gap-2 text-xs text-muted-foreground mb-1">
+                    <div className="flex items-center justify-center gap-2 text-xs text-muted-foreground mb-1">
                       {post.isPinned && <span className="text-accent">📌</span>}
                       <span>{post.category}</span>
                       <span>·</span>
                       <span>{post.replies} replies</span>
                     </div>
-                    <h3 className="font-display text-base text-foreground/80 group-hover:text-primary transition-colors truncate">
+                    <h3 className="font-display text-base text-foreground/80 group-hover:text-primary transition-colors">
                       {post.title}
                     </h3>
-                    <div className="flex items-center gap-2 mt-1.5">
+                    <div className="flex items-center justify-center gap-2 mt-1.5">
                       <ProfileFrame avatarUrl={post.authorAvatar} name={post.author} frame={post.authorFrame} size={20} />
                       <span className="text-muted-foreground/60 text-xs">{post.author}</span>
                       <span className="text-muted-foreground/40 text-xs">·</span>
@@ -193,7 +185,7 @@ export const HomePage: React.FC<HomePageProps> = ({
               </div>
             )}
 
-            <div className="text-center lg:text-left mt-6">
+            <div className="text-center mt-6">
               <button
                 onClick={() => setCurrentPage("forum")}
                 className="text-muted-foreground hover:text-primary text-sm transition-colors"
