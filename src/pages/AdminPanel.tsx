@@ -402,12 +402,14 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ glossary, authToken, onG
                               </div>
                             </div>
                             <div className="flex items-center gap-2 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity shrink-0">
-                              <button
-                                onClick={() => window.open(`/chapters/${ch.chapter_number}`, '_blank')}
-                                className="px-3 py-1.5 bg-accent/20 hover:bg-accent/30 text-accent rounded text-xs transition-colors"
+                              <a
+                                href={`/chapters/${ch.chapter_number}`}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="px-3 py-1.5 bg-accent/20 hover:bg-accent/30 text-accent rounded text-xs transition-colors inline-block"
                               >
                                 Preview
-                              </button>
+                              </a>
                               <button
                                 onClick={() => { setEditChapterId(ch.id); setEditorMode('edit'); }}
                                 className="px-3 py-1.5 bg-secondary hover:bg-secondary/80 text-foreground rounded text-xs transition-colors"
