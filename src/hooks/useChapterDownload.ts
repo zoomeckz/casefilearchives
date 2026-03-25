@@ -93,11 +93,22 @@ export async function downloadAllChapters() {
 
   const text = lines.join("\n");
   const blob = new Blob([text], { type: "text/plain;charset=utf-8" });
+  const blobUrl = URL.createObjectURL(blob);
+
+  // Use window.open as fallback for mobile browsers where <a> click doesn't trigger download
   const a = document.createElement("a");
-  a.href = URL.createObjectURL(blob);
+  a.href = blobUrl;
   a.download = `Sedorium_All_Chapters.txt`;
+  a.style.display = "none";
   document.body.appendChild(a);
+
+  // Some mobile browsers need a small delay
+  await new Promise((r) => setTimeout(r, 100));
   a.click();
-  document.body.removeChild(a);
-  URL.revokeObjectURL(a.href);
+
+  // Cleanup after a longer delay to ensure download starts
+  setTimeout(() => {
+    document.body.removeChild(a);
+    URL.revokeObjectURL(blobUrl);
+  }, 5000);
 }
