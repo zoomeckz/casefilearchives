@@ -162,6 +162,17 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ glossary, authToken, onG
     refreshDrafts();
   }, [refreshDrafts]);
 
+  // Auto-open chapter editor if navigated from reader page
+  useEffect(() => {
+    const editId = sessionStorage.getItem('admin-edit-chapter');
+    if (editId) {
+      sessionStorage.removeItem('admin-edit-chapter');
+      setActiveTab('chapters');
+      setEditChapterId(editId);
+      setEditorMode('edit');
+    }
+  }, []);
+
   // Filtered & sorted chapters
   const filteredChapters = useMemo(() => {
     let list = [...chapters];
