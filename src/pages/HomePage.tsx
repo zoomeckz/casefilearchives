@@ -123,14 +123,21 @@ export const HomePage: React.FC<HomePageProps> = ({
                   <div
                     key={chapter.id}
                     onClick={() => setSelectedChapter(chapter)}
-                    className="group cursor-pointer py-4 px-4 rounded-lg hover:bg-secondary/30 transition-all duration-200 text-center"
+                    className="group cursor-pointer py-4 px-4 rounded-lg hover:bg-secondary/30 transition-all duration-200"
                   >
-                    <span className="text-muted-foreground text-xs uppercase tracking-wider">
-                      Chapter {chapter.chapterNumber} · {new Date(chapter.publishedAt).toLocaleDateString("en-US", { month: "short", day: "numeric" })}
-                    </span>
-                    <h3 className="font-display text-lg text-foreground/80 group-hover:text-primary transition-colors mt-0.5">
-                      {chapter.title}
-                    </h3>
+                    <div className="flex items-baseline justify-between gap-3">
+                      <div className="min-w-0">
+                        <span className="text-muted-foreground text-xs uppercase tracking-wider">
+                          Chapter {chapter.chapterNumber}
+                        </span>
+                        <h3 className="font-display text-lg text-foreground/80 group-hover:text-primary transition-colors mt-0.5 truncate">
+                          {chapter.title}
+                        </h3>
+                      </div>
+                      <span className="text-muted-foreground/60 text-xs whitespace-nowrap flex-shrink-0">
+                        {new Date(chapter.publishedAt).toLocaleDateString("en-US", { month: "short", day: "numeric" })}
+                      </span>
+                    </div>
                   </div>
                 ))}
               </div>
