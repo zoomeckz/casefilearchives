@@ -73,7 +73,7 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ glossary, authToken, onG
     const fetchAnalytics = async () => {
       try {
         const [chaptersRes, readersRes, commentsRes, forumRes, subscribersRes, pageViewsRes] = await Promise.all([
-          dbFetch<any[]>('chapters', { select: 'id,title,views,chapter_number', order: 'chapter_number.asc', token: authToken }),
+          dbFetch<any[]>('chapters', { select: 'id,title,views,chapter_number,published_at', order: 'chapter_number.asc', token: authToken }),
           dbFetch<any[]>('profiles', { select: '*', head: true, token: authToken }),
           dbFetch<any[]>('comments', { select: '*', head: true, token: authToken }),
           dbFetch<any[]>('forum_posts', { select: '*', head: true, token: authToken }),
