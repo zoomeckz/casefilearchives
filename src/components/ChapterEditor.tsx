@@ -12,6 +12,7 @@ interface ChapterEditorProps {
   editChapterId?: string | null;
   resumeDraftId?: string | null;
 }
+
 export interface ChapterDraft {
   id: string;
   title: string;
@@ -20,51 +21,62 @@ export interface ChapterDraft {
   lastSaved: string;
 }
 
-const DRAFTS_KEY = 'sedorium-chapter-drafts';
+// ── DB-backed draft helpers ──
 
-export function getAllDrafts(): ChapterDraft[] {
-  try {
-    const raw = localStorage.getItem(DRAFTS_KEY);
-    return raw ? JSON.parse(raw) : [];
-  } catch {
-    return [];
-  }
+export async function getAllDrafts(token?: string): Promise<ChapterDraft[]> {
+  const { data } = await dbFetch<any[]>('chapter_drafts', {
+    select: 'id,title,content,chapter_number,updated_at',
+    order: 'updated_at.desc',
+    token,
+  });
+  return (data || []).map((d: any) => ({
+    id: d.id,
+    title: d.title,
+    content: d.content,
+    chapterNumber: d.chapter_number,
+    lastSaved: d.updated_at,
+  }));
 }
 
-function getDraftById(draftId: string): ChapterDraft | null {
-  return getAllDrafts().find(d => d.id === draftId) || null;
+async function getDraftById(draftId: string, token?: string): Promise<ChapterDraft | null> {
+  const { data } = await dbFetch<any[]>('chapter_drafts', {
+    select: 'id,title,content,chapter_number,updated_at',
+    filters: `id=eq.${draftId}`,
+    token,
+  });
+  if (!data?.[0]) return null;
+  const d = data[0];
+  return { id: d.id, title: d.title, content: d.content, chapterNumber: d.chapter_number, lastSaved: d.updated_at };
 }
 
-function saveDraftById(draft: ChapterDraft) {
-  const drafts = getAllDrafts();
-  const idx = drafts.findIndex(d => d.id === draft.id);
-  if (idx >= 0) {
-    drafts[idx] = draft;
-  } else {
-    drafts.push(draft);
-  }
-  localStorage.setItem(DRAFTS_KEY, JSON.stringify(drafts));
+async function saveDraftById(draft: ChapterDraft, userId: string, token?: string): Promise<string> {
+  // Try update first
+  const { error: updateErr } = await dbFetch('chapter_drafts', {
+    method: 'PATCH',
+    filters: `id=eq.${draft.id}`,
+    body: { title: draft.title, content: draft.content, chapter_number: draft.chapterNumber },
+    token,
+  });
+
+  // If no rows matched (new draft), insert
+  if (!updateErr) return draft.id;
+
+  const { data, error } = await dbFetch<any[]>('chapter_drafts', {
+    method: 'POST',
+    body: { title: draft.title, content: draft.content, chapter_number: draft.chapterNumber, user_id: userId },
+    token,
+  });
+  if (error) throw new Error(error);
+  return data?.[0]?.id || draft.id;
 }
 
-export function deleteDraft(draftId: string) {
-  const drafts = getAllDrafts().filter(d => d.id !== draftId);
-  localStorage.setItem(DRAFTS_KEY, JSON.stringify(drafts));
+export async function deleteDraft(draftId: string, token?: string) {
+  await dbFetch('chapter_drafts', {
+    method: 'DELETE',
+    filters: `id=eq.${draftId}`,
+    token,
+  });
 }
-
-// Migrate old single-draft format
-(function migrateLegacyDraft() {
-  try {
-    const old = localStorage.getItem('sedorium-chapter-draft');
-    if (old) {
-      const parsed = JSON.parse(old);
-      if (parsed && parsed.title) {
-        const draft: ChapterDraft = { ...parsed, id: 'legacy-' + Date.now() };
-        saveDraftById(draft);
-      }
-      localStorage.removeItem('sedorium-chapter-draft');
-    }
-  } catch { /* ignore */ }
-})();
 
 export const ChapterEditor: React.FC<ChapterEditorProps> = ({ authToken, glossary, onBack, editChapterId, resumeDraftId }) => {
   const [currentDraftId] = useState(() => resumeDraftId || `draft-${Date.now()}`);
