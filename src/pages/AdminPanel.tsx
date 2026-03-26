@@ -30,7 +30,7 @@ interface AnalyticsData {
 
 type ChapterSortKey = 'number-asc' | 'number-desc' | 'views-desc' | 'views-asc' | 'newest' | 'oldest';
 
-export const AdminPanel: React.FC<AdminPanelProps> = ({ glossary, authToken, onGlossaryChange }) => {
+export const AdminPanel: React.FC<AdminPanelProps> = ({ glossary, authToken, userId, onGlossaryChange }) => {
   const [activeTab, setActiveTab] = useState("dashboard");
   const [analytics, setAnalytics] = useState<AnalyticsData | null>(null);
   const [loading, setLoading] = useState(true);
