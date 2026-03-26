@@ -110,25 +110,29 @@ export const ChapterEditor: React.FC<ChapterEditorProps> = ({ authToken, userId,
       loadChapter();
     } else {
       // Load draft or set next chapter number
-      const draft = resumeDraftId ? getDraftById(resumeDraftId) : null;
-      if (draft) {
-        setTitle(draft.title);
-        setContent(draft.content);
-        setChapterNumber(draft.chapterNumber);
-        setDraftStatus(`Draft restored from ${new Date(draft.lastSaved).toLocaleTimeString()}`);
-      } else {
+      const loadDraftOrNext = async () => {
+        if (resumeDraftId) {
+          const draft = await getDraftById(resumeDraftId, authToken);
+          if (draft) {
+            setTitle(draft.title);
+            setContent(draft.content);
+            setChapterNumber(draft.chapterNumber);
+            setDraftStatus(`Draft restored from ${new Date(draft.lastSaved).toLocaleTimeString()}`);
+            return;
+          }
+        }
         // Get next chapter number
-        dbFetch<any[]>('chapters', {
+        const { data } = await dbFetch<any[]>('chapters', {
           select: 'chapter_number',
           order: 'chapter_number.desc',
           token: authToken,
-        }).then(({ data }) => {
-          const max = data?.[0]?.chapter_number || 0;
-          setChapterNumber(max + 1);
         });
-      }
+        const max = data?.[0]?.chapter_number || 0;
+        setChapterNumber(max + 1);
+      };
+      loadDraftOrNext();
     }
-  }, [editChapterId, authToken]);
+  }, [editChapterId, authToken, resumeDraftId]);
 
   // Auto-save draft every 10 seconds when content changes
   const autoSave = useCallback(() => {
