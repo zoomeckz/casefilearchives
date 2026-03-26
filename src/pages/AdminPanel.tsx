@@ -14,6 +14,7 @@ import { Menu, X, Search, ArrowUpDown } from "lucide-react";
 interface AdminPanelProps {
   glossary: Record<string, GlossaryEntry>;
   authToken?: string;
+  userId?: string;
   onGlossaryChange?: () => void;
 }
 
@@ -29,7 +30,7 @@ interface AnalyticsData {
 
 type ChapterSortKey = 'number-asc' | 'number-desc' | 'views-desc' | 'views-asc' | 'newest' | 'oldest';
 
-export const AdminPanel: React.FC<AdminPanelProps> = ({ glossary, authToken, onGlossaryChange }) => {
+export const AdminPanel: React.FC<AdminPanelProps> = ({ glossary, authToken, userId, onGlossaryChange }) => {
   const [activeTab, setActiveTab] = useState("dashboard");
   const [analytics, setAnalytics] = useState<AnalyticsData | null>(null);
   const [loading, setLoading] = useState(true);
@@ -154,9 +155,10 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ glossary, authToken, onG
     { id: "glossary", label: "Glossary", icon: Icons.Book },
   ];
 
-  const refreshDrafts = useCallback(() => {
-    setDrafts(getAllDrafts());
-  }, []);
+  const refreshDrafts = useCallback(async () => {
+    const d = await getAllDrafts(authToken);
+    setDrafts(d);
+  }, [authToken]);
 
   useEffect(() => {
     refreshDrafts();
@@ -212,6 +214,7 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ glossary, authToken, onG
       <div className="min-h-screen p-4 md:p-8">
         <ChapterEditor
           authToken={authToken}
+          userId={userId}
           glossary={glossary}
           editChapterId={editorMode === 'edit' ? editChapterId : undefined}
           resumeDraftId={editorMode === 'draft' ? resumeDraftId : undefined}
@@ -436,17 +439,16 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ glossary, authToken, onG
                       <div className="flex justify-end mb-3">
                         <button
                           onClick={() => {
-                            const allDrafts = getAllDrafts();
-                            if (allDrafts.length === 0) { toast.error('No drafts to download'); return; }
+                            if (drafts.length === 0) { toast.error('No drafts to download'); return; }
                             const separator = '═'.repeat(60);
                             const lines: string[] = [
                               'SEDORIUM — DRAFTS',
                               separator,
                               `Exported: ${new Date().toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })}`,
-                              `Total Drafts: ${allDrafts.length}`,
+                              `Total Drafts: ${drafts.length}`,
                               separator, '', '',
                             ];
-                            for (const d of allDrafts.sort((a, b) => (a.chapterNumber || 0) - (b.chapterNumber || 0))) {
+                            for (const d of [...drafts].sort((a, b) => (a.chapterNumber || 0) - (b.chapterNumber || 0))) {
                               lines.push(separator);
                               lines.push(`DRAFT — ${d.title || 'Untitled'} (Ch. ${d.chapterNumber || '?'})`);
                               lines.push(`Last saved: ${new Date(d.lastSaved).toLocaleString()}`);
