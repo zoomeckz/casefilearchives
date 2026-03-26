@@ -438,17 +438,16 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ glossary, authToken, use
                       <div className="flex justify-end mb-3">
                         <button
                           onClick={() => {
-                            const allDrafts = getAllDrafts();
-                            if (allDrafts.length === 0) { toast.error('No drafts to download'); return; }
+                            if (drafts.length === 0) { toast.error('No drafts to download'); return; }
                             const separator = '═'.repeat(60);
                             const lines: string[] = [
                               'SEDORIUM — DRAFTS',
                               separator,
                               `Exported: ${new Date().toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })}`,
-                              `Total Drafts: ${allDrafts.length}`,
+                              `Total Drafts: ${drafts.length}`,
                               separator, '', '',
                             ];
-                            for (const d of allDrafts.sort((a, b) => (a.chapterNumber || 0) - (b.chapterNumber || 0))) {
+                            for (const d of [...drafts].sort((a, b) => (a.chapterNumber || 0) - (b.chapterNumber || 0))) {
                               lines.push(separator);
                               lines.push(`DRAFT — ${d.title || 'Untitled'} (Ch. ${d.chapterNumber || '?'})`);
                               lines.push(`Last saved: ${new Date(d.lastSaved).toLocaleString()}`);
