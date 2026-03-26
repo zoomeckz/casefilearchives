@@ -7,6 +7,7 @@ import { toast } from 'sonner';
 
 interface ChapterEditorProps {
   authToken?: string;
+  userId?: string;
   glossary: Record<string, GlossaryEntry>;
   onBack: () => void;
   editChapterId?: string | null;
