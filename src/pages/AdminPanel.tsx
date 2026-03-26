@@ -215,6 +215,7 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ glossary, authToken, use
         <ChapterEditor
           authToken={authToken}
           userId={userId}
+          glossary={glossary}
           editChapterId={editorMode === 'edit' ? editChapterId : undefined}
           resumeDraftId={editorMode === 'draft' ? resumeDraftId : undefined}
           onBack={() => {
