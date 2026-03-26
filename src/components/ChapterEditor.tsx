@@ -225,7 +225,7 @@ export const ChapterEditor: React.FC<ChapterEditorProps> = ({ authToken, userId,
           token: authToken,
         });
         if (error) throw new Error(error);
-        deleteDraft(currentDraftId);
+        await deleteDraft(currentDraftId, authToken);
         toast.success('Chapter published!');
       }
       onBack();
