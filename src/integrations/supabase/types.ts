@@ -85,6 +85,36 @@ export type Database = {
           },
         ]
       }
+      chapter_drafts: {
+        Row: {
+          chapter_number: number
+          content: string
+          created_at: string
+          id: string
+          title: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          chapter_number?: number
+          content?: string
+          created_at?: string
+          id?: string
+          title?: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          chapter_number?: number
+          content?: string
+          created_at?: string
+          id?: string
+          title?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       chapter_polls: {
         Row: {
           chapter_id: string
