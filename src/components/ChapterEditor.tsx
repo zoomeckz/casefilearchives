@@ -144,11 +144,11 @@ export const ChapterEditor: React.FC<ChapterEditorProps> = ({ authToken, userId,
   const autoSave = useCallback(async () => {
     if (!editChapterId && (title || content) && userId) {
       try {
-        await upsertDraft({ id: currentDraftId, title, content, chapterNumber, lastSaved: new Date().toISOString() }, userId, authToken);
+        await upsertDraft({ id: draftIdRef.current, title, content, chapterNumber, lastSaved: new Date().toISOString() }, userId, authToken);
         setDraftStatus(`Draft auto-saved at ${new Date().toLocaleTimeString()}`);
       } catch { /* silent */ }
     }
-  }, [title, content, chapterNumber, editChapterId, currentDraftId, userId, authToken]);
+  }, [title, content, chapterNumber, editChapterId, draftIdRef.current, userId, authToken]);
 
   useEffect(() => {
     if (autoSaveTimer.current) clearTimeout(autoSaveTimer.current);
@@ -162,7 +162,7 @@ export const ChapterEditor: React.FC<ChapterEditorProps> = ({ authToken, userId,
   const handleSaveDraft = async () => {
     if (!userId) return;
     try {
-      await upsertDraft({ id: currentDraftId, title, content, chapterNumber, lastSaved: new Date().toISOString() }, userId, authToken);
+      await upsertDraft({ id: draftIdRef.current, title, content, chapterNumber, lastSaved: new Date().toISOString() }, userId, authToken);
       setDraftStatus(`Draft saved at ${new Date().toLocaleTimeString()}`);
       toast.success('Draft saved');
     } catch {
@@ -225,7 +225,7 @@ export const ChapterEditor: React.FC<ChapterEditorProps> = ({ authToken, userId,
           token: authToken,
         });
         if (error) throw new Error(error);
-        await deleteDraft(currentDraftId, authToken);
+        await deleteDraft(draftIdRef.current, authToken);
         toast.success('Chapter published!');
       }
       onBack();
