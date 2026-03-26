@@ -507,8 +507,9 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ glossary, authToken, use
                               <button
                                 onClick={() => {
                                   if (confirm('Delete this draft?')) {
-                                    deleteDraft(draft.id);
-                                    refreshDrafts();
+                                    deleteDraft(draft.id, authToken).then(() => {
+                                      refreshDrafts();
+                                    });
                                     toast.success('Draft deleted');
                                   }
                                 }}
