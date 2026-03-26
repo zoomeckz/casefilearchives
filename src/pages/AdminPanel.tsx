@@ -155,9 +155,10 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ glossary, authToken, use
     { id: "glossary", label: "Glossary", icon: Icons.Book },
   ];
 
-  const refreshDrafts = useCallback(() => {
-    setDrafts(getAllDrafts());
-  }, []);
+  const refreshDrafts = useCallback(async () => {
+    const d = await getAllDrafts(authToken);
+    setDrafts(d);
+  }, [authToken]);
 
   useEffect(() => {
     refreshDrafts();
