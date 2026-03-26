@@ -14,6 +14,7 @@ import { Menu, X, Search, ArrowUpDown } from "lucide-react";
 interface AdminPanelProps {
   glossary: Record<string, GlossaryEntry>;
   authToken?: string;
+  userId?: string;
   onGlossaryChange?: () => void;
 }
 
