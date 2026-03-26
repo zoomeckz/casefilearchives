@@ -135,18 +135,14 @@ export const ChapterEditor: React.FC<ChapterEditorProps> = ({ authToken, userId,
   }, [editChapterId, authToken, resumeDraftId]);
 
   // Auto-save draft every 10 seconds when content changes
-  const autoSave = useCallback(() => {
-    if (!editChapterId && (title || content)) {
-      saveDraftById({
-        id: currentDraftId,
-        title,
-        content,
-        chapterNumber,
-        lastSaved: new Date().toISOString(),
-      });
-      setDraftStatus(`Draft auto-saved at ${new Date().toLocaleTimeString()}`);
+  const autoSave = useCallback(async () => {
+    if (!editChapterId && (title || content) && userId) {
+      try {
+        await saveDraftById({ id: currentDraftId, title, content, chapterNumber, lastSaved: new Date().toISOString() }, userId, authToken);
+        setDraftStatus(`Draft auto-saved at ${new Date().toLocaleTimeString()}`);
+      } catch { /* silent */ }
     }
-  }, [title, content, chapterNumber, editChapterId, currentDraftId]);
+  }, [title, content, chapterNumber, editChapterId, currentDraftId, userId, authToken]);
 
   useEffect(() => {
     if (autoSaveTimer.current) clearTimeout(autoSaveTimer.current);
@@ -157,16 +153,15 @@ export const ChapterEditor: React.FC<ChapterEditorProps> = ({ authToken, userId,
   }, [autoSave]);
 
   // Save manually
-  const handleSaveDraft = () => {
-    saveDraftById({
-      id: currentDraftId,
-      title,
-      content,
-      chapterNumber,
-      lastSaved: new Date().toISOString(),
-    });
-    setDraftStatus(`Draft saved at ${new Date().toLocaleTimeString()}`);
-    toast.success('Draft saved locally');
+  const handleSaveDraft = async () => {
+    if (!userId) return;
+    try {
+      await saveDraftById({ id: currentDraftId, title, content, chapterNumber, lastSaved: new Date().toISOString() }, userId, authToken);
+      setDraftStatus(`Draft saved at ${new Date().toLocaleTimeString()}`);
+      toast.success('Draft saved');
+    } catch {
+      toast.error('Failed to save draft');
+    }
   };
 
   // Mark glossary terms in content
