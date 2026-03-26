@@ -50,17 +50,23 @@ async function getDraftById(draftId: string, token?: string): Promise<ChapterDra
   return { id: d.id, title: d.title, content: d.content, chapterNumber: d.chapter_number, lastSaved: d.updated_at };
 }
 
-async function saveDraftById(draft: ChapterDraft, userId: string, token?: string): Promise<string> {
-  // Try update first
-  const { error: updateErr } = await dbFetch('chapter_drafts', {
-    method: 'PATCH',
+async function upsertDraft(draft: ChapterDraft, userId: string, token?: string): Promise<string> {
+  // Check if draft exists
+  const { data: existing } = await dbFetch<any[]>('chapter_drafts', {
+    select: 'id',
     filters: `id=eq.${draft.id}`,
-    body: { title: draft.title, content: draft.content, chapter_number: draft.chapterNumber },
     token,
   });
 
-  // If no rows matched (new draft), insert
-  if (!updateErr) return draft.id;
+  if (existing && existing.length > 0) {
+    await dbFetch('chapter_drafts', {
+      method: 'PATCH',
+      filters: `id=eq.${draft.id}`,
+      body: { title: draft.title, content: draft.content, chapter_number: draft.chapterNumber },
+      token,
+    });
+    return draft.id;
+  }
 
   const { data, error } = await dbFetch<any[]>('chapter_drafts', {
     method: 'POST',
