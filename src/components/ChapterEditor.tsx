@@ -86,7 +86,7 @@ export async function deleteDraft(draftId: string, token?: string) {
 }
 
 export const ChapterEditor: React.FC<ChapterEditorProps> = ({ authToken, userId, glossary, onBack, editChapterId, resumeDraftId }) => {
-  const [currentDraftId] = useState(() => resumeDraftId || `draft-${Date.now()}`);
+  const draftIdRef = useRef<string>(resumeDraftId || '');
   const [title, setTitle] = useState('');
   const [content, setContent] = useState('');
   const [chapterNumber, setChapterNumber] = useState(1);
