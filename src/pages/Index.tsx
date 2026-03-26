@@ -204,7 +204,7 @@ const Index = () => {
         )}
 
         {currentPage === "admin" && user?.isAdmin && (
-          <AdminPanel glossary={glossary} authToken={session?.access_token} onGlossaryChange={fetchGlossary} />
+          <AdminPanel glossary={glossary} authToken={session?.access_token} userId={session?.user?.id} onGlossaryChange={fetchGlossary} />
         )}
 
         {currentPage === "rewards" && user && (
