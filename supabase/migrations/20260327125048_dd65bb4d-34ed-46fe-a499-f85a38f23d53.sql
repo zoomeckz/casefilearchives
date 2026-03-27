@@ -1,0 +1,1 @@
+UPDATE glossary SET image_url = 'https://iiezbdlmikvgxjlozwlc.supabase.co/storage/v1/object/public/images/glossary/helsim.png' WHERE term = 'Helsimian';
