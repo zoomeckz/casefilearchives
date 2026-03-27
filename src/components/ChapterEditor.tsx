@@ -165,8 +165,8 @@ export const ChapterEditor: React.FC<ChapterEditorProps> = ({ authToken, userId,
     try {
       const savedId = await upsertDraft({ id: draftIdRef.current, title, content, chapterNumber, lastSaved: new Date().toISOString() }, userId, authToken);
       draftIdRef.current = savedId;
-      setDraftStatus(`Draft saved at ${new Date().toLocaleTimeString()}`);
       toast.success('Draft saved');
+      onBack();
     } catch {
       toast.error('Failed to save draft');
     }
