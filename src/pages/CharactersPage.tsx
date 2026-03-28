@@ -171,7 +171,7 @@ export const CharactersPage: React.FC<CharactersPageProps> = ({ glossary }) => {
                     <h3 className="text-stone-100 group-hover:text-sky-400 transition-colors font-medium">
                       {char.name}
                     </h3>
-                    <p className="text-stone-500 text-sm mt-1 line-clamp-2">
+                    <p className="text-stone-500 text-sm mt-1">
                       {char.description}
                     </p>
                   </div>
