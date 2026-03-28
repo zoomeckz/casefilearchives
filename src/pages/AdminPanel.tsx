@@ -39,7 +39,7 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ glossary, authToken, use
 
   // Search & sort
   const [chapterSearch, setChapterSearch] = useState("");
-  const [chapterSort, setChapterSort] = useState<ChapterSortKey>('number-asc');
+  const [chapterSort, setChapterSort] = useState<ChapterSortKey>('number-desc');
   const [dashboardSearch, setDashboardSearch] = useState("");
 
   // Chapter editor state
