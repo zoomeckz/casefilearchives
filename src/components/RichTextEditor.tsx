@@ -190,7 +190,7 @@ export const RichTextEditor: React.FC<RichTextEditorProps> = ({
   // Sync editor content when the content prop changes externally (e.g. draft loaded async)
   React.useEffect(() => {
     if (editor && content && editor.getHTML() !== content) {
-      editor.commands.setContent(content, false);
+      editor.commands.setContent(content);
     }
   }, [editor, content]);
 
