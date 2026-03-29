@@ -148,11 +148,62 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ glossary, authToken, use
     }
   };
 
+  // SEO Sync state
+  const [seoSyncing, setSeoSyncing] = useState(false);
+  const [seoProgress, setSeoProgress] = useState(0);
+  const [seoResult, setSeoResult] = useState<any>(null);
+  const [seoStep, setSeoStep] = useState('');
+
+  const handleSeoSync = async () => {
+    setSeoSyncing(true);
+    setSeoProgress(0);
+    setSeoResult(null);
+
+    const steps = [
+      { label: 'Scanning chapters...', progress: 15 },
+      { label: 'Indexing glossary entries...', progress: 30 },
+      { label: 'Syncing community content...', progress: 50 },
+      { label: 'Verifying content feed...', progress: 70 },
+      { label: 'Running SEO checklist...', progress: 85 },
+    ];
+
+    for (const step of steps) {
+      setSeoStep(step.label);
+      setSeoProgress(step.progress);
+      await new Promise(r => setTimeout(r, 600));
+    }
+
+    try {
+      const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
+      const res = await fetch(`${supabaseUrl}/functions/v1/seo-sync`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${authToken}`,
+          'apikey': import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY,
+        },
+      });
+
+      if (!res.ok) throw new Error(`Failed: ${res.status}`);
+      const data = await res.json();
+      setSeoResult(data);
+      setSeoProgress(100);
+      setSeoStep('SEO sync complete!');
+      toast.success('SEO sync completed successfully');
+    } catch (err: any) {
+      toast.error('SEO sync failed: ' + (err.message || 'Unknown error'));
+      setSeoStep('Sync failed');
+    } finally {
+      setTimeout(() => setSeoSyncing(false), 1000);
+    }
+  };
+
   const tabs = [
     { id: "dashboard", label: "Dashboard", icon: Icons.Dashboard },
     { id: "chapters", label: "Chapters", icon: Icons.Book },
     { id: "analytics", label: "Analytics", icon: Icons.Eye },
     { id: "glossary", label: "Glossary", icon: Icons.Book },
+    { id: "seo", label: "SEO", icon: Globe },
   ];
 
   const refreshDrafts = useCallback(async () => {
