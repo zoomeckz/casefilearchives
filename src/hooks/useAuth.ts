@@ -27,16 +27,17 @@ function getStoredSession(): StoredSession | null {
     const raw = localStorage.getItem(STORAGE_KEY);
     if (!raw) return null;
     const session: StoredSession = JSON.parse(raw);
-    // Check if expired (with 60s buffer)
-    if (session.expires_at && session.expires_at < Math.floor(Date.now() / 1000) + 60) {
-      localStorage.removeItem(STORAGE_KEY);
-      return null;
-    }
+    // Don't clear expired sessions here — let the hook handle refresh
     return session;
   } catch {
     localStorage.removeItem(STORAGE_KEY);
     return null;
   }
+}
+
+function isSessionExpired(session: StoredSession): boolean {
+  // Expired if less than 60s remaining
+  return session.expires_at < Math.floor(Date.now() / 1000) + 60;
 }
 
 function storeSession(data: any): StoredSession {
