@@ -9,7 +9,7 @@ import { AnalyticsDashboard } from "@/components/AnalyticsDashboard";
 import { toast } from "sonner";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { Input } from "@/components/ui/input";
-import { Menu, X, Search, ArrowUpDown } from "lucide-react";
+import { Menu, X, Search, ArrowUpDown, Globe, CheckCircle2, AlertCircle, Loader2, ExternalLink } from "lucide-react";
 
 interface AdminPanelProps {
   glossary: Record<string, GlossaryEntry>;
