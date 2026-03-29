@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
-import { dbFetch, dbAuth } from '@/lib/dbFetch';
+import { dbFetch, dbAuth, dbRefreshToken } from '@/lib/dbFetch';
 
 const STORAGE_KEY = 'app-auth-session';
 
@@ -27,16 +27,17 @@ function getStoredSession(): StoredSession | null {
     const raw = localStorage.getItem(STORAGE_KEY);
     if (!raw) return null;
     const session: StoredSession = JSON.parse(raw);
-    // Check if expired (with 60s buffer)
-    if (session.expires_at && session.expires_at < Math.floor(Date.now() / 1000) + 60) {
-      localStorage.removeItem(STORAGE_KEY);
-      return null;
-    }
+    // Don't clear expired sessions here — let the hook handle refresh
     return session;
   } catch {
     localStorage.removeItem(STORAGE_KEY);
     return null;
   }
+}
+
+function isSessionExpired(session: StoredSession): boolean {
+  // Expired if less than 60s remaining
+  return session.expires_at < Math.floor(Date.now() / 1000) + 60;
 }
 
 function storeSession(data: any): StoredSession {
@@ -91,28 +92,96 @@ export function useAuth() {
   const [session, setSession] = useState<StoredSession | null>(null);
   const [loading, setLoading] = useState(true);
 
-  // Initialize from localStorage on mount
-  useEffect(() => {
-    const stored = getStoredSession();
-    if (stored) {
-      setSession(stored);
-      fetchUserProfile(stored.user.id, stored.user.email, stored.access_token)
-        .then(authUser => setUser(authUser))
-        .catch(err => {
-          console.error('Failed to fetch user profile:', err);
-          setUser({
-            id: stored.user.id,
-            email: stored.user.email,
-            name: stored.user.user_metadata?.name || stored.user.email.split('@')[0],
-            isAdmin: false,
-            avatarUrl: null,
-          });
-        })
-        .finally(() => setLoading(false));
-    } else {
-      setLoading(false);
+  // Refresh token helper
+  const refreshSession = useCallback(async (stored: StoredSession): Promise<StoredSession | null> => {
+    try {
+      const { data, error } = await dbRefreshToken(stored.refresh_token);
+      if (error || !data?.access_token) {
+        console.warn('Token refresh failed:', error);
+        clearSession();
+        setUser(null);
+        setSession(null);
+        return null;
+      }
+      const newStored = storeSession(data);
+      setSession(newStored);
+      return newStored;
+    } catch (err) {
+      console.error('Token refresh error:', err);
+      clearSession();
+      setUser(null);
+      setSession(null);
+      return null;
     }
   }, []);
+
+  // Initialize from localStorage on mount
+  useEffect(() => {
+    const init = async () => {
+      let stored = getStoredSession();
+      if (!stored) {
+        setLoading(false);
+        return;
+      }
+
+      // If expired, try to refresh first
+      if (isSessionExpired(stored)) {
+        stored = await refreshSession(stored);
+        if (!stored) {
+          setLoading(false);
+          return;
+        }
+      } else {
+        setSession(stored);
+      }
+
+      try {
+        const authUser = await fetchUserProfile(stored.user.id, stored.user.email, stored.access_token);
+        setUser(authUser);
+      } catch (err) {
+        console.error('Failed to fetch user profile:', err);
+        setUser({
+          id: stored.user.id,
+          email: stored.user.email,
+          name: stored.user.user_metadata?.name || stored.user.email.split('@')[0],
+          isAdmin: false,
+          avatarUrl: null,
+        });
+      }
+      setLoading(false);
+    };
+    init();
+  }, [refreshSession]);
+
+  // Auto-refresh token every 50 minutes (tokens last 60 min)
+  useEffect(() => {
+    if (!session) return;
+    const interval = setInterval(async () => {
+      const stored = getStoredSession();
+      if (stored) {
+        await refreshSession(stored);
+      }
+    }, 50 * 60 * 1000); // 50 minutes
+    return () => clearInterval(interval);
+  }, [session, refreshSession]);
+
+  // Also refresh on window focus (handles returning after sleep/inactivity)
+  useEffect(() => {
+    const handleFocus = async () => {
+      const stored = getStoredSession();
+      if (stored && isSessionExpired(stored)) {
+        await refreshSession(stored);
+      }
+    };
+    window.addEventListener('focus', handleFocus);
+    document.addEventListener('visibilitychange', () => {
+      if (document.visibilityState === 'visible') handleFocus();
+    });
+    return () => {
+      window.removeEventListener('focus', handleFocus);
+      document.removeEventListener('visibilitychange', handleFocus);
+    };
+  }, [refreshSession]);
 
   const signIn = async (email: string, password: string) => {
     const { data, error } = await dbAuth('signin', { email, password });

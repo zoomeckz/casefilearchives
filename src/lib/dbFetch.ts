@@ -114,3 +114,26 @@ export async function dbAuth(action: 'signin' | 'signup', payload: {
     return { data: null, error: err.message || 'Network error' };
   }
 }
+
+export async function dbRefreshToken(refreshToken: string): Promise<{ data: any; error: string | null }> {
+  try {
+    const response = await fetch(`${url}/auth/v1/token?grant_type=refresh_token`, {
+      method: 'POST',
+      headers: {
+        'apikey': key,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ refresh_token: refreshToken }),
+    });
+
+    const data = await response.json();
+
+    if (!response.ok) {
+      return { data: null, error: data.error_description || data.msg || data.message || 'Refresh failed' };
+    }
+
+    return { data, error: null };
+  } catch (err: any) {
+    return { data: null, error: err.message || 'Network error' };
+  }
+}
