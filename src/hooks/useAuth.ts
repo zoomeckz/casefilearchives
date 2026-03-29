@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
-import { dbFetch, dbAuth } from '@/lib/dbFetch';
+import { dbFetch, dbAuth, dbRefreshToken } from '@/lib/dbFetch';
 
 const STORAGE_KEY = 'app-auth-session';
 
