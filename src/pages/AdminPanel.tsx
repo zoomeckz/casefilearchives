@@ -9,7 +9,7 @@ import { AnalyticsDashboard } from "@/components/AnalyticsDashboard";
 import { toast } from "sonner";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { Input } from "@/components/ui/input";
-import { Menu, X, Search, ArrowUpDown } from "lucide-react";
+import { Menu, X, Search, ArrowUpDown, Globe, CheckCircle2, AlertCircle, Loader2, ExternalLink } from "lucide-react";
 
 interface AdminPanelProps {
   glossary: Record<string, GlossaryEntry>;
@@ -148,11 +148,62 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ glossary, authToken, use
     }
   };
 
+  // SEO Sync state
+  const [seoSyncing, setSeoSyncing] = useState(false);
+  const [seoProgress, setSeoProgress] = useState(0);
+  const [seoResult, setSeoResult] = useState<any>(null);
+  const [seoStep, setSeoStep] = useState('');
+
+  const handleSeoSync = async () => {
+    setSeoSyncing(true);
+    setSeoProgress(0);
+    setSeoResult(null);
+
+    const steps = [
+      { label: 'Scanning chapters...', progress: 15 },
+      { label: 'Indexing glossary entries...', progress: 30 },
+      { label: 'Syncing community content...', progress: 50 },
+      { label: 'Verifying content feed...', progress: 70 },
+      { label: 'Running SEO checklist...', progress: 85 },
+    ];
+
+    for (const step of steps) {
+      setSeoStep(step.label);
+      setSeoProgress(step.progress);
+      await new Promise(r => setTimeout(r, 600));
+    }
+
+    try {
+      const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
+      const res = await fetch(`${supabaseUrl}/functions/v1/seo-sync`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${authToken}`,
+          'apikey': import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY,
+        },
+      });
+
+      if (!res.ok) throw new Error(`Failed: ${res.status}`);
+      const data = await res.json();
+      setSeoResult(data);
+      setSeoProgress(100);
+      setSeoStep('SEO sync complete!');
+      toast.success('SEO sync completed successfully');
+    } catch (err: any) {
+      toast.error('SEO sync failed: ' + (err.message || 'Unknown error'));
+      setSeoStep('Sync failed');
+    } finally {
+      setTimeout(() => setSeoSyncing(false), 1000);
+    }
+  };
+
   const tabs = [
     { id: "dashboard", label: "Dashboard", icon: Icons.Dashboard },
     { id: "chapters", label: "Chapters", icon: Icons.Book },
     { id: "analytics", label: "Analytics", icon: Icons.Eye },
     { id: "glossary", label: "Glossary", icon: Icons.Book },
+    { id: "seo", label: "SEO", icon: Globe },
   ];
 
   const refreshDrafts = useCallback(async () => {
@@ -537,6 +588,146 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ glossary, authToken, use
                 entries={glossaryEntries}
                 onRefresh={fetchGlossaryEntries}
               />
+            )}
+
+            {activeTab === "seo" && (
+              <div>
+                <h1 className="font-display text-2xl md:text-3xl text-accent mb-6">SEO & Content Sync</h1>
+                <p className="text-muted-foreground text-sm mb-6">
+                  Sync all chapters, glossary, forum posts, theories, and fan art to the AI content feed. This makes your content fully discoverable by Google, ChatGPT, Claude, Perplexity, and other AI crawlers.
+                </p>
+
+                <button
+                  onClick={handleSeoSync}
+                  disabled={seoSyncing}
+                  className="flex items-center gap-3 px-6 py-3 bg-primary hover:bg-primary/90 text-primary-foreground rounded-lg font-medium transition-colors disabled:opacity-50 mb-6"
+                >
+                  {seoSyncing ? <Loader2 className="w-5 h-5 animate-spin" /> : <Globe className="w-5 h-5" />}
+                  {seoSyncing ? 'Syncing...' : 'Run SEO Sync'}
+                </button>
+
+                {/* Progress bar */}
+                {(seoSyncing || seoProgress > 0) && (
+                  <div className="mb-6">
+                    <div className="flex items-center justify-between mb-2">
+                      <span className="text-sm text-foreground">{seoStep}</span>
+                      <span className="text-sm text-muted-foreground">{seoProgress}%</span>
+                    </div>
+                    <div className="w-full h-3 bg-secondary rounded-full overflow-hidden">
+                      <div
+                        className="h-full bg-primary rounded-full transition-all duration-500 ease-out"
+                        style={{ width: `${seoProgress}%` }}
+                      />
+                    </div>
+                  </div>
+                )}
+
+                {/* Results */}
+                {seoResult && (
+                  <div className="space-y-4">
+                    {/* Content feed status */}
+                    <div className="p-4 bg-card/50 rounded-xl border border-border">
+                      <div className="flex items-center gap-2 mb-3">
+                        {seoResult.contentFeedStatus === 'online' ? (
+                          <CheckCircle2 className="w-5 h-5 text-green-500" />
+                        ) : (
+                          <AlertCircle className="w-5 h-5 text-destructive" />
+                        )}
+                        <h3 className="font-medium text-foreground">Content Feed</h3>
+                        <span className={`text-xs px-2 py-0.5 rounded-full ${
+                          seoResult.contentFeedStatus === 'online' ? 'bg-green-500/20 text-green-400' : 'bg-destructive/20 text-destructive'
+                        }`}>
+                          {seoResult.contentFeedStatus}
+                        </span>
+                      </div>
+                      <div className="flex flex-col sm:flex-row gap-2 text-xs">
+                        <a href={seoResult.contentFeedUrl} target="_blank" rel="noopener noreferrer" className="flex items-center gap-1 text-primary hover:underline">
+                          <ExternalLink className="w-3 h-3" /> HTML Feed
+                        </a>
+                        <a href={seoResult.contentFeedJsonUrl} target="_blank" rel="noopener noreferrer" className="flex items-center gap-1 text-primary hover:underline">
+                          <ExternalLink className="w-3 h-3" /> JSON Feed
+                        </a>
+                      </div>
+                    </div>
+
+                    {/* Stats grid */}
+                    <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+                      <div className="p-4 bg-card/50 rounded-xl border border-border text-center">
+                        <div className="text-2xl font-display text-foreground">{seoResult.stats.chapters.total}</div>
+                        <div className="text-xs text-muted-foreground mt-1">Chapters Indexed</div>
+                      </div>
+                      <div className="p-4 bg-card/50 rounded-xl border border-border text-center">
+                        <div className="text-2xl font-display text-foreground">{seoResult.stats.glossary.total}</div>
+                        <div className="text-xs text-muted-foreground mt-1">Glossary Terms</div>
+                      </div>
+                      <div className="p-4 bg-card/50 rounded-xl border border-border text-center">
+                        <div className="text-2xl font-display text-foreground">{seoResult.stats.community.forumPosts}</div>
+                        <div className="text-xs text-muted-foreground mt-1">Forum Posts</div>
+                      </div>
+                      <div className="p-4 bg-card/50 rounded-xl border border-border text-center">
+                        <div className="text-2xl font-display text-foreground">{seoResult.stats.community.theories}</div>
+                        <div className="text-xs text-muted-foreground mt-1">Theories</div>
+                      </div>
+                      <div className="p-4 bg-card/50 rounded-xl border border-border text-center">
+                        <div className="text-2xl font-display text-foreground">{seoResult.stats.community.fanArt}</div>
+                        <div className="text-xs text-muted-foreground mt-1">Fan Art</div>
+                      </div>
+                      <div className="p-4 bg-card/50 rounded-xl border border-border text-center">
+                        <div className="text-2xl font-display text-foreground">{seoResult.stats.community.registeredUsers}</div>
+                        <div className="text-xs text-muted-foreground mt-1">Users</div>
+                      </div>
+                      <div className="p-4 bg-card/50 rounded-xl border border-border text-center">
+                        <div className="text-2xl font-display text-foreground">{seoResult.stats.community.comments}</div>
+                        <div className="text-xs text-muted-foreground mt-1">Comments</div>
+                      </div>
+                      <div className="p-4 bg-card/50 rounded-xl border border-border text-center">
+                        <div className="text-2xl font-display text-foreground">{seoResult.stats.chapters.totalViews.toLocaleString()}</div>
+                        <div className="text-xs text-muted-foreground mt-1">Total Views</div>
+                      </div>
+                    </div>
+
+                    {/* Glossary breakdown */}
+                    {seoResult.stats.glossary.byType && (
+                      <div className="p-4 bg-card/50 rounded-xl border border-border">
+                        <h3 className="font-medium text-foreground mb-3">Glossary Breakdown</h3>
+                        <div className="flex flex-wrap gap-2">
+                          {Object.entries(seoResult.stats.glossary.byType).map(([type, count]) => (
+                            <span key={type} className="px-3 py-1 bg-secondary rounded-full text-xs text-foreground">
+                              {type}: {count as number}
+                            </span>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+
+                    {/* SEO Checklist */}
+                    <div className="p-4 bg-card/50 rounded-xl border border-border">
+                      <h3 className="font-medium text-foreground mb-3">SEO Checklist</h3>
+                      <div className="space-y-2">
+                        {[
+                          { label: `${seoResult.seoChecklist.structuredDataChapters} chapters in structured data`, ok: seoResult.seoChecklist.structuredDataChapters > 0 },
+                          { label: 'Content feed serving', ok: seoResult.seoChecklist.contentFeedServing },
+                          { label: `${seoResult.seoChecklist.glossaryTermsIndexed} glossary terms indexed`, ok: seoResult.seoChecklist.glossaryTermsIndexed > 0 },
+                          { label: `${seoResult.seoChecklist.communityContentIndexed} community items indexed`, ok: seoResult.seoChecklist.communityContentIndexed > 0 },
+                        ].map((item, i) => (
+                          <div key={i} className="flex items-center gap-2 text-sm">
+                            {item.ok ? (
+                              <CheckCircle2 className="w-4 h-4 text-green-500 shrink-0" />
+                            ) : (
+                              <AlertCircle className="w-4 h-4 text-amber-500 shrink-0" />
+                            )}
+                            <span className="text-foreground">{item.label}</span>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+
+                    <p className="text-xs text-muted-foreground">
+                      Last synced: {new Date(seoResult.timestamp).toLocaleString()}
+                    </p>
+                  </div>
+                )}
+              </div>
             )}
           </>
         )}
