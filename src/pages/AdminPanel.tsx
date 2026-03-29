@@ -589,6 +589,146 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ glossary, authToken, use
                 onRefresh={fetchGlossaryEntries}
               />
             )}
+
+            {activeTab === "seo" && (
+              <div>
+                <h1 className="font-display text-2xl md:text-3xl text-accent mb-6">SEO & Content Sync</h1>
+                <p className="text-muted-foreground text-sm mb-6">
+                  Sync all chapters, glossary, forum posts, theories, and fan art to the AI content feed. This makes your content fully discoverable by Google, ChatGPT, Claude, Perplexity, and other AI crawlers.
+                </p>
+
+                <button
+                  onClick={handleSeoSync}
+                  disabled={seoSyncing}
+                  className="flex items-center gap-3 px-6 py-3 bg-primary hover:bg-primary/90 text-primary-foreground rounded-lg font-medium transition-colors disabled:opacity-50 mb-6"
+                >
+                  {seoSyncing ? <Loader2 className="w-5 h-5 animate-spin" /> : <Globe className="w-5 h-5" />}
+                  {seoSyncing ? 'Syncing...' : 'Run SEO Sync'}
+                </button>
+
+                {/* Progress bar */}
+                {(seoSyncing || seoProgress > 0) && (
+                  <div className="mb-6">
+                    <div className="flex items-center justify-between mb-2">
+                      <span className="text-sm text-foreground">{seoStep}</span>
+                      <span className="text-sm text-muted-foreground">{seoProgress}%</span>
+                    </div>
+                    <div className="w-full h-3 bg-secondary rounded-full overflow-hidden">
+                      <div
+                        className="h-full bg-primary rounded-full transition-all duration-500 ease-out"
+                        style={{ width: `${seoProgress}%` }}
+                      />
+                    </div>
+                  </div>
+                )}
+
+                {/* Results */}
+                {seoResult && (
+                  <div className="space-y-4">
+                    {/* Content feed status */}
+                    <div className="p-4 bg-card/50 rounded-xl border border-border">
+                      <div className="flex items-center gap-2 mb-3">
+                        {seoResult.contentFeedStatus === 'online' ? (
+                          <CheckCircle2 className="w-5 h-5 text-green-500" />
+                        ) : (
+                          <AlertCircle className="w-5 h-5 text-destructive" />
+                        )}
+                        <h3 className="font-medium text-foreground">Content Feed</h3>
+                        <span className={`text-xs px-2 py-0.5 rounded-full ${
+                          seoResult.contentFeedStatus === 'online' ? 'bg-green-500/20 text-green-400' : 'bg-destructive/20 text-destructive'
+                        }`}>
+                          {seoResult.contentFeedStatus}
+                        </span>
+                      </div>
+                      <div className="flex flex-col sm:flex-row gap-2 text-xs">
+                        <a href={seoResult.contentFeedUrl} target="_blank" rel="noopener noreferrer" className="flex items-center gap-1 text-primary hover:underline">
+                          <ExternalLink className="w-3 h-3" /> HTML Feed
+                        </a>
+                        <a href={seoResult.contentFeedJsonUrl} target="_blank" rel="noopener noreferrer" className="flex items-center gap-1 text-primary hover:underline">
+                          <ExternalLink className="w-3 h-3" /> JSON Feed
+                        </a>
+                      </div>
+                    </div>
+
+                    {/* Stats grid */}
+                    <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+                      <div className="p-4 bg-card/50 rounded-xl border border-border text-center">
+                        <div className="text-2xl font-display text-foreground">{seoResult.stats.chapters.total}</div>
+                        <div className="text-xs text-muted-foreground mt-1">Chapters Indexed</div>
+                      </div>
+                      <div className="p-4 bg-card/50 rounded-xl border border-border text-center">
+                        <div className="text-2xl font-display text-foreground">{seoResult.stats.glossary.total}</div>
+                        <div className="text-xs text-muted-foreground mt-1">Glossary Terms</div>
+                      </div>
+                      <div className="p-4 bg-card/50 rounded-xl border border-border text-center">
+                        <div className="text-2xl font-display text-foreground">{seoResult.stats.community.forumPosts}</div>
+                        <div className="text-xs text-muted-foreground mt-1">Forum Posts</div>
+                      </div>
+                      <div className="p-4 bg-card/50 rounded-xl border border-border text-center">
+                        <div className="text-2xl font-display text-foreground">{seoResult.stats.community.theories}</div>
+                        <div className="text-xs text-muted-foreground mt-1">Theories</div>
+                      </div>
+                      <div className="p-4 bg-card/50 rounded-xl border border-border text-center">
+                        <div className="text-2xl font-display text-foreground">{seoResult.stats.community.fanArt}</div>
+                        <div className="text-xs text-muted-foreground mt-1">Fan Art</div>
+                      </div>
+                      <div className="p-4 bg-card/50 rounded-xl border border-border text-center">
+                        <div className="text-2xl font-display text-foreground">{seoResult.stats.community.registeredUsers}</div>
+                        <div className="text-xs text-muted-foreground mt-1">Users</div>
+                      </div>
+                      <div className="p-4 bg-card/50 rounded-xl border border-border text-center">
+                        <div className="text-2xl font-display text-foreground">{seoResult.stats.community.comments}</div>
+                        <div className="text-xs text-muted-foreground mt-1">Comments</div>
+                      </div>
+                      <div className="p-4 bg-card/50 rounded-xl border border-border text-center">
+                        <div className="text-2xl font-display text-foreground">{seoResult.stats.chapters.totalViews.toLocaleString()}</div>
+                        <div className="text-xs text-muted-foreground mt-1">Total Views</div>
+                      </div>
+                    </div>
+
+                    {/* Glossary breakdown */}
+                    {seoResult.stats.glossary.byType && (
+                      <div className="p-4 bg-card/50 rounded-xl border border-border">
+                        <h3 className="font-medium text-foreground mb-3">Glossary Breakdown</h3>
+                        <div className="flex flex-wrap gap-2">
+                          {Object.entries(seoResult.stats.glossary.byType).map(([type, count]) => (
+                            <span key={type} className="px-3 py-1 bg-secondary rounded-full text-xs text-foreground">
+                              {type}: {count as number}
+                            </span>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+
+                    {/* SEO Checklist */}
+                    <div className="p-4 bg-card/50 rounded-xl border border-border">
+                      <h3 className="font-medium text-foreground mb-3">SEO Checklist</h3>
+                      <div className="space-y-2">
+                        {[
+                          { label: `${seoResult.seoChecklist.structuredDataChapters} chapters in structured data`, ok: seoResult.seoChecklist.structuredDataChapters > 0 },
+                          { label: 'Content feed serving', ok: seoResult.seoChecklist.contentFeedServing },
+                          { label: `${seoResult.seoChecklist.glossaryTermsIndexed} glossary terms indexed`, ok: seoResult.seoChecklist.glossaryTermsIndexed > 0 },
+                          { label: `${seoResult.seoChecklist.communityContentIndexed} community items indexed`, ok: seoResult.seoChecklist.communityContentIndexed > 0 },
+                        ].map((item, i) => (
+                          <div key={i} className="flex items-center gap-2 text-sm">
+                            {item.ok ? (
+                              <CheckCircle2 className="w-4 h-4 text-green-500 shrink-0" />
+                            ) : (
+                              <AlertCircle className="w-4 h-4 text-amber-500 shrink-0" />
+                            )}
+                            <span className="text-foreground">{item.label}</span>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+
+                    <p className="text-xs text-muted-foreground">
+                      Last synced: {new Date(seoResult.timestamp).toLocaleString()}
+                    </p>
+                  </div>
+                )}
+              </div>
+            )}
           </>
         )}
       </main>
