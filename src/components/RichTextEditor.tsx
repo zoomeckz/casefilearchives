@@ -187,6 +187,13 @@ export const RichTextEditor: React.FC<RichTextEditorProps> = ({
     },
   });
 
+  // Sync editor content when the content prop changes externally (e.g. draft loaded async)
+  React.useEffect(() => {
+    if (editor && content && editor.getHTML() !== content) {
+      editor.commands.setContent(content);
+    }
+  }, [editor, content]);
+
   return (
     <div className="border border-border rounded-lg overflow-hidden bg-card/30">
       <Toolbar editor={editor} onMarkGlossary={onMarkGlossary} />
