@@ -340,7 +340,7 @@ export const ChapterEditor: React.FC<ChapterEditorProps> = ({ authToken, userId,
       </div>
 
       {/* Chapter metadata */}
-      <div className="grid grid-cols-1 md:grid-cols-[1fr_auto] gap-4 mb-6">
+      <div className="grid grid-cols-1 md:grid-cols-[1fr_auto_auto] gap-4 mb-6">
         <div>
           <label className="block text-sm text-muted-foreground mb-1">Chapter Title</label>
           <input
@@ -360,6 +360,34 @@ export const ChapterEditor: React.FC<ChapterEditorProps> = ({ authToken, userId,
             min={1}
             className="w-24 px-4 py-3 bg-card/50 border border-border rounded-lg text-foreground text-lg text-center focus:outline-none focus:border-primary transition-colors"
           />
+        </div>
+        <div>
+          <label className="block text-sm text-muted-foreground mb-1">Schedule Release</label>
+          <div className="flex items-center gap-2">
+            <input
+              type="datetime-local"
+              value={scheduledAt}
+              onChange={(e) => setScheduledAt(e.target.value)}
+              className="px-3 py-3 bg-card/50 border border-border rounded-lg text-foreground text-sm focus:outline-none focus:border-primary transition-colors"
+            />
+            {scheduledAt && (
+              <button
+                onClick={() => setScheduledAt('')}
+                className="px-2 py-1 text-xs text-destructive hover:text-destructive/80 transition-colors"
+                title="Clear schedule (publish immediately)"
+              >
+                ✕
+              </button>
+            )}
+          </div>
+          {scheduledAt && (
+            <span className="text-xs text-accent mt-1 block">
+              Will go live: {new Date(scheduledAt).toLocaleString()}
+            </span>
+          )}
+          {!scheduledAt && (
+            <span className="text-xs text-muted-foreground mt-1 block">Leave empty to publish now</span>
+          )}
         </div>
       </div>
 
