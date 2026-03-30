@@ -256,7 +256,7 @@ export const ChapterEditor: React.FC<ChapterEditorProps> = ({ authToken, userId,
         });
         if (error) throw new Error(error);
         await deleteDraft(draftIdRef.current, authToken);
-        toast.success(scheduledAt ? `Chapter scheduled for ${new Date(scheduledAt).toLocaleString()}` : 'Chapter published!');
+        toast.success(scheduledAt ? `Chapter scheduled for ${scheduledAt.replace('T', ' ')} (Swedish time)` : 'Chapter published!');
       }
       onBack();
     } catch (err: any) {
