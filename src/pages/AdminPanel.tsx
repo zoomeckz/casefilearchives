@@ -63,7 +63,7 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ glossary, authToken, use
 
   const fetchChapters = async () => {
     const { data } = await dbFetch<any[]>('chapters', {
-      select: 'id,title,chapter_number,views,published_at',
+      select: 'id,title,chapter_number,views,published_at,scheduled_at',
       order: 'chapter_number.asc',
       token: authToken,
     });
