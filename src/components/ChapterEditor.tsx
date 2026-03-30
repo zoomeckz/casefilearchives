@@ -385,6 +385,32 @@ export const ChapterEditor: React.FC<ChapterEditorProps> = ({ authToken, userId,
       <div className="mt-3 text-xs text-muted-foreground">
         {content.replace(/<[^>]*>/g, '').trim().split(/\s+/).filter(Boolean).length} words
       </div>
+
+      {/* Inline Preview Modal */}
+      {showPreview && (
+        <div className="fixed inset-0 z-50 bg-background overflow-y-auto">
+          <div className="sticky top-0 z-10 flex items-center justify-between px-4 py-3 bg-background/95 backdrop-blur border-b border-border">
+            <span className="text-sm text-muted-foreground font-medium">Preview</span>
+            <button
+              onClick={() => setShowPreview(false)}
+              className="px-4 py-1.5 bg-secondary hover:bg-secondary/80 text-foreground rounded-lg text-sm transition-colors"
+            >
+              Close
+            </button>
+          </div>
+          <div className="max-w-[720px] mx-auto px-4 sm:px-6 py-8 sm:py-12" style={{ fontFamily: "'Nunito Sans', sans-serif", lineHeight: 1.9, fontSize: '1.05rem' }}>
+            <header className="text-center mb-12">
+              <span className="text-accent text-sm font-medium tracking-wider uppercase">Chapter {chapterNumber}</span>
+              <h1 className="font-display text-3xl sm:text-4xl text-primary mt-2 mb-3" style={{ lineHeight: 1.2 }}>{title || 'Untitled'}</h1>
+              <div className="text-muted-foreground text-sm px-4 py-2 bg-card/30 rounded-lg inline-block">Preview — Not yet published</div>
+            </header>
+            <article
+              className="prose prose-stone dark:prose-invert max-w-none [&_p]:mb-5 [&_p]:text-foreground [&_strong]:text-foreground [&_em]:text-muted-foreground [&_h2]:font-display [&_h2]:text-primary [&_h3]:font-display [&_h3]:text-primary [&_blockquote]:border-l-accent [&_blockquote]:text-muted-foreground [&_blockquote]:italic [&_blockquote]:bg-card/30 [&_blockquote]:rounded-r-lg [&_a]:text-accent"
+              dangerouslySetInnerHTML={{ __html: content || '<p>No content yet.</p>' }}
+            />
+          </div>
+        </div>
+      )}
     </div>
   );
 };
