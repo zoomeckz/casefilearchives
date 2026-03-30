@@ -453,6 +453,9 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ glossary, authToken, use
                               <div className="flex gap-3 mt-1 text-xs text-muted-foreground">
                                 <span>{ch.views} views</span>
                                 <span>{ch.published_at ? new Date(ch.published_at).toLocaleDateString() : 'No date'}</span>
+                                {ch.scheduled_at && new Date(ch.scheduled_at) > new Date() && (
+                                  <span className="text-accent font-medium">📅 Scheduled: {new Date(ch.scheduled_at).toLocaleString()}</span>
+                                )}
                               </div>
                             </div>
                             <div className="flex items-center gap-2 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity shrink-0">

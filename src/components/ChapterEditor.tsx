@@ -334,7 +334,7 @@ export const ChapterEditor: React.FC<ChapterEditorProps> = ({ authToken, userId,
             disabled={publishing}
             className="px-6 py-2 bg-primary hover:bg-primary/90 text-primary-foreground rounded-lg text-sm font-medium transition-colors disabled:opacity-50"
           >
-            {publishing ? 'Saving...' : editChapterId ? 'Update Chapter' : 'Publish Chapter'}
+            {publishing ? 'Saving...' : editChapterId ? 'Update Chapter' : scheduledAt ? 'Schedule Chapter' : 'Publish Chapter'}
           </button>
         </div>
       </div>
