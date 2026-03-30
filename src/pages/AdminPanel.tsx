@@ -454,7 +454,7 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ glossary, authToken, use
                                 <span>{ch.views} views</span>
                                 <span>{ch.published_at ? new Date(ch.published_at).toLocaleDateString() : 'No date'}</span>
                                 {ch.scheduled_at && new Date(ch.scheduled_at) > new Date() && (
-                                  <span className="text-accent font-medium">📅 Scheduled: {new Date(ch.scheduled_at).toLocaleString()}</span>
+                                  <span className="text-accent font-medium">📅 Scheduled: {new Date(ch.scheduled_at).toLocaleString('sv-SE', { timeZone: 'Europe/Stockholm' })}</span>
                                 )}
                               </div>
                             </div>

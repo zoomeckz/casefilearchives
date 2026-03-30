@@ -112,9 +112,15 @@ export const ChapterEditor: React.FC<ChapterEditorProps> = ({ authToken, userId,
           setContent(data[0].content);
           setChapterNumber(data[0].chapter_number);
           if (data[0].scheduled_at) {
-            // Convert to local datetime-local format
+            // Convert to Swedish time for the datetime-local input
             const d = new Date(data[0].scheduled_at);
-            setScheduledAt(d.toISOString().slice(0, 16));
+            const sweDate = new Date(d.toLocaleString('en-US', { timeZone: 'Europe/Stockholm' }));
+            const yyyy = sweDate.getFullYear();
+            const mm = String(sweDate.getMonth() + 1).padStart(2, '0');
+            const dd = String(sweDate.getDate()).padStart(2, '0');
+            const hh = String(sweDate.getHours()).padStart(2, '0');
+            const mi = String(sweDate.getMinutes()).padStart(2, '0');
+            setScheduledAt(`${yyyy}-${mm}-${dd}T${hh}:${mi}`);
           }
         }
         setLoadingChapter(false);
