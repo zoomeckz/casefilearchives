@@ -107,6 +107,7 @@ export const ChapterEditor: React.FC<ChapterEditorProps> = ({ authToken, userId,
   const [scheduledAt, setScheduledAt] = useState<string>('');
   const [saving, setSaving] = useState(false);
   const [publishing, setPublishing] = useState(false);
+  const [showPreview, setShowPreview] = useState(false);
   const [draftStatus, setDraftStatus] = useState<string>('');
   const [loadingChapter, setLoadingChapter] = useState(!!editChapterId);
   const autoSaveTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -295,56 +296,7 @@ export const ChapterEditor: React.FC<ChapterEditorProps> = ({ authToken, userId,
             </button>
           )}
           <button
-            onClick={() => {
-              // Open preview in new tab
-              const previewWindow = window.open('', '_blank');
-              if (previewWindow) {
-                previewWindow.document.write(`
-                  <!DOCTYPE html>
-                  <html>
-                  <head>
-                    <title>Preview: ${title || 'Untitled'}</title>
-                    <link href="https://fonts.googleapis.com/css2?family=Lora:ital,wght@0,400;0,500;0,600;0,700;1,400;1,500&family=Nunito+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet">
-                    <style>
-                      * { margin: 0; padding: 0; box-sizing: border-box; }
-                      body { font-family: 'Nunito Sans', sans-serif; background: #0c0a09; color: #d6d3d1; max-width: 720px; margin: 0 auto; padding: 3rem 1.5rem; line-height: 1.9; font-size: 1.05rem; }
-                      header { text-align: center; margin-bottom: 3rem; }
-                      header .chapter-label { color: #d97706; font-size: 0.875rem; font-weight: 500; letter-spacing: 0.05em; }
-                      header h1 { font-family: 'Lora', serif; color: #f59e0b; font-size: 2.5rem; margin-top: 0.5rem; margin-bottom: 0.75rem; line-height: 1.2; }
-                      header .meta { color: #78716c; font-size: 0.85rem; padding: 0.5rem 1rem; background: rgba(255,255,255,0.03); border-radius: 8px; display: inline-block; }
-                      article p { margin-bottom: 1.25em; color: #d6d3d1; }
-                      article strong { color: #e7e5e4; font-weight: 600; }
-                      article em { color: #a8a29e; }
-                      article h2, article h3 { font-family: 'Lora', serif; color: #f59e0b; margin: 2rem 0 1rem; }
-                      article h2 { font-size: 1.5rem; }
-                      article h3 { font-size: 1.25rem; }
-                      article blockquote { border-left: 3px solid #d97706; padding: 0.75rem 1.25rem; margin: 1.5rem 0; color: #a8a29e; font-style: italic; background: rgba(255,255,255,0.02); border-radius: 0 8px 8px 0; }
-                      article ul, article ol { margin: 1rem 0; padding-left: 1.5rem; color: #d6d3d1; }
-                      article li { margin-bottom: 0.5rem; }
-                      .glossary-term { color: #d97706; border-bottom: 1px dashed rgba(217,119,6,0.4); cursor: help; }
-                      article img { max-width: 100%; border-radius: 8px; margin: 1.5rem 0; }
-                      article a { color: #d97706; text-decoration: underline; text-underline-offset: 2px; }
-                      article a:hover { color: #f59e0b; }
-                      article hr { border: none; border-top: 1px solid rgba(255,255,255,0.08); margin: 2rem 0; }
-                      article pre { background: rgba(255,255,255,0.05); padding: 1rem; border-radius: 8px; overflow-x: auto; font-size: 0.9rem; }
-                      article code { font-family: monospace; font-size: 0.9em; background: rgba(255,255,255,0.06); padding: 0.15em 0.4em; border-radius: 4px; }
-                    </style>
-                  </head>
-                  <body>
-                    <header>
-                      <span class="chapter-label">Chapter ${chapterNumber}</span>
-                      <h1>${title || 'Untitled'}</h1>
-                      <div class="meta">Preview — Not yet published</div>
-                    </header>
-                    <article>
-                      ${content || '<p>No content yet.</p>'}
-                    </article>
-                  </body>
-                  </html>
-                `);
-                previewWindow.document.close();
-              }
-            }}
+            onClick={() => setShowPreview(true)}
             className="px-4 py-2 bg-accent/20 hover:bg-accent/30 text-accent rounded-lg text-sm transition-colors"
           >
             Preview
@@ -433,6 +385,32 @@ export const ChapterEditor: React.FC<ChapterEditorProps> = ({ authToken, userId,
       <div className="mt-3 text-xs text-muted-foreground">
         {content.replace(/<[^>]*>/g, '').trim().split(/\s+/).filter(Boolean).length} words
       </div>
+
+      {/* Inline Preview Modal */}
+      {showPreview && (
+        <div className="fixed inset-0 z-50 bg-background overflow-y-auto">
+          <div className="sticky top-0 z-10 flex items-center justify-between px-4 py-3 bg-background/95 backdrop-blur border-b border-border">
+            <span className="text-sm text-muted-foreground font-medium">Preview</span>
+            <button
+              onClick={() => setShowPreview(false)}
+              className="px-4 py-1.5 bg-secondary hover:bg-secondary/80 text-foreground rounded-lg text-sm transition-colors"
+            >
+              Close
+            </button>
+          </div>
+          <div className="max-w-[720px] mx-auto px-4 sm:px-6 py-8 sm:py-12" style={{ fontFamily: "'Nunito Sans', sans-serif", lineHeight: 1.9, fontSize: '1.05rem' }}>
+            <header className="text-center mb-12">
+              <span className="text-accent text-sm font-medium tracking-wider uppercase">Chapter {chapterNumber}</span>
+              <h1 className="font-display text-3xl sm:text-4xl text-primary mt-2 mb-3" style={{ lineHeight: 1.2 }}>{title || 'Untitled'}</h1>
+              <div className="text-muted-foreground text-sm px-4 py-2 bg-card/30 rounded-lg inline-block">Preview — Not yet published</div>
+            </header>
+            <article
+              className="prose prose-stone dark:prose-invert max-w-none [&_p]:mb-5 [&_p]:text-foreground [&_strong]:text-foreground [&_em]:text-muted-foreground [&_h2]:font-display [&_h2]:text-primary [&_h3]:font-display [&_h3]:text-primary [&_blockquote]:border-l-accent [&_blockquote]:text-muted-foreground [&_blockquote]:italic [&_blockquote]:bg-card/30 [&_blockquote]:rounded-r-lg [&_a]:text-accent"
+              dangerouslySetInnerHTML={{ __html: content || '<p>No content yet.</p>' }}
+            />
+          </div>
+        </div>
+      )}
     </div>
   );
 };
