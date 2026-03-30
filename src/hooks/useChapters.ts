@@ -100,15 +100,18 @@ export function useChapters() {
     );
     const data = await response.json();
     if (Array.isArray(data)) {
+      const now = new Date().toISOString();
       setChapters(
-        data.map((c: any) => ({
-          id: c.id,
-          title: c.title,
-          content: c.content,
-          chapterNumber: c.chapter_number,
-          publishedAt: c.published_at,
-          views: c.views,
-        }))
+        data
+          .filter((c: any) => !c.scheduled_at || c.scheduled_at <= now)
+          .map((c: any) => ({
+            id: c.id,
+            title: c.title,
+            content: c.content,
+            chapterNumber: c.chapter_number,
+            publishedAt: c.published_at,
+            views: c.views,
+          }))
       );
     }
   }, []);
