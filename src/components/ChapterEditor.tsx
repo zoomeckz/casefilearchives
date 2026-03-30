@@ -368,7 +368,7 @@ export const ChapterEditor: React.FC<ChapterEditorProps> = ({ authToken, userId,
           />
         </div>
         <div>
-          <label className="block text-sm text-muted-foreground mb-1">Schedule Release</label>
+          <label className="block text-sm text-muted-foreground mb-1">Schedule Release (Swedish time)</label>
           <div className="flex items-center gap-2">
             <input
               type="datetime-local"
@@ -388,7 +388,7 @@ export const ChapterEditor: React.FC<ChapterEditorProps> = ({ authToken, userId,
           </div>
           {scheduledAt && (
             <span className="text-xs text-accent mt-1 block">
-              Will go live: {new Date(scheduledAt).toLocaleString()}
+              🇸🇪 Will go live: {scheduledAt.replace('T', ' ')} (Swedish time)
             </span>
           )}
           {!scheduledAt && (
