@@ -221,6 +221,7 @@ export type Database = {
           created_at: string
           id: string
           published_at: string
+          scheduled_at: string | null
           title: string
           updated_at: string
           views: number
@@ -231,6 +232,7 @@ export type Database = {
           created_at?: string
           id?: string
           published_at?: string
+          scheduled_at?: string | null
           title: string
           updated_at?: string
           views?: number
@@ -241,6 +243,7 @@ export type Database = {
           created_at?: string
           id?: string
           published_at?: string
+          scheduled_at?: string | null
           title?: string
           updated_at?: string
           views?: number
