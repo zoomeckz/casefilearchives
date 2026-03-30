@@ -296,56 +296,7 @@ export const ChapterEditor: React.FC<ChapterEditorProps> = ({ authToken, userId,
             </button>
           )}
           <button
-            onClick={() => {
-              // Open preview in new tab
-              const previewWindow = window.open('', '_blank');
-              if (previewWindow) {
-                previewWindow.document.write(`
-                  <!DOCTYPE html>
-                  <html>
-                  <head>
-                    <title>Preview: ${title || 'Untitled'}</title>
-                    <link href="https://fonts.googleapis.com/css2?family=Lora:ital,wght@0,400;0,500;0,600;0,700;1,400;1,500&family=Nunito+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet">
-                    <style>
-                      * { margin: 0; padding: 0; box-sizing: border-box; }
-                      body { font-family: 'Nunito Sans', sans-serif; background: #0c0a09; color: #d6d3d1; max-width: 720px; margin: 0 auto; padding: 3rem 1.5rem; line-height: 1.9; font-size: 1.05rem; }
-                      header { text-align: center; margin-bottom: 3rem; }
-                      header .chapter-label { color: #d97706; font-size: 0.875rem; font-weight: 500; letter-spacing: 0.05em; }
-                      header h1 { font-family: 'Lora', serif; color: #f59e0b; font-size: 2.5rem; margin-top: 0.5rem; margin-bottom: 0.75rem; line-height: 1.2; }
-                      header .meta { color: #78716c; font-size: 0.85rem; padding: 0.5rem 1rem; background: rgba(255,255,255,0.03); border-radius: 8px; display: inline-block; }
-                      article p { margin-bottom: 1.25em; color: #d6d3d1; }
-                      article strong { color: #e7e5e4; font-weight: 600; }
-                      article em { color: #a8a29e; }
-                      article h2, article h3 { font-family: 'Lora', serif; color: #f59e0b; margin: 2rem 0 1rem; }
-                      article h2 { font-size: 1.5rem; }
-                      article h3 { font-size: 1.25rem; }
-                      article blockquote { border-left: 3px solid #d97706; padding: 0.75rem 1.25rem; margin: 1.5rem 0; color: #a8a29e; font-style: italic; background: rgba(255,255,255,0.02); border-radius: 0 8px 8px 0; }
-                      article ul, article ol { margin: 1rem 0; padding-left: 1.5rem; color: #d6d3d1; }
-                      article li { margin-bottom: 0.5rem; }
-                      .glossary-term { color: #d97706; border-bottom: 1px dashed rgba(217,119,6,0.4); cursor: help; }
-                      article img { max-width: 100%; border-radius: 8px; margin: 1.5rem 0; }
-                      article a { color: #d97706; text-decoration: underline; text-underline-offset: 2px; }
-                      article a:hover { color: #f59e0b; }
-                      article hr { border: none; border-top: 1px solid rgba(255,255,255,0.08); margin: 2rem 0; }
-                      article pre { background: rgba(255,255,255,0.05); padding: 1rem; border-radius: 8px; overflow-x: auto; font-size: 0.9rem; }
-                      article code { font-family: monospace; font-size: 0.9em; background: rgba(255,255,255,0.06); padding: 0.15em 0.4em; border-radius: 4px; }
-                    </style>
-                  </head>
-                  <body>
-                    <header>
-                      <span class="chapter-label">Chapter ${chapterNumber}</span>
-                      <h1>${title || 'Untitled'}</h1>
-                      <div class="meta">Preview — Not yet published</div>
-                    </header>
-                    <article>
-                      ${content || '<p>No content yet.</p>'}
-                    </article>
-                  </body>
-                  </html>
-                `);
-                previewWindow.document.close();
-              }
-            }}
+            onClick={() => setShowPreview(true)}
             className="px-4 py-2 bg-accent/20 hover:bg-accent/30 text-accent rounded-lg text-sm transition-colors"
           >
             Preview
