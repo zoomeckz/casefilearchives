@@ -5,6 +5,20 @@ import { dbFetch } from '@/lib/dbFetch';
 import { GlossaryEntry } from '@/lib/data';
 import { toast } from 'sonner';
 
+// Convert a datetime-local value (interpreted as Swedish time) to ISO UTC
+function swedishToUTC(localStr: string): string {
+  const parts = localStr.match(/(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2})/);
+  if (!parts) return new Date(localStr).toISOString();
+  const [, y, m, d, h, mi] = parts;
+  const approx = new Date(`${y}-${m}-${d}T${h}:${mi}:00`);
+  const utcStr = approx.toLocaleString('en-US', { timeZone: 'UTC' });
+  const sweStr = approx.toLocaleString('en-US', { timeZone: 'Europe/Stockholm' });
+  const utcDate = new Date(utcStr);
+  const sweDate = new Date(sweStr);
+  const offsetMs = sweDate.getTime() - utcDate.getTime();
+  return new Date(approx.getTime() - offsetMs).toISOString();
+}
+
 interface ChapterEditorProps {
   authToken?: string;
   userId?: string;
