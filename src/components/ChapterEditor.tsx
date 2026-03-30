@@ -107,6 +107,7 @@ export const ChapterEditor: React.FC<ChapterEditorProps> = ({ authToken, userId,
   const [scheduledAt, setScheduledAt] = useState<string>('');
   const [saving, setSaving] = useState(false);
   const [publishing, setPublishing] = useState(false);
+  const [showPreview, setShowPreview] = useState(false);
   const [draftStatus, setDraftStatus] = useState<string>('');
   const [loadingChapter, setLoadingChapter] = useState(!!editChapterId);
   const autoSaveTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
