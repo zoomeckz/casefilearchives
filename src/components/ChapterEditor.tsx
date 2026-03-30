@@ -103,7 +103,7 @@ export const ChapterEditor: React.FC<ChapterEditorProps> = ({ authToken, userId,
     if (editChapterId) {
       const loadChapter = async () => {
         const { data } = await dbFetch<any[]>('chapters', {
-          select: 'title,content,chapter_number',
+          select: 'title,content,chapter_number,scheduled_at',
           filters: `id=eq.${editChapterId}`,
           token: authToken,
         });
@@ -111,6 +111,11 @@ export const ChapterEditor: React.FC<ChapterEditorProps> = ({ authToken, userId,
           setTitle(data[0].title);
           setContent(data[0].content);
           setChapterNumber(data[0].chapter_number);
+          if (data[0].scheduled_at) {
+            // Convert to local datetime-local format
+            const d = new Date(data[0].scheduled_at);
+            setScheduledAt(d.toISOString().slice(0, 16));
+          }
         }
         setLoadingChapter(false);
       };
