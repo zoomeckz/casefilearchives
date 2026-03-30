@@ -208,33 +208,35 @@ export const ChapterEditor: React.FC<ChapterEditorProps> = ({ authToken, userId,
     setPublishing(true);
     try {
       if (editChapterId) {
-        // Update existing chapter
+        const body: any = {
+          title: title.trim(),
+          content,
+          chapter_number: chapterNumber,
+          scheduled_at: scheduledAt ? new Date(scheduledAt).toISOString() : null,
+        };
         const { error } = await dbFetch('chapters', {
           method: 'PATCH',
           filters: `id=eq.${editChapterId}`,
-          body: {
-            title: title.trim(),
-            content,
-            chapter_number: chapterNumber,
-          },
+          body,
           token: authToken,
         });
         if (error) throw new Error(error);
-        toast.success('Chapter updated!');
+        toast.success(scheduledAt ? `Chapter scheduled for ${new Date(scheduledAt).toLocaleString()}` : 'Chapter updated!');
       } else {
-        // Create new chapter
+        const body: any = {
+          title: title.trim(),
+          content,
+          chapter_number: chapterNumber,
+          scheduled_at: scheduledAt ? new Date(scheduledAt).toISOString() : null,
+        };
         const { error } = await dbFetch('chapters', {
           method: 'POST',
-          body: {
-            title: title.trim(),
-            content,
-            chapter_number: chapterNumber,
-          },
+          body,
           token: authToken,
         });
         if (error) throw new Error(error);
         await deleteDraft(draftIdRef.current, authToken);
-        toast.success('Chapter published!');
+        toast.success(scheduledAt ? `Chapter scheduled for ${new Date(scheduledAt).toLocaleString()}` : 'Chapter published!');
       }
       onBack();
     } catch (err: any) {
