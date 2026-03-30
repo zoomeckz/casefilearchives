@@ -5,6 +5,20 @@ import { dbFetch } from '@/lib/dbFetch';
 import { GlossaryEntry } from '@/lib/data';
 import { toast } from 'sonner';
 
+// Convert a datetime-local value (interpreted as Swedish time) to ISO UTC
+function swedishToUTC(localStr: string): string {
+  const parts = localStr.match(/(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2})/);
+  if (!parts) return new Date(localStr).toISOString();
+  const [, y, m, d, h, mi] = parts;
+  const approx = new Date(`${y}-${m}-${d}T${h}:${mi}:00`);
+  const utcStr = approx.toLocaleString('en-US', { timeZone: 'UTC' });
+  const sweStr = approx.toLocaleString('en-US', { timeZone: 'Europe/Stockholm' });
+  const utcDate = new Date(utcStr);
+  const sweDate = new Date(sweStr);
+  const offsetMs = sweDate.getTime() - utcDate.getTime();
+  return new Date(approx.getTime() - offsetMs).toISOString();
+}
+
 interface ChapterEditorProps {
   authToken?: string;
   userId?: string;
@@ -112,9 +126,15 @@ export const ChapterEditor: React.FC<ChapterEditorProps> = ({ authToken, userId,
           setContent(data[0].content);
           setChapterNumber(data[0].chapter_number);
           if (data[0].scheduled_at) {
-            // Convert to local datetime-local format
+            // Convert to Swedish time for the datetime-local input
             const d = new Date(data[0].scheduled_at);
-            setScheduledAt(d.toISOString().slice(0, 16));
+            const sweDate = new Date(d.toLocaleString('en-US', { timeZone: 'Europe/Stockholm' }));
+            const yyyy = sweDate.getFullYear();
+            const mm = String(sweDate.getMonth() + 1).padStart(2, '0');
+            const dd = String(sweDate.getDate()).padStart(2, '0');
+            const hh = String(sweDate.getHours()).padStart(2, '0');
+            const mi = String(sweDate.getMinutes()).padStart(2, '0');
+            setScheduledAt(`${yyyy}-${mm}-${dd}T${hh}:${mi}`);
           }
         }
         setLoadingChapter(false);
@@ -212,7 +232,7 @@ export const ChapterEditor: React.FC<ChapterEditorProps> = ({ authToken, userId,
           title: title.trim(),
           content,
           chapter_number: chapterNumber,
-          scheduled_at: scheduledAt ? new Date(scheduledAt).toISOString() : null,
+          scheduled_at: scheduledAt ? swedishToUTC(scheduledAt) : null,
         };
         const { error } = await dbFetch('chapters', {
           method: 'PATCH',
@@ -221,13 +241,13 @@ export const ChapterEditor: React.FC<ChapterEditorProps> = ({ authToken, userId,
           token: authToken,
         });
         if (error) throw new Error(error);
-        toast.success(scheduledAt ? `Chapter scheduled for ${new Date(scheduledAt).toLocaleString()}` : 'Chapter updated!');
+        toast.success(scheduledAt ? `Chapter scheduled for ${scheduledAt.replace('T', ' ')} (Swedish time)` : 'Chapter updated!');
       } else {
         const body: any = {
           title: title.trim(),
           content,
           chapter_number: chapterNumber,
-          scheduled_at: scheduledAt ? new Date(scheduledAt).toISOString() : null,
+          scheduled_at: scheduledAt ? swedishToUTC(scheduledAt) : null,
         };
         const { error } = await dbFetch('chapters', {
           method: 'POST',
@@ -236,7 +256,7 @@ export const ChapterEditor: React.FC<ChapterEditorProps> = ({ authToken, userId,
         });
         if (error) throw new Error(error);
         await deleteDraft(draftIdRef.current, authToken);
-        toast.success(scheduledAt ? `Chapter scheduled for ${new Date(scheduledAt).toLocaleString()}` : 'Chapter published!');
+        toast.success(scheduledAt ? `Chapter scheduled for ${scheduledAt.replace('T', ' ')} (Swedish time)` : 'Chapter published!');
       }
       onBack();
     } catch (err: any) {
@@ -362,7 +382,7 @@ export const ChapterEditor: React.FC<ChapterEditorProps> = ({ authToken, userId,
           />
         </div>
         <div>
-          <label className="block text-sm text-muted-foreground mb-1">Schedule Release</label>
+          <label className="block text-sm text-muted-foreground mb-1">Schedule Release (Swedish time)</label>
           <div className="flex items-center gap-2">
             <input
               type="datetime-local"
@@ -382,7 +402,7 @@ export const ChapterEditor: React.FC<ChapterEditorProps> = ({ authToken, userId,
           </div>
           {scheduledAt && (
             <span className="text-xs text-accent mt-1 block">
-              Will go live: {new Date(scheduledAt).toLocaleString()}
+              🇸🇪 Will go live: {scheduledAt.replace('T', ' ')} (Swedish time)
             </span>
           )}
           {!scheduledAt && (

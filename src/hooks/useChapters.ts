@@ -7,9 +7,22 @@ export interface Chapter {
   chapterNumber: number;
   publishedAt: string;
   views: number;
+  scheduledAt: string | null;
 }
 
-export function useChapters() {
+function mapChapter(c: any): Chapter {
+  return {
+    id: c.id,
+    title: c.title,
+    content: c.content,
+    chapterNumber: c.chapter_number,
+    publishedAt: c.published_at,
+    views: c.views,
+    scheduledAt: c.scheduled_at || null,
+  };
+}
+
+export function useChapters(isAdmin = false) {
   const [chapters, setChapters] = useState<Chapter[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -38,15 +51,8 @@ export function useChapters() {
           const now = new Date().toISOString();
           setChapters(
             data
-              .filter((c: any) => !c.scheduled_at || c.scheduled_at <= now)
-              .map((c: any) => ({
-                id: c.id,
-                title: c.title,
-                content: c.content,
-                chapterNumber: c.chapter_number,
-                publishedAt: c.published_at,
-                views: c.views,
-              }))
+              .filter((c: any) => isAdmin || !c.scheduled_at || c.scheduled_at <= now)
+              .map(mapChapter)
           );
         }
       } catch (err) {
@@ -60,7 +66,7 @@ export function useChapters() {
     return () => {
       cancelled = true;
     };
-  }, []);
+  }, [isAdmin]);
 
   const incrementViews = useCallback(
     async (chapterId: string) => {
@@ -103,18 +109,11 @@ export function useChapters() {
       const now = new Date().toISOString();
       setChapters(
         data
-          .filter((c: any) => !c.scheduled_at || c.scheduled_at <= now)
-          .map((c: any) => ({
-            id: c.id,
-            title: c.title,
-            content: c.content,
-            chapterNumber: c.chapter_number,
-            publishedAt: c.published_at,
-            views: c.views,
-          }))
+          .filter((c: any) => isAdmin || !c.scheduled_at || c.scheduled_at <= now)
+          .map(mapChapter)
       );
     }
-  }, []);
+  }, [isAdmin]);
 
   return {
     chapters,

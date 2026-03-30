@@ -69,7 +69,7 @@ const Index = () => {
   const { user, session, loading: authLoading, signIn, signUp, signOut, refreshUser } = useAuth();
 
   // Chapters from database
-  const { chapters, loading: chaptersLoading, incrementViews } = useChapters();
+  const { chapters, loading: chaptersLoading, incrementViews } = useChapters(user?.isAdmin);
 
   // Reading progress
   const { isRead, markAsRead, markAsUnread, readCount } = useReadingProgress(user);

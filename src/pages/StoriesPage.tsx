@@ -96,6 +96,11 @@ export const StoriesPage: React.FC<StoriesPageProps> = ({
                     Chapter {chapter.chapterNumber} ·{" "}
                     {new Date(chapter.publishedAt).toLocaleDateString()}
                   </span>
+                  {chapter.scheduledAt && new Date(chapter.scheduledAt) > new Date() && (
+                    <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-accent/20 text-accent text-xs font-semibold border border-accent/30">
+                      📅 Scheduled · {new Date(chapter.scheduledAt).toLocaleString('sv-SE', { timeZone: 'Europe/Stockholm' })}
+                    </span>
+                  )}
                   {user && chapterIsRead && (
                     <ReadingProgressBadge
                       isRead={chapterIsRead}
