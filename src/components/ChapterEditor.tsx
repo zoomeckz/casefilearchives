@@ -232,7 +232,7 @@ export const ChapterEditor: React.FC<ChapterEditorProps> = ({ authToken, userId,
           title: title.trim(),
           content,
           chapter_number: chapterNumber,
-          scheduled_at: scheduledAt ? new Date(scheduledAt).toISOString() : null,
+          scheduled_at: scheduledAt ? swedishToUTC(scheduledAt) : null,
         };
         const { error } = await dbFetch('chapters', {
           method: 'PATCH',
