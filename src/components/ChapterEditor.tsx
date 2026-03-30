@@ -90,6 +90,7 @@ export const ChapterEditor: React.FC<ChapterEditorProps> = ({ authToken, userId,
   const [title, setTitle] = useState('');
   const [content, setContent] = useState('');
   const [chapterNumber, setChapterNumber] = useState(1);
+  const [scheduledAt, setScheduledAt] = useState<string>('');
   const [saving, setSaving] = useState(false);
   const [publishing, setPublishing] = useState(false);
   const [draftStatus, setDraftStatus] = useState<string>('');
@@ -102,7 +103,7 @@ export const ChapterEditor: React.FC<ChapterEditorProps> = ({ authToken, userId,
     if (editChapterId) {
       const loadChapter = async () => {
         const { data } = await dbFetch<any[]>('chapters', {
-          select: 'title,content,chapter_number',
+          select: 'title,content,chapter_number,scheduled_at',
           filters: `id=eq.${editChapterId}`,
           token: authToken,
         });
@@ -110,6 +111,11 @@ export const ChapterEditor: React.FC<ChapterEditorProps> = ({ authToken, userId,
           setTitle(data[0].title);
           setContent(data[0].content);
           setChapterNumber(data[0].chapter_number);
+          if (data[0].scheduled_at) {
+            // Convert to local datetime-local format
+            const d = new Date(data[0].scheduled_at);
+            setScheduledAt(d.toISOString().slice(0, 16));
+          }
         }
         setLoadingChapter(false);
       };
@@ -202,33 +208,35 @@ export const ChapterEditor: React.FC<ChapterEditorProps> = ({ authToken, userId,
     setPublishing(true);
     try {
       if (editChapterId) {
-        // Update existing chapter
+        const body: any = {
+          title: title.trim(),
+          content,
+          chapter_number: chapterNumber,
+          scheduled_at: scheduledAt ? new Date(scheduledAt).toISOString() : null,
+        };
         const { error } = await dbFetch('chapters', {
           method: 'PATCH',
           filters: `id=eq.${editChapterId}`,
-          body: {
-            title: title.trim(),
-            content,
-            chapter_number: chapterNumber,
-          },
+          body,
           token: authToken,
         });
         if (error) throw new Error(error);
-        toast.success('Chapter updated!');
+        toast.success(scheduledAt ? `Chapter scheduled for ${new Date(scheduledAt).toLocaleString()}` : 'Chapter updated!');
       } else {
-        // Create new chapter
+        const body: any = {
+          title: title.trim(),
+          content,
+          chapter_number: chapterNumber,
+          scheduled_at: scheduledAt ? new Date(scheduledAt).toISOString() : null,
+        };
         const { error } = await dbFetch('chapters', {
           method: 'POST',
-          body: {
-            title: title.trim(),
-            content,
-            chapter_number: chapterNumber,
-          },
+          body,
           token: authToken,
         });
         if (error) throw new Error(error);
         await deleteDraft(draftIdRef.current, authToken);
-        toast.success('Chapter published!');
+        toast.success(scheduledAt ? `Chapter scheduled for ${new Date(scheduledAt).toLocaleString()}` : 'Chapter published!');
       }
       onBack();
     } catch (err: any) {
@@ -326,13 +334,13 @@ export const ChapterEditor: React.FC<ChapterEditorProps> = ({ authToken, userId,
             disabled={publishing}
             className="px-6 py-2 bg-primary hover:bg-primary/90 text-primary-foreground rounded-lg text-sm font-medium transition-colors disabled:opacity-50"
           >
-            {publishing ? 'Saving...' : editChapterId ? 'Update Chapter' : 'Publish Chapter'}
+            {publishing ? 'Saving...' : editChapterId ? 'Update Chapter' : scheduledAt ? 'Schedule Chapter' : 'Publish Chapter'}
           </button>
         </div>
       </div>
 
       {/* Chapter metadata */}
-      <div className="grid grid-cols-1 md:grid-cols-[1fr_auto] gap-4 mb-6">
+      <div className="grid grid-cols-1 md:grid-cols-[1fr_auto_auto] gap-4 mb-6">
         <div>
           <label className="block text-sm text-muted-foreground mb-1">Chapter Title</label>
           <input
@@ -352,6 +360,34 @@ export const ChapterEditor: React.FC<ChapterEditorProps> = ({ authToken, userId,
             min={1}
             className="w-24 px-4 py-3 bg-card/50 border border-border rounded-lg text-foreground text-lg text-center focus:outline-none focus:border-primary transition-colors"
           />
+        </div>
+        <div>
+          <label className="block text-sm text-muted-foreground mb-1">Schedule Release</label>
+          <div className="flex items-center gap-2">
+            <input
+              type="datetime-local"
+              value={scheduledAt}
+              onChange={(e) => setScheduledAt(e.target.value)}
+              className="px-3 py-3 bg-card/50 border border-border rounded-lg text-foreground text-sm focus:outline-none focus:border-primary transition-colors"
+            />
+            {scheduledAt && (
+              <button
+                onClick={() => setScheduledAt('')}
+                className="px-2 py-1 text-xs text-destructive hover:text-destructive/80 transition-colors"
+                title="Clear schedule (publish immediately)"
+              >
+                ✕
+              </button>
+            )}
+          </div>
+          {scheduledAt && (
+            <span className="text-xs text-accent mt-1 block">
+              Will go live: {new Date(scheduledAt).toLocaleString()}
+            </span>
+          )}
+          {!scheduledAt && (
+            <span className="text-xs text-muted-foreground mt-1 block">Leave empty to publish now</span>
+          )}
         </div>
       </div>
 
