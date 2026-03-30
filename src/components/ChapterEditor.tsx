@@ -241,7 +241,7 @@ export const ChapterEditor: React.FC<ChapterEditorProps> = ({ authToken, userId,
           token: authToken,
         });
         if (error) throw new Error(error);
-        toast.success(scheduledAt ? `Chapter scheduled for ${new Date(scheduledAt).toLocaleString()}` : 'Chapter updated!');
+        toast.success(scheduledAt ? `Chapter scheduled for ${scheduledAt.replace('T', ' ')} (Swedish time)` : 'Chapter updated!');
       } else {
         const body: any = {
           title: title.trim(),
