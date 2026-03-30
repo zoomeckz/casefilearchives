@@ -90,6 +90,7 @@ export const ChapterEditor: React.FC<ChapterEditorProps> = ({ authToken, userId,
   const [title, setTitle] = useState('');
   const [content, setContent] = useState('');
   const [chapterNumber, setChapterNumber] = useState(1);
+  const [scheduledAt, setScheduledAt] = useState<string>('');
   const [saving, setSaving] = useState(false);
   const [publishing, setPublishing] = useState(false);
   const [draftStatus, setDraftStatus] = useState<string>('');
