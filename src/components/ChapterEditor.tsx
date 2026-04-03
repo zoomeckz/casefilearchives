@@ -23,6 +23,13 @@ export interface ChapterDraft {
   lastSaved: string;
 }
 
+function normalizeScheduledAt(value: string): string {
+  if (!value) return '';
+
+  const datePart = value.split('T')[0];
+  return /^\d{4}-\d{2}-\d{2}$/.test(datePart) ? `${datePart}T10:00` : value;
+}
+
 // ── DB-backed draft helpers ──
 
 export async function getAllDrafts(token?: string): Promise<ChapterDraft[]> {
@@ -114,7 +121,7 @@ export const ChapterEditor: React.FC<ChapterEditorProps> = ({ authToken, userId,
           setContent(data[0].content);
           setChapterNumber(data[0].chapter_number);
           if (data[0].scheduled_at) {
-            setScheduledAt(utcToSwedishDateTimeLocal(data[0].scheduled_at));
+            setScheduledAt(normalizeScheduledAt(utcToSwedishDateTimeLocal(data[0].scheduled_at)));
           }
         }
         setLoadingChapter(false);
@@ -207,12 +214,14 @@ export const ChapterEditor: React.FC<ChapterEditorProps> = ({ authToken, userId,
 
     setPublishing(true);
     try {
+      const normalizedScheduledAt = normalizeScheduledAt(scheduledAt);
+
       if (editChapterId) {
         const body: any = {
           title: title.trim(),
           content,
           chapter_number: chapterNumber,
-          scheduled_at: scheduledAt ? swedishToUTC(scheduledAt) : null,
+          scheduled_at: normalizedScheduledAt ? swedishToUTC(normalizedScheduledAt) : null,
         };
         const { error } = await dbFetch('chapters', {
           method: 'PATCH',
@@ -221,13 +230,13 @@ export const ChapterEditor: React.FC<ChapterEditorProps> = ({ authToken, userId,
           token: authToken,
         });
         if (error) throw new Error(error);
-        toast.success(scheduledAt ? `Chapter scheduled for ${scheduledAt.replace('T', ' ')} (Swedish time)` : 'Chapter updated!');
+        toast.success(normalizedScheduledAt ? `Chapter scheduled for ${normalizedScheduledAt.replace('T', ' ')} (Swedish time)` : 'Chapter updated!');
       } else {
         const body: any = {
           title: title.trim(),
           content,
           chapter_number: chapterNumber,
-          scheduled_at: scheduledAt ? swedishToUTC(scheduledAt) : null,
+          scheduled_at: normalizedScheduledAt ? swedishToUTC(normalizedScheduledAt) : null,
         };
         const { error } = await dbFetch('chapters', {
           method: 'POST',
@@ -236,7 +245,7 @@ export const ChapterEditor: React.FC<ChapterEditorProps> = ({ authToken, userId,
         });
         if (error) throw new Error(error);
         await deleteDraft(draftIdRef.current, authToken);
-        toast.success(scheduledAt ? `Chapter scheduled for ${scheduledAt.replace('T', ' ')} (Swedish time)` : 'Chapter published!');
+        toast.success(normalizedScheduledAt ? `Chapter scheduled for ${normalizedScheduledAt.replace('T', ' ')} (Swedish time)` : 'Chapter published!');
       }
       onBack();
     } catch (err: any) {
@@ -313,14 +322,17 @@ export const ChapterEditor: React.FC<ChapterEditorProps> = ({ authToken, userId,
           />
         </div>
         <div>
-          <label className="block text-sm text-muted-foreground mb-1">Schedule Release (Swedish time)</label>
+          <label className="block text-sm text-muted-foreground mb-1">Schedule Release Date</label>
           <div className="flex items-center gap-2">
             <input
-              type="datetime-local"
-              value={scheduledAt}
-              onChange={(e) => setScheduledAt(e.target.value)}
+              type="date"
+              value={scheduledAt ? scheduledAt.slice(0, 10) : ''}
+              onChange={(e) => setScheduledAt(normalizeScheduledAt(e.target.value))}
               className="px-3 py-3 bg-card/50 border border-border rounded-lg text-foreground text-sm focus:outline-none focus:border-primary transition-colors"
             />
+            <span className="px-3 py-2 rounded-lg bg-secondary text-foreground text-sm whitespace-nowrap">
+              10:00 🇸🇪
+            </span>
             {scheduledAt && (
               <button
                 onClick={() => setScheduledAt('')}
@@ -337,7 +349,7 @@ export const ChapterEditor: React.FC<ChapterEditorProps> = ({ authToken, userId,
             </span>
           )}
           {!scheduledAt && (
-            <span className="text-xs text-muted-foreground mt-1 block">Leave empty to publish now</span>
+            <span className="text-xs text-muted-foreground mt-1 block">Pick a date — release time is fixed to 10:00 Swedish time</span>
           )}
         </div>
       </div>
