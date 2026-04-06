@@ -123,6 +123,7 @@ export const ChapterEditor: React.FC<ChapterEditorProps> = ({ authToken, userId,
   const [loadingChapter, setLoadingChapter] = useState(!!editChapterId);
   const autoSaveTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [glossaryMarked, setGlossaryMarked] = useState(false);
+  const [takenFridays, setTakenFridays] = useState<string[]>([]);
 
   // Load existing chapter for editing
   useEffect(() => {
