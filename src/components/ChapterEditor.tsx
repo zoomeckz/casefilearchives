@@ -125,6 +125,26 @@ export const ChapterEditor: React.FC<ChapterEditorProps> = ({ authToken, userId,
   const [glossaryMarked, setGlossaryMarked] = useState(false);
   const [takenFridays, setTakenFridays] = useState<string[]>([]);
 
+  // Load all scheduled Fridays to prevent double-booking
+  useEffect(() => {
+    const loadTaken = async () => {
+      const { data } = await dbFetch<any[]>('chapters', {
+        select: 'id,scheduled_at',
+        filters: 'scheduled_at=not.is.null',
+        token: authToken,
+      });
+      const dates = (data || [])
+        .filter((c: any) => !editChapterId || c.id !== editChapterId)
+        .map((c: any) => {
+          const sw = utcToSwedishDateTimeLocal(c.scheduled_at);
+          return sw.slice(0, 10);
+        })
+        .filter(Boolean);
+      setTakenFridays(dates);
+    };
+    loadTaken();
+  }, [authToken, editChapterId]);
+
   // Load existing chapter for editing
   useEffect(() => {
     if (editChapterId) {
