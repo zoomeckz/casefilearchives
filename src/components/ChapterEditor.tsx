@@ -360,34 +360,43 @@ export const ChapterEditor: React.FC<ChapterEditorProps> = ({ authToken, userId,
           />
         </div>
         <div>
-          <label className="block text-sm text-muted-foreground mb-1">Schedule Release Date</label>
+          <label className="block text-sm text-muted-foreground mb-1">Schedule (Fridays 10:00 🇸🇪)</label>
           <div className="flex items-center gap-2">
-            <input
-              type="date"
-              value={scheduledAt ? scheduledAt.slice(0, 10) : ''}
-              onChange={(e) => setScheduledAt(normalizeScheduledAt(e.target.value))}
-              className="px-3 py-3 bg-card/50 border border-border rounded-lg text-foreground text-sm focus:outline-none focus:border-primary transition-colors"
-            />
-            <span className="px-3 py-2 rounded-lg bg-secondary text-foreground text-sm whitespace-nowrap">
-              10:00 🇸🇪
-            </span>
-            {scheduledAt && (
+            {!scheduledAt ? (
               <button
-                onClick={() => setScheduledAt('')}
-                className="px-2 py-1 text-xs text-destructive hover:text-destructive/80 transition-colors"
-                title="Clear schedule (publish immediately)"
+                onClick={() => setScheduledAt(getNextAvailableFriday(takenFridays))}
+                className="px-4 py-3 bg-accent/20 hover:bg-accent/30 text-accent rounded-lg text-sm font-medium transition-colors"
               >
-                ✕
+                Schedule for next Friday
               </button>
+            ) : (
+              <>
+                <span className="px-4 py-3 bg-card/50 border border-border rounded-lg text-foreground text-sm">
+                  📅 {new Date(scheduledAt.slice(0, 10) + 'T12:00:00').toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })} — 10:00 🇸🇪
+                </span>
+                <button
+                  onClick={() => {
+                    const current = new Date(scheduledAt.slice(0, 10) + 'T12:00:00');
+                    const next = getNextAvailableFriday([...takenFridays, scheduledAt.slice(0, 10)]);
+                    setScheduledAt(next);
+                  }}
+                  className="px-3 py-2 bg-secondary hover:bg-secondary/80 text-foreground rounded-lg text-xs transition-colors"
+                  title="Skip to next available Friday"
+                >
+                  Next →
+                </button>
+                <button
+                  onClick={() => setScheduledAt('')}
+                  className="px-2 py-1 text-xs text-destructive hover:text-destructive/80 transition-colors"
+                  title="Clear schedule (publish immediately)"
+                >
+                  ✕
+                </button>
+              </>
             )}
           </div>
-          {scheduledAt && (
-            <span className="text-xs text-accent mt-1 block">
-              🇸🇪 Will go live: {scheduledAt.replace('T', ' ')} (Swedish time)
-            </span>
-          )}
-          {!scheduledAt && (
-            <span className="text-xs text-muted-foreground mt-1 block">Pick a date — release time is fixed to 10:00 Swedish time</span>
+          {scheduledAt && takenFridays.includes(scheduledAt.slice(0, 10)) && (
+            <span className="text-xs text-destructive mt-1 block">⚠ Another chapter is already scheduled for this date!</span>
           )}
         </div>
       </div>
