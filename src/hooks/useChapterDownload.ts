@@ -1,6 +1,41 @@
 const url = import.meta.env.VITE_SUPABASE_URL;
 const key = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY;
 
+export async function downloadSingleChapter(chapterNumber: number, title: string) {
+  const response = await fetch(
+    `${url}/rest/v1/chapters?select=title,content,chapter_number&chapter_number=eq.${chapterNumber}`,
+    { headers: { 'apikey': key, 'Authorization': `Bearer ${key}` } }
+  );
+  if (!response.ok) throw new Error("Failed to fetch chapter");
+  const data = await response.json();
+  if (!Array.isArray(data) || data.length === 0) throw new Error("Chapter not found");
+
+  const ch = data[0];
+  const separator = "═".repeat(60);
+  const lines = [
+    "SEDORIUM",
+    separator,
+    `CHAPTER ${ch.chapter_number}: ${(ch.title || "").toUpperCase()}`,
+    separator,
+    "",
+    stripHtml(ch.content || ""),
+    "",
+    separator,
+  ];
+
+  const text = lines.join("\n");
+  const blob = new Blob([text], { type: "text/plain;charset=utf-8" });
+  const blobUrl = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = blobUrl;
+  a.download = `Sedorium_Chapter_${ch.chapter_number}.txt`;
+  a.style.display = "none";
+  document.body.appendChild(a);
+  await new Promise((r) => setTimeout(r, 100));
+  a.click();
+  setTimeout(() => { document.body.removeChild(a); URL.revokeObjectURL(blobUrl); }, 5000);
+}
+
 function stripHtml(html: string): string {
   const div = document.createElement("div");
   div.innerHTML = html;
