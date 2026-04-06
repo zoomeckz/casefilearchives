@@ -36,9 +36,9 @@ function getNextFriday(after: Date = new Date()): Date {
   return d;
 }
 
-function getNextAvailableFriday(takenDates: string[]): string {
+function getNextAvailableFriday(takenDates: string[], after?: Date): string {
   const taken = new Set(takenDates);
-  let candidate = getNextFriday();
+  let candidate = getNextFriday(after);
   for (let i = 0; i < 200; i++) {
     const iso = candidate.toISOString().slice(0, 10);
     if (!taken.has(iso)) return `${iso}T10:00`;
