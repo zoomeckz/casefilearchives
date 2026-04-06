@@ -36,9 +36,9 @@ function getNextFriday(after: Date = new Date()): Date {
   return d;
 }
 
-function getNextAvailableFriday(takenDates: string[]): string {
+function getNextAvailableFriday(takenDates: string[], after?: Date): string {
   const taken = new Set(takenDates);
-  let candidate = getNextFriday();
+  let candidate = getNextFriday(after);
   for (let i = 0; i < 200; i++) {
     const iso = candidate.toISOString().slice(0, 10);
     if (!taken.has(iso)) return `${iso}T10:00`;
@@ -380,8 +380,8 @@ export const ChapterEditor: React.FC<ChapterEditorProps> = ({ authToken, userId,
                 </span>
                 <button
                   onClick={() => {
-                    const current = new Date(scheduledAt.slice(0, 10) + 'T12:00:00');
-                    const next = getNextAvailableFriday([...takenFridays, scheduledAt.slice(0, 10)]);
+                    const currentDate = new Date(scheduledAt.slice(0, 10) + 'T12:00:00');
+                    const next = getNextAvailableFriday(takenFridays, currentDate);
                     setScheduledAt(next);
                   }}
                   className="px-3 py-2 bg-secondary hover:bg-secondary/80 text-foreground rounded-lg text-xs transition-colors"
