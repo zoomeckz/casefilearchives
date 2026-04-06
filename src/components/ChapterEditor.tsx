@@ -249,6 +249,10 @@ export const ChapterEditor: React.FC<ChapterEditorProps> = ({ authToken, userId,
       toast.error('Please write some content');
       return;
     }
+    if (scheduledAt && takenFridays.includes(scheduledAt.slice(0, 10))) {
+      toast.error('Another chapter is already scheduled for this Friday. Use "Next →" to pick a different one.');
+      return;
+    }
 
     setPublishing(true);
     try {
