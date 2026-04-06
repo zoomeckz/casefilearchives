@@ -30,6 +30,23 @@ function normalizeScheduledAt(value: string): string {
   return /^\d{4}-\d{2}-\d{2}$/.test(datePart) ? `${datePart}T10:00` : value;
 }
 
+function getNextFriday(after: Date = new Date()): Date {
+  const d = new Date(after);
+  d.setDate(d.getDate() + ((5 - d.getDay() + 7) % 7 || 7));
+  return d;
+}
+
+function getNextAvailableFriday(takenDates: string[]): string {
+  const taken = new Set(takenDates);
+  let candidate = getNextFriday();
+  for (let i = 0; i < 200; i++) {
+    const iso = candidate.toISOString().slice(0, 10);
+    if (!taken.has(iso)) return `${iso}T10:00`;
+    candidate = getNextFriday(candidate);
+  }
+  return `${candidate.toISOString().slice(0, 10)}T10:00`;
+}
+
 // ── DB-backed draft helpers ──
 
 export async function getAllDrafts(token?: string): Promise<ChapterDraft[]> {
