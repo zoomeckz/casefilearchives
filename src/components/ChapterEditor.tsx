@@ -30,6 +30,23 @@ function normalizeScheduledAt(value: string): string {
   return /^\d{4}-\d{2}-\d{2}$/.test(datePart) ? `${datePart}T10:00` : value;
 }
 
+function getNextFriday(after: Date = new Date()): Date {
+  const d = new Date(after);
+  d.setDate(d.getDate() + ((5 - d.getDay() + 7) % 7 || 7));
+  return d;
+}
+
+function getNextAvailableFriday(takenDates: string[]): string {
+  const taken = new Set(takenDates);
+  let candidate = getNextFriday();
+  for (let i = 0; i < 200; i++) {
+    const iso = candidate.toISOString().slice(0, 10);
+    if (!taken.has(iso)) return `${iso}T10:00`;
+    candidate = getNextFriday(candidate);
+  }
+  return `${candidate.toISOString().slice(0, 10)}T10:00`;
+}
+
 // ── DB-backed draft helpers ──
 
 export async function getAllDrafts(token?: string): Promise<ChapterDraft[]> {
@@ -106,6 +123,27 @@ export const ChapterEditor: React.FC<ChapterEditorProps> = ({ authToken, userId,
   const [loadingChapter, setLoadingChapter] = useState(!!editChapterId);
   const autoSaveTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [glossaryMarked, setGlossaryMarked] = useState(false);
+  const [takenFridays, setTakenFridays] = useState<string[]>([]);
+
+  // Load all scheduled Fridays to prevent double-booking
+  useEffect(() => {
+    const loadTaken = async () => {
+      const { data } = await dbFetch<any[]>('chapters', {
+        select: 'id,scheduled_at',
+        filters: 'scheduled_at=not.is.null',
+        token: authToken,
+      });
+      const dates = (data || [])
+        .filter((c: any) => !editChapterId || c.id !== editChapterId)
+        .map((c: any) => {
+          const sw = utcToSwedishDateTimeLocal(c.scheduled_at);
+          return sw.slice(0, 10);
+        })
+        .filter(Boolean);
+      setTakenFridays(dates);
+    };
+    loadTaken();
+  }, [authToken, editChapterId]);
 
   // Load existing chapter for editing
   useEffect(() => {
@@ -209,6 +247,10 @@ export const ChapterEditor: React.FC<ChapterEditorProps> = ({ authToken, userId,
     }
     if (!content.trim()) {
       toast.error('Please write some content');
+      return;
+    }
+    if (scheduledAt && takenFridays.includes(scheduledAt.slice(0, 10))) {
+      toast.error('Another chapter is already scheduled for this Friday. Use "Next →" to pick a different one.');
       return;
     }
 
@@ -322,34 +364,43 @@ export const ChapterEditor: React.FC<ChapterEditorProps> = ({ authToken, userId,
           />
         </div>
         <div>
-          <label className="block text-sm text-muted-foreground mb-1">Schedule Release Date</label>
+          <label className="block text-sm text-muted-foreground mb-1">Schedule (Fridays 10:00 🇸🇪)</label>
           <div className="flex items-center gap-2">
-            <input
-              type="date"
-              value={scheduledAt ? scheduledAt.slice(0, 10) : ''}
-              onChange={(e) => setScheduledAt(normalizeScheduledAt(e.target.value))}
-              className="px-3 py-3 bg-card/50 border border-border rounded-lg text-foreground text-sm focus:outline-none focus:border-primary transition-colors"
-            />
-            <span className="px-3 py-2 rounded-lg bg-secondary text-foreground text-sm whitespace-nowrap">
-              10:00 🇸🇪
-            </span>
-            {scheduledAt && (
+            {!scheduledAt ? (
               <button
-                onClick={() => setScheduledAt('')}
-                className="px-2 py-1 text-xs text-destructive hover:text-destructive/80 transition-colors"
-                title="Clear schedule (publish immediately)"
+                onClick={() => setScheduledAt(getNextAvailableFriday(takenFridays))}
+                className="px-4 py-3 bg-accent/20 hover:bg-accent/30 text-accent rounded-lg text-sm font-medium transition-colors"
               >
-                ✕
+                Schedule for next Friday
               </button>
+            ) : (
+              <>
+                <span className="px-4 py-3 bg-card/50 border border-border rounded-lg text-foreground text-sm">
+                  📅 {new Date(scheduledAt.slice(0, 10) + 'T12:00:00').toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })} — 10:00 🇸🇪
+                </span>
+                <button
+                  onClick={() => {
+                    const current = new Date(scheduledAt.slice(0, 10) + 'T12:00:00');
+                    const next = getNextAvailableFriday([...takenFridays, scheduledAt.slice(0, 10)]);
+                    setScheduledAt(next);
+                  }}
+                  className="px-3 py-2 bg-secondary hover:bg-secondary/80 text-foreground rounded-lg text-xs transition-colors"
+                  title="Skip to next available Friday"
+                >
+                  Next →
+                </button>
+                <button
+                  onClick={() => setScheduledAt('')}
+                  className="px-2 py-1 text-xs text-destructive hover:text-destructive/80 transition-colors"
+                  title="Clear schedule (publish immediately)"
+                >
+                  ✕
+                </button>
+              </>
             )}
           </div>
-          {scheduledAt && (
-            <span className="text-xs text-accent mt-1 block">
-              🇸🇪 Will go live: {scheduledAt.replace('T', ' ')} (Swedish time)
-            </span>
-          )}
-          {!scheduledAt && (
-            <span className="text-xs text-muted-foreground mt-1 block">Pick a date — release time is fixed to 10:00 Swedish time</span>
+          {scheduledAt && takenFridays.includes(scheduledAt.slice(0, 10)) && (
+            <span className="text-xs text-destructive mt-1 block">⚠ Another chapter is already scheduled for this date!</span>
           )}
         </div>
       </div>
