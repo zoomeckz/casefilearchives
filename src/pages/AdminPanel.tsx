@@ -463,10 +463,10 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ glossary, authToken, use
                             <div className="flex items-center gap-2 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity shrink-0">
                               <button
                                 onClick={() => downloadSingleChapter(ch.chapter_number, ch.title)}
-                                className="px-3 py-1.5 bg-primary/10 hover:bg-primary/20 text-primary rounded text-xs transition-colors"
+                                className="px-3 py-1.5 bg-primary/20 hover:bg-primary/30 text-primary rounded text-xs transition-colors"
                                 title="Download this chapter"
                               >
-                                ↓
+                                Download
                               </button>
                               <a
                                 href={`/chapters/${ch.chapter_number}`}
