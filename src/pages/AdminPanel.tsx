@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useCallback, useMemo } from "react";
+import { useSearchParams } from "react-router-dom";
 import { Icons } from "@/lib/icons";
 import { GlossaryEntry } from "@/lib/data";
 import { dbFetch } from "@/lib/dbFetch";
