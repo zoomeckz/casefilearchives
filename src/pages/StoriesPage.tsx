@@ -32,6 +32,7 @@ export const StoriesPage: React.FC<StoriesPageProps> = ({
   setSelectedChapter,
   setCurrentPage,
   user,
+  isAdmin = false,
   isRead,
   markAsUnread,
   readCount,
