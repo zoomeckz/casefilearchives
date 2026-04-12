@@ -6,6 +6,7 @@ import { downloadAllChapters, downloadSingleChapter } from "@/hooks/useChapterDo
 import { ChapterEditor, getAllDrafts, deleteDraft, type ChapterDraft } from "@/components/ChapterEditor";
 import { GlossaryManager } from "@/components/GlossaryManager";
 import { AnalyticsDashboard } from "@/components/AnalyticsDashboard";
+import { ContentSearch } from "@/components/ContentSearch";
 import { toast } from "sonner";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { Input } from "@/components/ui/input";
