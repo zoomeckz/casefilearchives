@@ -33,6 +33,7 @@ interface AnalyticsData {
 type ChapterSortKey = 'number-asc' | 'number-desc' | 'views-desc' | 'views-asc' | 'newest' | 'oldest';
 
 export const AdminPanel: React.FC<AdminPanelProps> = ({ glossary, authToken, userId, onGlossaryChange }) => {
+  const [searchParams, setSearchParams] = useSearchParams();
   const [activeTab, setActiveTab] = useState("dashboard");
   const [analytics, setAnalytics] = useState<AnalyticsData | null>(null);
   const [loading, setLoading] = useState(true);
@@ -48,6 +49,7 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ glossary, authToken, use
   const [editorMode, setEditorMode] = useState<'list' | 'new' | 'edit' | 'draft'>('list');
   const [editChapterId, setEditChapterId] = useState<string | null>(null);
   const [searchHighlight, setSearchHighlight] = useState<string | null>(null);
+  const [searchSentence, setSearchSentence] = useState<string | null>(null);
   const [resumeDraftId, setResumeDraftId] = useState<string | null>(null);
   const [chapterSubTab, setChapterSubTab] = useState<'published' | 'drafts'>('published');
   const [drafts, setDrafts] = useState<ChapterDraft[]>([]);
