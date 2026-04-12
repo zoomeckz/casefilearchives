@@ -159,6 +159,7 @@ const Index = () => {
             setSelectedChapter={handleSelectChapter}
             setCurrentPage={setCurrentPage}
             user={user}
+            isAdmin={user?.isAdmin ?? false}
             isRead={isRead}
             markAsUnread={markAsUnread}
             readCount={readCount}

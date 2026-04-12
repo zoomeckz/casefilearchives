@@ -13,6 +13,7 @@ interface StoriesPageProps {
   setSelectedChapter: (chapter: Chapter) => void;
   setCurrentPage: (page: string) => void;
   user: AuthUser | null;
+  isAdmin?: boolean;
   isRead: (chapterId: string) => boolean;
   markAsUnread: (chapterId: string) => void;
   readCount: number;
@@ -31,6 +32,7 @@ export const StoriesPage: React.FC<StoriesPageProps> = ({
   setSelectedChapter,
   setCurrentPage,
   user,
+  isAdmin = false,
   isRead,
   markAsUnread,
   readCount,
@@ -96,11 +98,6 @@ export const StoriesPage: React.FC<StoriesPageProps> = ({
                     Chapter {chapter.chapterNumber} ·{" "}
                     {new Date(chapter.publishedAt).toLocaleDateString()}
                   </span>
-                  {chapter.scheduledAt && new Date(chapter.scheduledAt) > new Date() && (
-                    <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-accent/20 text-accent text-xs font-semibold border border-accent/30">
-                      📅 Scheduled · {new Date(chapter.scheduledAt).toLocaleString('sv-SE', { timeZone: 'Europe/Stockholm' })}
-                    </span>
-                  )}
                   {user && chapterIsRead && (
                     <ReadingProgressBadge
                       isRead={chapterIsRead}
@@ -128,6 +125,11 @@ export const StoriesPage: React.FC<StoriesPageProps> = ({
                   <span className="flex items-center gap-1">
                     <Icons.Eye className="w-3 h-3" /> {chapter.views} views
                   </span>
+                  {isAdmin && chapter.scheduledAt && new Date(chapter.scheduledAt) > new Date() && (
+                    <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-accent/20 text-accent text-xs font-semibold border border-accent/30">
+                      📅 Releases {new Date(chapter.scheduledAt).toLocaleDateString('sv-SE', { timeZone: 'Europe/Stockholm' })}
+                    </span>
+                  )}
                 </div>
               </div>
             );
