@@ -6,6 +6,7 @@ import { downloadAllChapters, downloadSingleChapter } from "@/hooks/useChapterDo
 import { ChapterEditor, getAllDrafts, deleteDraft, type ChapterDraft } from "@/components/ChapterEditor";
 import { GlossaryManager } from "@/components/GlossaryManager";
 import { AnalyticsDashboard } from "@/components/AnalyticsDashboard";
+import { ContentSearch } from "@/components/ContentSearch";
 import { toast } from "sonner";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { Input } from "@/components/ui/input";
@@ -201,6 +202,7 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ glossary, authToken, use
   const tabs = [
     { id: "dashboard", label: "Dashboard", icon: Icons.Dashboard },
     { id: "chapters", label: "Chapters", icon: Icons.Book },
+    { id: "search", label: "Search Content", icon: Search },
     { id: "analytics", label: "Analytics", icon: Icons.Eye },
     { id: "glossary", label: "Glossary", icon: Icons.Book },
     { id: "seo", label: "SEO", icon: Globe },
@@ -588,6 +590,17 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ glossary, authToken, use
                   </>
                 )}
               </div>
+            )}
+
+            {activeTab === "search" && (
+              <ContentSearch
+                authToken={authToken}
+                onEditChapter={(chapterId) => {
+                  setActiveTab("chapters");
+                  setEditChapterId(chapterId);
+                  setEditorMode("edit");
+                }}
+              />
             )}
 
             {activeTab === "analytics" && (
