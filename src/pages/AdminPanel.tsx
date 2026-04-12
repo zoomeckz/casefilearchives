@@ -592,6 +592,17 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ glossary, authToken, use
               </div>
             )}
 
+            {activeTab === "search" && (
+              <ContentSearch
+                authToken={authToken}
+                onEditChapter={(chapterId) => {
+                  setActiveTab("chapters");
+                  setEditChapterId(chapterId);
+                  setEditorMode("edit");
+                }}
+              />
+            )}
+
             {activeTab === "analytics" && (
               <AnalyticsDashboard authToken={authToken} />
             )}
