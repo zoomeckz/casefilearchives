@@ -202,6 +202,7 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ glossary, authToken, use
   const tabs = [
     { id: "dashboard", label: "Dashboard", icon: Icons.Dashboard },
     { id: "chapters", label: "Chapters", icon: Icons.Book },
+    { id: "search", label: "Search Content", icon: Search },
     { id: "analytics", label: "Analytics", icon: Icons.Eye },
     { id: "glossary", label: "Glossary", icon: Icons.Book },
     { id: "seo", label: "SEO", icon: Globe },
