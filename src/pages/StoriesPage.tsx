@@ -13,6 +13,7 @@ interface StoriesPageProps {
   setSelectedChapter: (chapter: Chapter) => void;
   setCurrentPage: (page: string) => void;
   user: AuthUser | null;
+  isAdmin?: boolean;
   isRead: (chapterId: string) => boolean;
   markAsUnread: (chapterId: string) => void;
   readCount: number;
