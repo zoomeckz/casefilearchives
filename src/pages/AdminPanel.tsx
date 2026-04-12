@@ -217,20 +217,56 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ glossary, authToken, use
     setDrafts(d);
   }, [authToken]);
 
+  const updateAdminRoute = useCallback((updates: Record<string, string | null>, replace = false) => {
+    const next = new URLSearchParams(searchParams);
+
+    Object.entries(updates).forEach(([key, value]) => {
+      if (!value) next.delete(key);
+      else next.set(key, value);
+    });
+
+    setSearchParams(next, { replace });
+  }, [searchParams, setSearchParams]);
+
   useEffect(() => {
     refreshDrafts();
   }, [refreshDrafts]);
 
-  // Auto-open chapter editor if navigated from reader page
   useEffect(() => {
-    const editId = sessionStorage.getItem('admin-edit-chapter');
-    if (editId) {
-      sessionStorage.removeItem('admin-edit-chapter');
-      setActiveTab('chapters');
-      setEditChapterId(editId);
-      setEditorMode('edit');
+    const tabParam = searchParams.get('tab');
+    const nextTab = ['dashboard', 'chapters', 'search', 'analytics', 'glossary', 'seo'].includes(tabParam || '')
+      ? (tabParam as string)
+      : 'dashboard';
+    const nextSubTab = searchParams.get('subtab') === 'drafts' ? 'drafts' : 'published';
+    const viewParam = searchParams.get('view');
+    const nextView = viewParam === 'new' || viewParam === 'edit' || viewParam === 'draft' ? viewParam : 'list';
+    const nextChapterId = searchParams.get('chapter');
+    const nextDraftId = searchParams.get('draft');
+    const nextSearchHighlight = searchParams.get('term');
+    const nextSearchSentence = searchParams.get('sentence');
+
+    setActiveTab(nextTab);
+    setChapterSubTab(nextSubTab);
+
+    if (nextSubTab === 'drafts') {
+      refreshDrafts();
     }
-  }, []);
+
+    if (nextTab === 'chapters' && nextView !== 'list') {
+      setEditorMode(nextView);
+      setEditChapterId(nextView === 'edit' ? nextChapterId : null);
+      setResumeDraftId(nextView === 'draft' ? nextDraftId : null);
+      setSearchHighlight(nextView === 'edit' ? nextSearchHighlight : null);
+      setSearchSentence(nextView === 'edit' ? nextSearchSentence : null);
+      return;
+    }
+
+    setEditorMode('list');
+    setEditChapterId(null);
+    setResumeDraftId(null);
+    setSearchHighlight(null);
+    setSearchSentence(null);
+  }, [searchParams, refreshDrafts]);
 
   // Filtered & sorted chapters
   const filteredChapters = useMemo(() => {
@@ -276,11 +312,9 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ glossary, authToken, use
           editChapterId={editorMode === 'edit' ? editChapterId : undefined}
           resumeDraftId={editorMode === 'draft' ? resumeDraftId : undefined}
           searchHighlight={editorMode === 'edit' ? searchHighlight : undefined}
+          searchSentence={editorMode === 'edit' ? searchSentence : undefined}
           onBack={() => {
-            setEditorMode('list');
-            setEditChapterId(null);
-            setSearchHighlight(null);
-            setResumeDraftId(null);
+            updateAdminRoute({ view: null, chapter: null, draft: null, term: null, sentence: null });
             fetchChapters();
             refreshDrafts();
           }}
@@ -290,7 +324,15 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ glossary, authToken, use
   }
 
   const handleTabClick = (tabId: string) => {
-    setActiveTab(tabId);
+    updateAdminRoute({
+      tab: tabId,
+      subtab: tabId === 'chapters' ? chapterSubTab : null,
+      view: null,
+      chapter: null,
+      draft: null,
+      term: null,
+      sentence: null,
+    });
     if (isMobile) setSidebarOpen(false);
   };
 
@@ -396,7 +438,7 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ glossary, authToken, use
                 <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 mb-4">
                   <h1 className="font-display text-2xl md:text-3xl text-accent">Chapters</h1>
                   <button
-                    onClick={() => setEditorMode('new')}
+                    onClick={() => updateAdminRoute({ tab: 'chapters', view: 'new', chapter: null, draft: null, term: null, sentence: null })}
                     className="flex items-center gap-2 px-4 py-2.5 bg-primary hover:bg-primary/90 text-primary-foreground rounded-lg font-medium transition-colors text-sm"
                   >
                     <Icons.Plus className="w-4 h-4" />
@@ -434,7 +476,10 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ glossary, authToken, use
                   {(['published', 'drafts'] as const).map(tab => (
                     <button
                       key={tab}
-                      onClick={() => { setChapterSubTab(tab); if (tab === 'drafts') refreshDrafts(); }}
+                      onClick={() => {
+                        updateAdminRoute({ tab: 'chapters', subtab: tab, view: null, chapter: null, draft: null, term: null, sentence: null });
+                        if (tab === 'drafts') refreshDrafts();
+                      }}
                       className={`px-3 md:px-4 py-2 rounded-md text-xs md:text-sm font-medium transition-colors ${
                         chapterSubTab === tab
                           ? 'bg-primary/20 text-primary'
@@ -485,7 +530,7 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ glossary, authToken, use
                                 Preview
                               </a>
                               <button
-                                onClick={() => { setEditChapterId(ch.id); setEditorMode('edit'); }}
+                                onClick={() => updateAdminRoute({ tab: 'chapters', view: 'edit', chapter: ch.id, draft: null, term: null, sentence: null })}
                                 className="px-3 py-1.5 bg-secondary hover:bg-secondary/80 text-foreground rounded text-xs transition-colors"
                               >
                                 Edit
@@ -570,7 +615,7 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ glossary, authToken, use
                             </div>
                             <div className="flex items-center gap-2 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity shrink-0">
                               <button
-                                onClick={() => { setResumeDraftId(draft.id); setEditorMode('draft'); }}
+                                onClick={() => updateAdminRoute({ tab: 'chapters', subtab: 'drafts', view: 'draft', draft: draft.id, chapter: null, term: null, sentence: null })}
                                 className="px-3 py-1.5 bg-primary/20 hover:bg-primary/30 text-primary rounded text-xs transition-colors"
                               >
                                 Resume
@@ -601,11 +646,16 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ glossary, authToken, use
             {activeTab === "search" && (
               <ContentSearch
                 authToken={authToken}
-                onEditChapter={(chapterId, searchTerm) => {
-                  setActiveTab("chapters");
-                  setEditChapterId(chapterId);
-                  setSearchHighlight(searchTerm || null);
-                  setEditorMode("edit");
+                onEditChapter={(chapterId, searchTerm, sentence) => {
+                  updateAdminRoute({
+                    tab: 'chapters',
+                    subtab: 'published',
+                    view: 'edit',
+                    chapter: chapterId,
+                    draft: null,
+                    term: searchTerm || null,
+                    sentence: sentence || null,
+                  });
                 }}
               />
             )}
