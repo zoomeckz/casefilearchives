@@ -184,6 +184,13 @@ export const RichTextEditor: React.FC<RichTextEditorProps> = ({
       attributes: {
         class: 'prose prose-invert max-w-none p-6 min-h-[500px] focus:outline-none text-foreground',
       },
+      handleKeyDown: (_view, event) => {
+        // Allow browser-native Ctrl+F / Cmd+F find dialog
+        if ((event.ctrlKey || event.metaKey) && event.key === 'f') {
+          return false;
+        }
+        return false;
+      },
     },
   });
 
