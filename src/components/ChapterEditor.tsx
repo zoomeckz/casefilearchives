@@ -13,6 +13,7 @@ interface ChapterEditorProps {
   onBack: () => void;
   editChapterId?: string | null;
   resumeDraftId?: string | null;
+  searchHighlight?: string | null;
 }
 
 export interface ChapterDraft {
@@ -110,7 +111,7 @@ export async function deleteDraft(draftId: string, token?: string) {
   });
 }
 
-export const ChapterEditor: React.FC<ChapterEditorProps> = ({ authToken, userId, glossary, onBack, editChapterId, resumeDraftId }) => {
+export const ChapterEditor: React.FC<ChapterEditorProps> = ({ authToken, userId, glossary, onBack, editChapterId, resumeDraftId, searchHighlight }) => {
   const draftIdRef = useRef<string>(resumeDraftId || '');
   const [title, setTitle] = useState('');
   const [content, setContent] = useState('');
@@ -421,6 +422,7 @@ export const ChapterEditor: React.FC<ChapterEditorProps> = ({ authToken, userId,
         onChange={setContent}
         glossaryTerms={Object.keys(glossary)}
         onMarkGlossary={handleMarkGlossary}
+        searchHighlight={searchHighlight || undefined}
       />
 
       {/* Word count */}

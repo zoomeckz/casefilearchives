@@ -14,6 +14,7 @@ interface RichTextEditorProps {
   onChange: (html: string) => void;
   glossaryTerms?: string[];
   onMarkGlossary?: () => void;
+  searchHighlight?: string;
 }
 
 const ToolbarButton: React.FC<{
@@ -165,7 +166,9 @@ export const RichTextEditor: React.FC<RichTextEditorProps> = ({
   onChange,
   glossaryTerms = [],
   onMarkGlossary,
+  searchHighlight,
 }) => {
+  const highlightApplied = React.useRef(false);
   const editor = useEditor({
     extensions: [
       StarterKit,
@@ -200,6 +203,45 @@ export const RichTextEditor: React.FC<RichTextEditorProps> = ({
       editor.commands.setContent(content);
     }
   }, [editor, content]);
+
+  // Search highlight: find the text in the editor and scroll to it
+  React.useEffect(() => {
+    if (!editor || !searchHighlight || highlightApplied.current) return;
+    // Wait for content to be set
+    const text = editor.state.doc.textContent;
+    if (!text) return;
+
+    const lowerText = text.toLowerCase();
+    const lowerQuery = searchHighlight.toLowerCase();
+    const idx = lowerText.indexOf(lowerQuery);
+    if (idx === -1) return;
+
+    highlightApplied.current = true;
+
+    // Find the position in the document
+    let pos = 0;
+    let found = false;
+    editor.state.doc.descendants((node, nodePos) => {
+      if (found) return false;
+      if (node.isText && node.text) {
+        const nodeIdx = node.text.toLowerCase().indexOf(lowerQuery);
+        if (nodeIdx !== -1) {
+          pos = nodePos + nodeIdx;
+          found = true;
+          return false;
+        }
+      }
+    });
+
+    if (found) {
+      // Select the matched text and scroll into view
+      editor.chain()
+        .focus()
+        .setTextSelection({ from: pos, to: pos + searchHighlight.length })
+        .scrollIntoView()
+        .run();
+    }
+  }, [editor, searchHighlight, content]);
 
   return (
     <div className="border border-border rounded-lg overflow-hidden bg-card/30">

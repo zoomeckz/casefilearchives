@@ -46,6 +46,7 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ glossary, authToken, use
   // Chapter editor state
   const [editorMode, setEditorMode] = useState<'list' | 'new' | 'edit' | 'draft'>('list');
   const [editChapterId, setEditChapterId] = useState<string | null>(null);
+  const [searchHighlight, setSearchHighlight] = useState<string | null>(null);
   const [resumeDraftId, setResumeDraftId] = useState<string | null>(null);
   const [chapterSubTab, setChapterSubTab] = useState<'published' | 'drafts'>('published');
   const [drafts, setDrafts] = useState<ChapterDraft[]>([]);
@@ -271,9 +272,11 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ glossary, authToken, use
           glossary={glossary}
           editChapterId={editorMode === 'edit' ? editChapterId : undefined}
           resumeDraftId={editorMode === 'draft' ? resumeDraftId : undefined}
+          searchHighlight={editorMode === 'edit' ? searchHighlight : undefined}
           onBack={() => {
             setEditorMode('list');
             setEditChapterId(null);
+            setSearchHighlight(null);
             setResumeDraftId(null);
             fetchChapters();
             refreshDrafts();
@@ -595,9 +598,10 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ glossary, authToken, use
             {activeTab === "search" && (
               <ContentSearch
                 authToken={authToken}
-                onEditChapter={(chapterId) => {
+                onEditChapter={(chapterId, searchTerm) => {
                   setActiveTab("chapters");
                   setEditChapterId(chapterId);
+                  setSearchHighlight(searchTerm || null);
                   setEditorMode("edit");
                 }}
               />
