@@ -69,7 +69,7 @@ const Index = () => {
   const { user, session, loading: authLoading, signIn, signUp, signOut, refreshUser } = useAuth();
 
   // Chapters from database
-  const { chapters, loading: chaptersLoading, incrementViews } = useChapters(user?.isAdmin);
+  const { chapters, publishedChapters, incrementViews } = useChapters(user?.isAdmin);
 
   // Reading progress
   const { isRead, markAsRead, markAsUnread, readCount } = useReadingProgress(user);
@@ -147,7 +147,7 @@ const Index = () => {
       <main className="flex-1">
         {currentPage === "home" && (
           <HomePage
-            chapters={chapters}
+            chapters={publishedChapters}
             setCurrentPage={setCurrentPage}
             setSelectedChapter={handleSelectChapter}
           />
