@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from "react";
+import { Link } from "react-router-dom";
 import { Icons } from "@/lib/icons";
 import { Chapter } from "@/hooks/useChapters";
 import { GlossaryEntry } from "@/lib/data";
@@ -96,17 +97,13 @@ export const ReaderPage: React.FC<ReaderPageProps> = ({
             </span>
             <span>📖 ~{readTime} min read</span>
             {user?.isAdmin && (
-              <button
-                onClick={() => {
-                  setCurrentPage("admin");
-                  // Store the chapter id so AdminPanel can open the editor
-                  sessionStorage.setItem('admin-edit-chapter', chapter.id);
-                }}
+              <Link
+                to={`/admin?tab=chapters&view=edit&chapter=${chapter.id}`}
                 className="flex items-center gap-1 px-3 py-1 bg-primary/20 hover:bg-primary/30 text-primary rounded-full text-xs font-medium transition-colors"
               >
                 <Icons.Edit className="w-3.5 h-3.5" />
                 Edit Chapter
-              </button>
+              </Link>
             )}
             {user && (
               <BookmarkButton

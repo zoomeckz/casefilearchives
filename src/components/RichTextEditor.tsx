@@ -15,6 +15,7 @@ interface RichTextEditorProps {
   glossaryTerms?: string[];
   onMarkGlossary?: () => void;
   searchHighlight?: string;
+  searchSentence?: string;
 }
 
 const ToolbarButton: React.FC<{
@@ -167,8 +168,10 @@ export const RichTextEditor: React.FC<RichTextEditorProps> = ({
   glossaryTerms = [],
   onMarkGlossary,
   searchHighlight,
+  searchSentence,
 }) => {
-  const highlightApplied = React.useRef(false);
+  const lastJumpKey = React.useRef('');
+  const normalizeSearchText = React.useCallback((value: string) => value.replace(/\s+/g, ' ').trim().toLowerCase(), []);
   const editor = useEditor({
     extensions: [
       StarterKit,
@@ -204,44 +207,73 @@ export const RichTextEditor: React.FC<RichTextEditorProps> = ({
     }
   }, [editor, content]);
 
-  // Search highlight: find the text in the editor and scroll to it
+  // Search jump: scroll to the exact paragraph/sentence match from admin search
   React.useEffect(() => {
-    if (!editor || !searchHighlight || highlightApplied.current) return;
-    // Wait for content to be set
-    const text = editor.state.doc.textContent;
-    if (!text) return;
+    if (!editor || !searchHighlight) return;
 
-    const lowerText = text.toLowerCase();
-    const lowerQuery = searchHighlight.toLowerCase();
-    const idx = lowerText.indexOf(lowerQuery);
-    if (idx === -1) return;
+    const jumpKey = `${searchHighlight}::${searchSentence || ''}::${content.length}`;
+    if (lastJumpKey.current === jumpKey) return;
 
-    highlightApplied.current = true;
+    const root = editor.view.dom as HTMLElement | null;
+    if (!root) return;
 
-    // Find the position in the document
-    let pos = 0;
-    let found = false;
-    editor.state.doc.descendants((node, nodePos) => {
-      if (found) return false;
-      if (node.isText && node.text) {
-        const nodeIdx = node.text.toLowerCase().indexOf(lowerQuery);
-        if (nodeIdx !== -1) {
-          pos = nodePos + nodeIdx;
-          found = true;
-          return false;
+    const normalizedTerm = normalizeSearchText(searchHighlight);
+    const normalizedSentence = searchSentence ? normalizeSearchText(searchSentence) : '';
+    const focusClasses = ['bg-primary/10', 'ring-2', 'ring-primary/30', 'rounded-md'];
+
+    const jumpToMatch = () => {
+      const blocks = Array.from(
+        root.querySelectorAll('p, li, blockquote, h1, h2, h3, h4, h5, h6')
+      ) as HTMLElement[];
+
+      const matchedBlock =
+        blocks.find((block) => {
+          const blockText = normalizeSearchText(block.textContent || '');
+          return normalizedSentence ? blockText.includes(normalizedSentence) : false;
+        }) ??
+        blocks.find((block) => normalizeSearchText(block.textContent || '').includes(normalizedTerm));
+
+      if (!matchedBlock) return;
+
+      lastJumpKey.current = jumpKey;
+      matchedBlock.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      matchedBlock.classList.add(...focusClasses);
+
+      window.setTimeout(() => {
+        matchedBlock.classList.remove(...focusClasses);
+      }, 2500);
+
+      const walker = document.createTreeWalker(matchedBlock, NodeFilter.SHOW_TEXT);
+      let currentNode = walker.nextNode();
+
+      while (currentNode) {
+        const nodeText = currentNode.textContent || '';
+        const matchIndex = nodeText.toLowerCase().indexOf(searchHighlight.toLowerCase());
+
+        if (matchIndex !== -1) {
+          const from = editor.view.posAtDOM(currentNode, matchIndex);
+          const to = editor.view.posAtDOM(currentNode, matchIndex + searchHighlight.length);
+
+          editor.chain().focus().setTextSelection({ from, to }).run();
+          break;
         }
+
+        currentNode = walker.nextNode();
       }
+    };
+
+    let frameOne = 0;
+    let frameTwo = 0;
+
+    frameOne = window.requestAnimationFrame(() => {
+      frameTwo = window.requestAnimationFrame(jumpToMatch);
     });
 
-    if (found) {
-      // Select the matched text and scroll into view
-      editor.chain()
-        .focus()
-        .setTextSelection({ from: pos, to: pos + searchHighlight.length })
-        .scrollIntoView()
-        .run();
-    }
-  }, [editor, searchHighlight, content]);
+    return () => {
+      window.cancelAnimationFrame(frameOne);
+      window.cancelAnimationFrame(frameTwo);
+    };
+  }, [editor, searchHighlight, searchSentence, content, normalizeSearchText]);
 
   return (
     <div className="border border-border rounded-lg overflow-hidden bg-card/30">
