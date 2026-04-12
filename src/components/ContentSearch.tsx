@@ -6,7 +6,7 @@ import { toast } from "sonner";
 
 interface ContentSearchProps {
   authToken?: string;
-  onEditChapter: (chapterId: string, searchTerm: string) => void;
+  onEditChapter: (chapterId: string, searchTerm: string, sentence: string) => void;
 }
 
 interface SearchResult {
@@ -187,7 +187,7 @@ export const ContentSearch: React.FC<ContentSearchProps> = ({ authToken, onEditC
                     View
                   </a>
                   <button
-                    onClick={() => onEditChapter(result.chapterId, query.trim())}
+                    onClick={() => onEditChapter(result.chapterId, query.trim(), result.sentence)}
                     className="flex items-center gap-1 px-2.5 py-1 bg-primary/20 hover:bg-primary/30 text-primary rounded text-xs transition-colors"
                   >
                     <FileEdit className="w-3 h-3" />
