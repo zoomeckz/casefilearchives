@@ -173,22 +173,6 @@ export const RichTextEditor: React.FC<RichTextEditorProps> = ({
 }) => {
   const lastJumpKey = React.useRef('');
   const normalizeSearchText = React.useCallback((value: string) => value.replace(/\s+/g, ' ').trim().toLowerCase(), []);
-  const handlePasteCapture = React.useCallback((event: React.ClipboardEvent<HTMLDivElement>) => {
-    if (!editor) return;
-
-    const html = event.clipboardData.getData('text/html');
-    const text = event.clipboardData.getData('text/plain');
-
-    if (!shouldNormalizeRichPaste(text, html)) return;
-
-    event.preventDefault();
-
-    const normalizedContent = html.trim()
-      ? sanitizeRichPasteHtml(html)
-      : plainTextToRichHtml(text);
-
-    editor.chain().focus().insertContent(normalizedContent).run();
-  }, [editor]);
 
   const editor = useEditor({
     extensions: [
@@ -217,6 +201,23 @@ export const RichTextEditor: React.FC<RichTextEditorProps> = ({
       },
     },
   });
+
+  const handlePasteCapture = React.useCallback((event: React.ClipboardEvent<HTMLDivElement>) => {
+    if (!editor) return;
+
+    const html = event.clipboardData.getData('text/html');
+    const text = event.clipboardData.getData('text/plain');
+
+    if (!shouldNormalizeRichPaste(text, html)) return;
+
+    event.preventDefault();
+
+    const normalizedContent = html.trim()
+      ? sanitizeRichPasteHtml(html)
+      : plainTextToRichHtml(text);
+
+    editor.chain().focus().insertContent(normalizedContent).run();
+  }, [editor]);
 
   // Sync editor content when the content prop changes externally (e.g. draft loaded async)
   React.useEffect(() => {
