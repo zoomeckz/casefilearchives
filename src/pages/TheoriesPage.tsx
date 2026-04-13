@@ -5,6 +5,7 @@ import { AuthUser } from "@/hooks/useAuth";
 import { ProfileFrame } from "@/components/ProfileFrame";
 import { FormatToolbar } from "@/components/FormatToolbar";
 import { renderFormatted } from "@/pages/ForumPage";
+import { normalizePlainTextFormatting } from "@/lib/contentFormatting";
 
 interface Theory {
   id: string;
@@ -79,13 +80,15 @@ export const TheoriesPage: React.FC<TheoriesPageProps> = ({ user, setShowAuthMod
     if (!user) { setShowAuthModal(true); return; }
     if (!newTitle.trim() || !newContent.trim()) return;
 
+    const normalizedContent = normalizePlainTextFormatting(newContent);
+
     const { data } = await supabase.from("theories").insert({
-      user_id: user.id, title: newTitle, content: newContent,
+      user_id: user.id, title: newTitle, content: normalizedContent,
     }).select().single();
 
     if (data) {
       setTheories(prev => [{
-        id: data.id, title: data.title, content: data.content, status: "pending",
+        id: data.id, title: data.title, content: normalizedContent, status: "pending",
         userId: user.id, userName: user.name, userAvatar: user.avatarUrl || null,
         userFrame: null, createdAt: data.created_at, votes: 0, userVote: 0,
       }, ...prev]);

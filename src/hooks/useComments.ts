@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import type { AuthUser } from './useAuth';
+import { normalizePlainTextFormatting } from '@/lib/contentFormatting';
 
 export interface Comment {
   id: string;
@@ -54,12 +55,14 @@ export function useComments(chapterId: string | undefined) {
   const addComment = useCallback(async (content: string, user: AuthUser) => {
     if (!chapterId || !user) return;
 
+    const normalizedContent = normalizePlainTextFormatting(content);
+
     const { data, error } = await supabase
       .from('comments')
       .insert({
         chapter_id: chapterId,
         user_id: user.id,
-        content,
+        content: normalizedContent,
       })
       .select()
       .single();
@@ -67,7 +70,7 @@ export function useComments(chapterId: string | undefined) {
     if (!error && data) {
       setComments(prev => [...prev, {
         id: data.id,
-        content: data.content,
+        content: normalizedContent,
         author: user.name,
         authorId: data.user_id,
         createdAt: data.created_at,
@@ -79,14 +82,15 @@ export function useComments(chapterId: string | undefined) {
 
   const updateComment = useCallback(async (commentId: string, newContent: string) => {
     const now = new Date().toISOString();
+    const normalizedContent = normalizePlainTextFormatting(newContent);
     const { error } = await supabase
       .from('comments')
-      .update({ content: newContent, updated_at: now })
+      .update({ content: normalizedContent, updated_at: now })
       .eq('id', commentId);
 
     if (!error) {
       setComments(prev => prev.map(c =>
-        c.id === commentId ? { ...c, content: newContent, updatedAt: now, isEdited: true } : c
+        c.id === commentId ? { ...c, content: normalizedContent, updatedAt: now, isEdited: true } : c
       ));
     }
   }, []);

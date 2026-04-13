@@ -8,6 +8,7 @@ import Link from '@tiptap/extension-link';
 import Placeholder from '@tiptap/extension-placeholder';
 import Highlight from '@tiptap/extension-highlight';
 import { Icons } from '@/lib/icons';
+import { plainTextToRichHtml, sanitizeRichPasteHtml, shouldNormalizeRichPaste } from '@/lib/contentFormatting';
 
 interface RichTextEditorProps {
   content: string;
@@ -172,6 +173,7 @@ export const RichTextEditor: React.FC<RichTextEditorProps> = ({
 }) => {
   const lastJumpKey = React.useRef('');
   const normalizeSearchText = React.useCallback((value: string) => value.replace(/\s+/g, ' ').trim().toLowerCase(), []);
+
   const editor = useEditor({
     extensions: [
       StarterKit,
@@ -199,6 +201,23 @@ export const RichTextEditor: React.FC<RichTextEditorProps> = ({
       },
     },
   });
+
+  const handlePasteCapture = React.useCallback((event: React.ClipboardEvent<HTMLDivElement>) => {
+    if (!editor) return;
+
+    const html = event.clipboardData.getData('text/html');
+    const text = event.clipboardData.getData('text/plain');
+
+    if (!shouldNormalizeRichPaste(text, html)) return;
+
+    event.preventDefault();
+
+    const normalizedContent = html.trim()
+      ? sanitizeRichPasteHtml(html)
+      : plainTextToRichHtml(text);
+
+    editor.chain().focus().insertContent(normalizedContent).run();
+  }, [editor]);
 
   // Sync editor content when the content prop changes externally (e.g. draft loaded async)
   React.useEffect(() => {
@@ -278,7 +297,9 @@ export const RichTextEditor: React.FC<RichTextEditorProps> = ({
   return (
     <div className="border border-border rounded-lg overflow-hidden bg-card/30">
       <Toolbar editor={editor} onMarkGlossary={onMarkGlossary} />
-      <EditorContent editor={editor} />
+      <div onPasteCapture={handlePasteCapture}>
+        <EditorContent editor={editor} />
+      </div>
     </div>
   );
 };

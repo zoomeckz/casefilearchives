@@ -7,34 +7,10 @@ import { dbFetch } from "@/lib/dbFetch";
 import { supabase } from "@/integrations/supabase/client";
 import { forumCategories } from "@/lib/data";
 import { FormatToolbar } from "@/components/FormatToolbar";
-import DOMPurify from "dompurify";
+import { normalizePlainTextFormatting, renderFormattedContent } from "@/lib/contentFormatting";
 
 function renderFormatted(text: string): string {
-  // First escape raw HTML from user input
-  const div = document.createElement("div");
-  div.textContent = text;
-  let escaped = div.innerHTML;
-
-  let html = escaped
-    // Spoiler tags: ||text||
-    .replace(/\|\|(.+?)\|\|/g, '<span class="spoiler-tag" onclick="this.classList.toggle(\'revealed\')" title="Click to reveal spoiler">$1</span>')
-    // Bold
-    .replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
-    // Italic
-    .replace(/\*(.+?)\*/g, '<em>$1</em>')
-    // Image URLs on their own line: ![alt](url)
-    .replace(/!\[([^\]]*)\]\(([^)]+)\)/g, '<img src="$2" alt="$1" class="max-w-full rounded-lg my-2" />')
-    // Links: [text](url)
-    .replace(/\[([^\]]+)\]\(([^)]+)\)/g, '<a href="$2" target="_blank" rel="noopener noreferrer" class="text-primary underline">$1</a>')
-    // Blockquotes: lines starting with >
-    .replace(/^&gt; (.+)$/gm, '<span class="block border-l-2 border-primary/40 pl-3 text-muted-foreground italic text-sm">$1</span>')
-    // Preserve newlines (including blank lines)
-    .replace(/\n/g, '<br>');
-
-  return DOMPurify.sanitize(html, {
-    ALLOWED_TAGS: ['strong', 'em', 'br', 'span', 'a', 'img'],
-    ALLOWED_ATTR: ['href', 'src', 'alt', 'class', 'target', 'rel', 'title', 'onclick'],
-  });
+  return renderFormattedContent(text);
 }
 
 export { renderFormatted };
@@ -243,14 +219,16 @@ export const ForumPage: React.FC<ForumPageProps> = ({
     if (!newPost.title || !newPost.content) return;
     if (!user) { setShowAuthModal(true); return; }
 
+    const normalizedContent = normalizePlainTextFormatting(newPost.content);
+
     const { data } = await dbFetch<any[]>('forum_posts', {
       method: 'POST',
-      body: { title: newPost.title, content: newPost.content, category: newPost.category, user_id: user.id },
+      body: { title: newPost.title, content: normalizedContent, category: newPost.category, user_id: user.id },
     });
 
     if (data && data[0]) {
       setPosts([{
-        id: data[0].id, title: data[0].title, content: data[0].content, category: data[0].category,
+        id: data[0].id, title: data[0].title, content: normalizedContent, category: data[0].category,
         author: user.name, authorId: data[0].user_id, authorAvatar: user.avatarUrl || null, authorFrame: null,
         replies: 0, createdAt: data[0].created_at, isPinned: false, isEdited: false,
       }, ...posts]);
@@ -263,13 +241,15 @@ export const ForumPage: React.FC<ForumPageProps> = ({
     e.preventDefault();
     if (!editingPost || !editContent.title || !editContent.content) return;
 
+    const normalizedContent = normalizePlainTextFormatting(editContent.content);
+
     await dbFetch('forum_posts', {
       method: 'PATCH',
       filters: `id=eq.${editingPost.id}`,
-      body: { title: editContent.title, content: editContent.content, category: editContent.category },
+      body: { title: editContent.title, content: normalizedContent, category: editContent.category },
     });
 
-    const updated = { ...editingPost, ...editContent, isEdited: true };
+    const updated = { ...editingPost, ...editContent, content: normalizedContent, isEdited: true };
     setPosts(posts.map(p => p.id === editingPost.id ? updated : p));
     if (selectedPost?.id === editingPost.id) {
       setSelectedPost(updated);
@@ -301,14 +281,16 @@ export const ForumPage: React.FC<ForumPageProps> = ({
     e.preventDefault();
     if (!user || !replyContent.trim() || !selectedPost) return;
 
+    const normalizedContent = normalizePlainTextFormatting(replyContent);
+
     const { data } = await dbFetch<any[]>('forum_replies', {
       method: 'POST',
-      body: { post_id: selectedPost.id, user_id: user.id, content: replyContent },
+      body: { post_id: selectedPost.id, user_id: user.id, content: normalizedContent },
     });
 
     if (data && data[0]) {
       setReplies([...replies, {
-        id: data[0].id, content: data[0].content, author: user.name,
+        id: data[0].id, content: normalizedContent, author: user.name,
         authorId: data[0].user_id, authorBio: '', authorAvatar: user.avatarUrl || null, authorFrame: null, createdAt: data[0].created_at, isEdited: false,
       }]);
       setSelectedPost({ ...selectedPost, replies: selectedPost.replies + 1 });
@@ -322,7 +304,7 @@ export const ForumPage: React.FC<ForumPageProps> = ({
           user_id: selectedPost.authorId,
           type: "reply",
           title: `${user.name} replied to "${selectedPost.title}"`,
-          message: replyContent.slice(0, 100),
+          message: normalizedContent.slice(0, 100),
           link: `/forum/${slug}`,
         });
       }
@@ -334,12 +316,13 @@ export const ForumPage: React.FC<ForumPageProps> = ({
   const handleEditReply = async () => {
     if (!editingReplyId || !editReplyContent.trim()) return;
     const now = new Date().toISOString();
+    const normalizedContent = normalizePlainTextFormatting(editReplyContent);
     await dbFetch('forum_replies', {
       method: 'PATCH',
       filters: `id=eq.${editingReplyId}`,
-      body: { content: editReplyContent, updated_at: now },
+      body: { content: normalizedContent, updated_at: now },
     });
-    setReplies(replies.map(r => r.id === editingReplyId ? { ...r, content: editReplyContent, isEdited: true } : r));
+    setReplies(replies.map(r => r.id === editingReplyId ? { ...r, content: normalizedContent, isEdited: true } : r));
     setEditingReplyId(null);
     setEditReplyContent("");
   };
