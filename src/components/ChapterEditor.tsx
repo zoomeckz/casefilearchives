@@ -4,6 +4,7 @@ import { RichTextEditor } from '@/components/RichTextEditor';
 import { dbFetch } from '@/lib/dbFetch';
 import { GlossaryEntry } from '@/lib/data';
 import { swedishToUTC, utcToSwedishDateTimeLocal } from '@/lib/timezone';
+import { normalizeRichTextHtml } from '@/lib/contentFormatting';
 import { toast } from 'sonner';
 
 interface ChapterEditorProps {
@@ -197,7 +198,7 @@ export const ChapterEditor: React.FC<ChapterEditorProps> = ({ authToken, userId,
   const autoSave = useCallback(async () => {
     if (!editChapterId && (title || content) && userId) {
       try {
-        const savedId = await upsertDraft({ id: draftIdRef.current, title, content, chapterNumber, lastSaved: new Date().toISOString() }, userId, authToken);
+        const savedId = await upsertDraft({ id: draftIdRef.current, title, content: normalizeRichTextHtml(content), chapterNumber, lastSaved: new Date().toISOString() }, userId, authToken);
         draftIdRef.current = savedId;
         setDraftStatus(`Draft auto-saved at ${new Date().toLocaleTimeString()}`);
       } catch { /* silent */ }
@@ -216,7 +217,11 @@ export const ChapterEditor: React.FC<ChapterEditorProps> = ({ authToken, userId,
   const handleSaveDraft = async () => {
     if (!userId) return;
     try {
-      const savedId = await upsertDraft({ id: draftIdRef.current, title, content, chapterNumber, lastSaved: new Date().toISOString() }, userId, authToken);
+      const normalizedContent = normalizeRichTextHtml(content);
+      if (normalizedContent !== content) {
+        setContent(normalizedContent);
+      }
+      const savedId = await upsertDraft({ id: draftIdRef.current, title, content: normalizedContent, chapterNumber, lastSaved: new Date().toISOString() }, userId, authToken);
       draftIdRef.current = savedId;
       toast.success('Draft saved');
       onBack();
@@ -259,11 +264,16 @@ export const ChapterEditor: React.FC<ChapterEditorProps> = ({ authToken, userId,
     setPublishing(true);
     try {
       const normalizedScheduledAt = normalizeScheduledAt(scheduledAt);
+      const normalizedContent = normalizeRichTextHtml(content);
+
+      if (normalizedContent !== content) {
+        setContent(normalizedContent);
+      }
 
       if (editChapterId) {
         const body: any = {
           title: title.trim(),
-          content,
+          content: normalizedContent,
           chapter_number: chapterNumber,
           scheduled_at: normalizedScheduledAt ? swedishToUTC(normalizedScheduledAt) : null,
         };
@@ -278,7 +288,7 @@ export const ChapterEditor: React.FC<ChapterEditorProps> = ({ authToken, userId,
       } else {
         const body: any = {
           title: title.trim(),
-          content,
+          content: normalizedContent,
           chapter_number: chapterNumber,
           scheduled_at: normalizedScheduledAt ? swedishToUTC(normalizedScheduledAt) : null,
         };
