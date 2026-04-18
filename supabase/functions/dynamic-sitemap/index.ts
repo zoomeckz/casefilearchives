@@ -6,7 +6,7 @@ const corsHeaders = {
     "authorization, x-client-info, apikey, content-type",
 };
 
-const SITE_URL = "https://sedorium.lovable.app";
+const SITE_URL = "https://www.thefivethrones.com";
 
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") {
@@ -42,11 +42,6 @@ Deno.serve(async (req) => {
       { loc: `${SITE_URL}/gallery`, priority: "0.6", changefreq: "weekly" },
       { loc: `${SITE_URL}/leaderboard`, priority: "0.5", changefreq: "daily" },
       { loc: `${SITE_URL}/rewards`, priority: "0.5", changefreq: "monthly" },
-      {
-        loc: `${supabaseUrl}/functions/v1/content-feed`,
-        priority: "0.95",
-        changefreq: "weekly",
-      },
     ];
 
     const chapterUrls = publishedChapters.map((c) => ({
