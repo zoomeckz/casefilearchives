@@ -7,10 +7,13 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import Index from "./pages/Index";
 import NotFound from "./pages/NotFound";
+import { useDynamicSeo } from "./hooks/useDynamicSeo";
 
 const queryClient = new QueryClient();
 
 const App = () => {
+  useDynamicSeo();
+
   useEffect(() => {
     const lenis = new Lenis({
       duration: 1.2,

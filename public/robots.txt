@@ -39,7 +39,14 @@ User-agent: *
 Allow: /
 
 Sitemap: https://sedorium.lovable.app/sitemap.xml
+Sitemap: https://iiezbdlmikvgxjlozwlc.supabase.co/functions/v1/dynamic-sitemap
 
-# Full content feed for AI crawlers and search engines (always up-to-date, dynamically generated)
+# Always-fresh sitemap (regenerated from the live database on every request):
+# https://iiezbdlmikvgxjlozwlc.supabase.co/functions/v1/dynamic-sitemap
+#
+# Always-fresh SEO metadata feed (titles, descriptions, JSON-LD schemas):
+# https://iiezbdlmikvgxjlozwlc.supabase.co/functions/v1/dynamic-seo-meta
+#
+# Full content feed for AI crawlers and search engines (always up-to-date):
 # HTML: https://iiezbdlmikvgxjlozwlc.supabase.co/functions/v1/content-feed
 # JSON: https://iiezbdlmikvgxjlozwlc.supabase.co/functions/v1/content-feed?format=json
