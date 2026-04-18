@@ -11,9 +11,12 @@ import { useDynamicSeo } from "./hooks/useDynamicSeo";
 
 const queryClient = new QueryClient();
 
-const App = () => {
+const DynamicSeo = () => {
   useDynamicSeo();
+  return null;
+};
 
+const App = () => {
   useEffect(() => {
     const lenis = new Lenis({
       duration: 1.2,
