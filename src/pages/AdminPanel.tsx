@@ -159,6 +159,44 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ glossary, authToken, use
   const [seoResult, setSeoResult] = useState<any>(null);
   const [seoStep, setSeoStep] = useState('');
 
+  // Live SEO + cron status state
+  const [seoStatus, setSeoStatus] = useState<any>(null);
+  const [seoStatusLoading, setSeoStatusLoading] = useState(false);
+  const [seoRefreshing, setSeoRefreshing] = useState(false);
+
+  const fetchSeoStatus = useCallback(async (refresh = false) => {
+    if (refresh) setSeoRefreshing(true);
+    else setSeoStatusLoading(true);
+    try {
+      const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
+      const res = await fetch(`${supabaseUrl}/functions/v1/seo-status`, {
+        method: refresh ? 'POST' : 'GET',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${authToken}`,
+          apikey: import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY,
+        },
+        body: refresh ? JSON.stringify({ action: 'refresh' }) : undefined,
+      });
+      if (!res.ok) throw new Error(`Status ${res.status}`);
+      const data = await res.json();
+      setSeoStatus(data);
+      if (refresh) toast.success('SEO endpoints refreshed');
+    } catch (err: any) {
+      toast.error('Failed to load SEO status: ' + (err.message || 'Unknown error'));
+    } finally {
+      setSeoStatusLoading(false);
+      setSeoRefreshing(false);
+    }
+  }, [authToken]);
+
+  // Auto-load SEO status when entering the SEO tab
+  useEffect(() => {
+    if (activeTab === 'seo' && !seoStatus && authToken) {
+      fetchSeoStatus(false);
+    }
+  }, [activeTab, seoStatus, authToken, fetchSeoStatus]);
+
   const handleSeoSync = async () => {
     setSeoSyncing(true);
     setSeoProgress(0);
