@@ -11,9 +11,12 @@ import { useDynamicSeo } from "./hooks/useDynamicSeo";
 
 const queryClient = new QueryClient();
 
-const App = () => {
+const DynamicSeo = () => {
   useDynamicSeo();
+  return null;
+};
 
+const App = () => {
   useEffect(() => {
     const lenis = new Lenis({
       duration: 1.2,
@@ -36,6 +39,7 @@ const App = () => {
       <Toaster />
       <Sonner />
       <BrowserRouter>
+        <DynamicSeo />
         <Routes>
           <Route path="/" element={<Index />} />
           <Route path="/chapters" element={<Index />} />
