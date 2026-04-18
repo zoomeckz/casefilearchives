@@ -38,10 +38,11 @@ Allow: /
 User-agent: *
 Allow: /
 
-Sitemap: https://sedorium.lovable.app/sitemap.xml
-Sitemap: https://iiezbdlmikvgxjlozwlc.supabase.co/functions/v1/dynamic-sitemap
+Sitemap: https://www.thefivethrones.com/sitemap.xml
 
-# Always-fresh sitemap (regenerated from the live database on every request):
+# Always-fresh sitemap (regenerated from the live database on every request).
+# Submit this URL in Google Search Console only if you've verified the Supabase domain.
+# For thefivethrones.com Search Console property, submit /sitemap.xml above instead.
 # https://iiezbdlmikvgxjlozwlc.supabase.co/functions/v1/dynamic-sitemap
 #
 # Always-fresh SEO metadata feed (titles, descriptions, JSON-LD schemas):
