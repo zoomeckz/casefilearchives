@@ -5,3 +5,12 @@ verify_jwt = false
 
 [functions.generate-manga-panel]
 verify_jwt = false
+
+[functions.dynamic-sitemap]
+verify_jwt = false
+
+[functions.dynamic-seo-meta]
+verify_jwt = false
+
+[functions.content-feed]
+verify_jwt = false
