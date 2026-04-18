@@ -717,6 +717,151 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ glossary, authToken, use
                   Sync all chapters, glossary, forum posts, theories, and fan art to the AI content feed. This makes your content fully discoverable by Google, ChatGPT, Claude, Perplexity, and other AI crawlers.
                 </p>
 
+                {/* === Live SEO + Cron Status Widget === */}
+                <div className="p-4 md:p-5 bg-card/50 rounded-xl border border-border mb-6">
+                  <div className="flex items-center justify-between gap-3 mb-4 flex-wrap">
+                    <div>
+                      <h3 className="font-medium text-foreground flex items-center gap-2">
+                        <Globe className="w-4 h-4" />
+                        Live SEO & Weekly Cron
+                      </h3>
+                      <p className="text-xs text-muted-foreground mt-1">
+                        Auto-refreshes every Friday at 09:05 UTC, just after the 10:00 Stockholm chapter publish.
+                      </p>
+                    </div>
+                    <button
+                      onClick={() => fetchSeoStatus(true)}
+                      disabled={seoRefreshing || seoStatusLoading}
+                      className="flex items-center gap-2 px-4 py-2 bg-primary hover:bg-primary/90 text-primary-foreground rounded-lg text-sm font-medium transition-colors disabled:opacity-50"
+                    >
+                      {seoRefreshing ? <Loader2 className="w-4 h-4 animate-spin" /> : <Globe className="w-4 h-4" />}
+                      {seoRefreshing ? 'Refreshing…' : 'Refresh now'}
+                    </button>
+                  </div>
+
+                  {seoStatusLoading && !seoStatus && (
+                    <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                      <Loader2 className="w-4 h-4 animate-spin" /> Loading SEO status…
+                    </div>
+                  )}
+
+                  {seoStatus && (
+                    <div className="space-y-4">
+                      {/* Live snapshot */}
+                      {seoStatus.live && (
+                        <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+                          <div className="p-3 bg-background/50 rounded-lg border border-border">
+                            <div className="text-2xl font-display text-foreground">{seoStatus.live.totalChapters}</div>
+                            <div className="text-[10px] uppercase tracking-wide text-muted-foreground mt-1">Chapters exposed to crawlers</div>
+                          </div>
+                          <div className="p-3 bg-background/50 rounded-lg border border-border">
+                            <div className="text-sm font-medium text-foreground truncate" title={seoStatus.live.latestChapter?.title}>
+                              {seoStatus.live.latestChapter ? `#${seoStatus.live.latestChapter.number}` : '—'}
+                            </div>
+                            <div className="text-[10px] uppercase tracking-wide text-muted-foreground mt-1">Latest chapter</div>
+                            <div className="text-xs text-muted-foreground truncate" title={seoStatus.live.latestChapter?.title}>
+                              {seoStatus.live.latestChapter?.title || '—'}
+                            </div>
+                          </div>
+                          <div className="p-3 bg-background/50 rounded-lg border border-border">
+                            <div className="text-sm font-medium text-foreground">{seoStatus.live.schemas?.length ?? 0}</div>
+                            <div className="text-[10px] uppercase tracking-wide text-muted-foreground mt-1">JSON-LD schemas</div>
+                            <div className="text-xs text-muted-foreground truncate">{(seoStatus.live.schemas || []).join(', ')}</div>
+                          </div>
+                          <div className="p-3 bg-background/50 rounded-lg border border-border">
+                            <div className="text-xs text-foreground">
+                              {seoStatus.live.generatedAt ? new Date(seoStatus.live.generatedAt).toLocaleString() : '—'}
+                            </div>
+                            <div className="text-[10px] uppercase tracking-wide text-muted-foreground mt-1">Last generated</div>
+                          </div>
+                        </div>
+                      )}
+
+                      {/* Endpoint health */}
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-2 text-xs">
+                        {seoStatus.endpoints && (
+                          <>
+                            <a
+                              href={seoStatus.endpoints.dynamicSitemap.url}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="flex items-center justify-between gap-2 px-3 py-2 bg-background/50 rounded-lg border border-border hover:border-primary/50 transition-colors"
+                            >
+                              <span className="flex items-center gap-2 text-foreground">
+                                <ExternalLink className="w-3 h-3" /> Dynamic sitemap
+                              </span>
+                              <span className={`px-2 py-0.5 rounded-full ${seoStatus.endpoints.dynamicSitemap.status === 200 ? 'bg-primary/20 text-primary' : 'bg-destructive/20 text-destructive'}`}>
+                                {seoStatus.endpoints.dynamicSitemap.status}
+                              </span>
+                            </a>
+                            <a
+                              href={seoStatus.endpoints.dynamicSeoMeta.url}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="flex items-center justify-between gap-2 px-3 py-2 bg-background/50 rounded-lg border border-border hover:border-primary/50 transition-colors"
+                            >
+                              <span className="flex items-center gap-2 text-foreground">
+                                <ExternalLink className="w-3 h-3" /> Dynamic SEO meta
+                              </span>
+                              <span className={`px-2 py-0.5 rounded-full ${seoStatus.endpoints.dynamicSeoMeta.status === 200 ? 'bg-primary/20 text-primary' : 'bg-destructive/20 text-destructive'}`}>
+                                {seoStatus.endpoints.dynamicSeoMeta.status}
+                              </span>
+                            </a>
+                          </>
+                        )}
+                      </div>
+
+                      {/* Cron status */}
+                      <div className="p-3 bg-background/50 rounded-lg border border-border">
+                        <div className="flex items-center justify-between mb-2">
+                          <span className="text-sm font-medium text-foreground">Weekly cron job</span>
+                          {seoStatus.cron?.active === true && (
+                            <span className="text-xs px-2 py-0.5 rounded-full bg-primary/20 text-primary">active</span>
+                          )}
+                          {seoStatus.cron?.active === false && (
+                            <span className="text-xs px-2 py-0.5 rounded-full bg-destructive/20 text-destructive">inactive</span>
+                          )}
+                        </div>
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-x-4 gap-y-1 text-xs text-muted-foreground">
+                          <div><span className="text-foreground">Job:</span> {seoStatus.cron?.jobName || 'weekly-seo-refresh'}</div>
+                          <div><span className="text-foreground">Schedule:</span> {seoStatus.cron?.schedule || '5 9 * * 5 (Fri 09:05 UTC)'}</div>
+                        </div>
+                        {Array.isArray(seoStatus.cron?.lastRuns) && seoStatus.cron.lastRuns.length > 0 ? (
+                          <div className="mt-3 space-y-1">
+                            <div className="text-xs font-medium text-foreground">Recent runs:</div>
+                            {seoStatus.cron.lastRuns.slice(0, 3).map((r: any, i: number) => (
+                              <div key={i} className="flex items-center gap-2 text-xs text-muted-foreground">
+                                {r.status === 'succeeded' ? (
+                                  <CheckCircle2 className="w-3 h-3 text-primary shrink-0" />
+                                ) : (
+                                  <AlertCircle className="w-3 h-3 text-destructive shrink-0" />
+                                )}
+                                <span>{r.startTime ? new Date(r.startTime).toLocaleString() : '—'}</span>
+                                <span>·</span>
+                                <span>{r.status}</span>
+                              </div>
+                            ))}
+                          </div>
+                        ) : (
+                          <div className="mt-3 text-xs text-muted-foreground">
+                            No runs yet. Next run: next Friday 09:05 UTC.
+                          </div>
+                        )}
+                      </div>
+
+                      {seoStatus.refreshResult && (
+                        <div className="text-xs text-muted-foreground">
+                          Last manual refresh: sitemap {seoStatus.refreshResult.sitemap},
+                          meta {seoStatus.refreshResult.seoMeta},
+                          feed {seoStatus.refreshResult.contentFeed} ({seoStatus.refreshResult.durationMs}ms)
+                        </div>
+                      )}
+                    </div>
+                  )}
+                </div>
+                {/* === End Live SEO + Cron Status Widget === */}
+
+
                 <button
                   onClick={handleSeoSync}
                   disabled={seoSyncing}
