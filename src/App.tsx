@@ -39,6 +39,7 @@ const App = () => {
       <Toaster />
       <Sonner />
       <BrowserRouter>
+        <DynamicSeo />
         <Routes>
           <Route path="/" element={<Index />} />
           <Route path="/chapters" element={<Index />} />
