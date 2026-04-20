@@ -57,6 +57,10 @@ export const ReaderPage: React.FC<ReaderPageProps> = ({
 
   useEffect(() => {
     if (chapter) {
+      // Scroll to top whenever a new chapter opens (fixes mobile mid-page landing)
+      window.scrollTo({ top: 0, left: 0, behavior: "auto" });
+      document.documentElement.scrollTop = 0;
+      document.body.scrollTop = 0;
       incrementViews(chapter.id);
       if (user) markAsRead(chapter.id);
     }
@@ -190,6 +194,34 @@ export const ReaderPage: React.FC<ReaderPageProps> = ({
           user={user}
           setShowAuthModal={setShowAuthModal}
         />
+
+        {/* Prev/Next at the very bottom for easier mobile navigation */}
+        <div className="flex items-center justify-between gap-4 pt-8 mt-12 border-t border-border">
+          {prevChapter ? (
+            <button
+              onClick={() => setSelectedChapter(prevChapter)}
+              className="flex items-center gap-2 text-muted-foreground hover:text-foreground max-w-[45%]"
+            >
+              <Icons.ChevronLeft className="shrink-0" />
+              <div className="text-left overflow-hidden">
+                <div className="text-xs text-muted-foreground">Previous</div>
+                <div className="text-sm truncate">{prevChapter.title}</div>
+              </div>
+            </button>
+          ) : <div />}
+          {nextChapter ? (
+            <button
+              onClick={() => setSelectedChapter(nextChapter)}
+              className="flex items-center gap-2 text-muted-foreground hover:text-foreground text-right max-w-[45%] ml-auto"
+            >
+              <div className="overflow-hidden">
+                <div className="text-xs text-muted-foreground">Next</div>
+                <div className="text-sm truncate">{nextChapter.title}</div>
+              </div>
+              <Icons.ChevronRight className="shrink-0" />
+            </button>
+          ) : <div />}
+        </div>
       </div>
     </div>
   );
