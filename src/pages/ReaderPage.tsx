@@ -57,6 +57,10 @@ export const ReaderPage: React.FC<ReaderPageProps> = ({
 
   useEffect(() => {
     if (chapter) {
+      // Scroll to top whenever a new chapter opens (fixes mobile mid-page landing)
+      window.scrollTo({ top: 0, left: 0, behavior: "auto" });
+      document.documentElement.scrollTop = 0;
+      document.body.scrollTop = 0;
       incrementViews(chapter.id);
       if (user) markAsRead(chapter.id);
     }
