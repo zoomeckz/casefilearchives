@@ -1,7 +1,7 @@
 import React, { useState, useMemo, useEffect } from "react";
 import { GlossaryEntry } from "@/lib/data";
 import { CharacterRelationshipMap } from "@/components/CharacterRelationshipMap";
-import { Search, Menu, X, EyeOff, Eye, ChevronRight, ChevronLeft, Users, MapPin, Sparkles, BookOpen, Skull } from "lucide-react";
+import { Search, Menu, X, EyeOff, Eye, ChevronRight, ChevronLeft, Users, MapPin, Sparkles, BookOpen, Skull, Loader2 } from "lucide-react";
 
 type EntryType = GlossaryEntry["type"];
 
@@ -11,6 +11,7 @@ interface NamedEntry extends GlossaryEntry {
 
 interface CharactersPageProps {
   glossary: Record<string, GlossaryEntry>;
+  glossaryLoading?: boolean;
   chapters?: Array<{ id: string; chapterNumber: number }>;
   readChapterIds?: Set<string>;
   isLoggedIn?: boolean;
@@ -27,6 +28,7 @@ const VISIBLE_FOR_GUESTS = 3; // ch 1–3 visible to logged-out visitors
 
 export const CharactersPage: React.FC<CharactersPageProps> = ({
   glossary,
+  glossaryLoading = false,
   chapters = [],
   readChapterIds,
   isLoggedIn = false,
