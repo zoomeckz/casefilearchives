@@ -170,7 +170,12 @@ const Index = () => {
         )}
 
         {currentPage === "characters" && (
-          <CharactersPage glossary={glossary} />
+          <CharactersPage
+            glossary={glossary}
+            chapters={publishedChapters}
+            readChapterIds={readChapterIds}
+            isLoggedIn={!!user}
+          />
         )}
 
         {currentPage === "reader" && (
