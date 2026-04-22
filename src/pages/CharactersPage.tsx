@@ -159,7 +159,10 @@ export const CharactersPage: React.FC<CharactersPageProps> = ({
       <div className="max-w-7xl mx-auto px-0 md:px-6">
         <div className="flex">
           {/* Sidebar — desktop */}
-          <aside className="hidden md:block w-72 lg:w-80 shrink-0 border-r border-stone-800/50 sticky top-0 h-[calc(100vh-0px)] overflow-y-auto py-6 pr-4">
+          <aside
+            data-lenis-prevent
+            className="hidden md:block w-72 lg:w-80 shrink-0 border-r border-stone-800/50 sticky top-0 h-[calc(100vh-0px)] overflow-y-auto py-6 pr-4 overscroll-contain"
+          >
             <SidebarContent
               activeCategory={activeCategory}
               setActiveCategory={(c) => {
@@ -185,7 +188,7 @@ export const CharactersPage: React.FC<CharactersPageProps> = ({
                 className="absolute inset-0 bg-black/70 backdrop-blur-sm"
                 onClick={() => setDrawerOpen(false)}
               />
-              <div className="relative ml-auto w-[88%] max-w-sm h-full bg-stone-950 border-l border-stone-800 overflow-y-auto p-5 animate-in slide-in-from-right">
+              <div data-lenis-prevent className="relative ml-auto w-[88%] max-w-sm h-full bg-stone-950 border-l border-stone-800 overflow-y-auto overscroll-contain p-5 animate-in slide-in-from-right">
                 <div className="flex items-center justify-between mb-4">
                   <h2 className="font-display text-lg text-amber-100">Browse</h2>
                   <button
@@ -359,7 +362,7 @@ const SidebarContent: React.FC<SidebarProps> = ({
           <span className="text-xs">Fetching latest entries…</span>
         </div>
       ) : (
-      <ul className="space-y-0.5 max-h-[60vh] md:max-h-none overflow-y-auto pr-1">
+      <ul data-lenis-prevent className="space-y-0.5 max-h-[60vh] md:max-h-none overflow-y-auto overscroll-contain pr-1">
         {pageEntries.map((e) => {
           const unlocked = isUnlocked(e, maxRead, revealedSpoilers);
           const active = selectedName === e.name;
