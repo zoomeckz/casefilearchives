@@ -471,13 +471,6 @@ const ReadingPane: React.FC<ReadingPaneProps> = ({
 
   return (
     <article className="max-w-3xl">
-      {/* Hero */}
-      {entry.image && isUnlockedNow && (
-        <div className="aspect-[16/9] w-full overflow-hidden rounded-2xl border border-stone-800 mb-6">
-          <img src={entry.image} alt={entry.name} className="w-full h-full object-cover object-top" />
-        </div>
-      )}
-
       {/* Title row */}
       <div className="flex flex-wrap items-center gap-2 mb-3">
         <h2 className="font-display text-3xl md:text-4xl text-amber-100">{entry.name}</h2>
@@ -528,6 +521,13 @@ const ReadingPane: React.FC<ReadingPaneProps> = ({
               </button>
             </div>
           </div>
+        </div>
+      )}
+
+      {/* Hero image — shown after the text */}
+      {entry.image && isUnlockedNow && (
+        <div className="aspect-[16/9] w-full overflow-hidden rounded-2xl border border-stone-800 mt-6">
+          <img src={entry.image} alt={entry.name} className="w-full h-full object-cover object-top" />
         </div>
       )}
 
