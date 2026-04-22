@@ -153,11 +153,15 @@ export const ReaderPage: React.FC<ReaderPageProps> = ({
   const prevSummary = prevChapter ? prevChapter.title : null;
 
   return (
-    <div className="min-h-screen py-8 sm:py-12 px-4 sm:px-6">
+    <div ref={containerRef} className="min-h-screen py-8 sm:py-12 px-4 sm:px-6">
       {/* Reading progress bar */}
       <div
         className="fixed top-0 left-0 right-0 h-1 bg-transparent z-50 pointer-events-none"
-        aria-hidden="true"
+        role="progressbar"
+        aria-label={`Reading progress: ${Math.round(scrollProgress)}%`}
+        aria-valuenow={Math.round(scrollProgress)}
+        aria-valuemin={0}
+        aria-valuemax={100}
       >
         <div
           className="h-full bg-primary transition-[width] duration-150 ease-out"
