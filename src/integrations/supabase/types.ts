@@ -488,6 +488,7 @@ export type Database = {
         Row: {
           created_at: string
           description: string
+          first_chapter: number | null
           id: string
           image_url: string | null
           parent_term: string | null
@@ -497,6 +498,7 @@ export type Database = {
         Insert: {
           created_at?: string
           description: string
+          first_chapter?: number | null
           id?: string
           image_url?: string | null
           parent_term?: string | null
@@ -506,6 +508,7 @@ export type Database = {
         Update: {
           created_at?: string
           description?: string
+          first_chapter?: number | null
           id?: string
           image_url?: string | null
           parent_term?: string | null
