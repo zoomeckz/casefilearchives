@@ -82,7 +82,7 @@ const Index = () => {
 
   const fetchGlossary = useCallback(async () => {
     const { data } = await dbFetch<any[]>('glossary', {
-      select: 'term,description,type,image_url,parent_term,first_chapter',
+      select: 'term,description,type,image_url,parent_term,first_chapter,aliases',
       order: 'term.asc',
     });
     if (!data) return;
@@ -95,6 +95,7 @@ const Index = () => {
         image: entry.image_url || undefined,
         parentTerm: entry.parent_term || undefined,
         firstChapter: typeof entry.first_chapter === 'number' ? entry.first_chapter : undefined,
+        aliases: Array.isArray(entry.aliases) ? entry.aliases.filter((a: unknown): a is string => typeof a === 'string' && a.length > 0) : [],
       };
     }
 
