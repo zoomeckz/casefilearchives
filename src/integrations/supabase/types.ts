@@ -486,6 +486,7 @@ export type Database = {
       }
       glossary: {
         Row: {
+          aliases: string[]
           created_at: string
           description: string
           first_chapter: number | null
@@ -496,6 +497,7 @@ export type Database = {
           type: string
         }
         Insert: {
+          aliases?: string[]
           created_at?: string
           description: string
           first_chapter?: number | null
@@ -506,6 +508,7 @@ export type Database = {
           type: string
         }
         Update: {
+          aliases?: string[]
           created_at?: string
           description?: string
           first_chapter?: number | null
