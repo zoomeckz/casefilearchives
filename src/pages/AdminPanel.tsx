@@ -8,10 +8,11 @@ import { ChapterEditor, getAllDrafts, deleteDraft, type ChapterDraft } from "@/c
 import { GlossaryManager } from "@/components/GlossaryManager";
 import { AnalyticsDashboard } from "@/components/AnalyticsDashboard";
 import { ContentSearch } from "@/components/ContentSearch";
+import { EditAuditPanel } from "@/components/EditAuditPanel";
 import { toast } from "sonner";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { Input } from "@/components/ui/input";
-import { Menu, X, Search, ArrowUpDown, Globe, CheckCircle2, AlertCircle, Loader2, ExternalLink } from "lucide-react";
+import { Menu, X, Search, ArrowUpDown, Globe, CheckCircle2, AlertCircle, Loader2, ExternalLink, History } from "lucide-react";
 
 interface AdminPanelProps {
   glossary: Record<string, GlossaryEntry>;
