@@ -59,7 +59,7 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ glossary, authToken, use
 
   const fetchGlossaryEntries = useCallback(async () => {
     const { data } = await dbFetch<any[]>('glossary', {
-      select: 'id,term,description,type,image_url',
+      select: 'id,term,description,type,image_url,aliases',
       order: 'term.asc',
       token: authToken,
     });
