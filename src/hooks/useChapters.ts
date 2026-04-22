@@ -127,6 +127,14 @@ export function useChapters(isAdmin = false) {
     };
   }, [fetchChapters]);
 
+  // Light-weight clock tick so that scheduled-at gates flip on time even
+  // between full chapter re-fetches. Avoids "next chapter is live but won't
+  // appear until the next 30-second poll" gaps.
+  useEffect(() => {
+    const id = window.setInterval(() => setNowMs(Date.now()), PUBLISH_TICK_INTERVAL_MS);
+    return () => window.clearInterval(id);
+  }, []);
+
   const incrementViews = useCallback(
     async (chapterId: string) => {
       const url = import.meta.env.VITE_SUPABASE_URL;
