@@ -996,6 +996,10 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ glossary, authToken, use
                 )}
               </div>
             )}
+
+            {activeTab === "audit" && (
+              <EditAuditPanel authToken={authToken} />
+            )}
           </>
         )}
       </main>
