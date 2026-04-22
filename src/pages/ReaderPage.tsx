@@ -318,10 +318,9 @@ export const ReaderPage: React.FC<ReaderPageProps> = ({
       {/* Floating back-to-top button */}
       <button
         type="button"
-        onClick={() =>
-          window.scrollTo({ top: 0, left: 0, behavior: "smooth" })
-        }
-        aria-label="Back to top"
+        onClick={scrollToTop}
+        aria-label="Back to top (press T)"
+        title="Back to top (press T)"
         className={`fixed bottom-6 right-6 z-40 flex h-11 w-11 items-center justify-center rounded-full bg-primary text-primary-foreground shadow-lg ring-1 ring-border/50 transition-all duration-200 hover:scale-105 hover:bg-primary/90 ${
           showBackToTop
             ? "opacity-100 translate-y-0 pointer-events-auto"
