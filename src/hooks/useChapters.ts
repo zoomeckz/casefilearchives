@@ -23,17 +23,26 @@ function mapChapter(c: any): Chapter {
 }
 
 const CHAPTER_REFRESH_INTERVAL_MS = 30_000;
+const PUBLISH_TICK_INTERVAL_MS = 60_000;
 
 function isChapterPublished(chapter: Chapter, nowMs: number): boolean {
+  // Defense-in-depth: a chapter is "published" only when BOTH
+  //   - it has a valid published_at that has already passed, AND
+  //   - it has no future scheduled_at gate.
+  // If published_at is missing or unparseable, treat the chapter as unreleased
+  // rather than silently leaking it onto the home page.
   const publishedAtMs = Date.parse(chapter.publishedAt);
-  const scheduledAtMs = chapter.scheduledAt ? Date.parse(chapter.scheduledAt) : null;
-
-  if (!Number.isNaN(publishedAtMs) && publishedAtMs > nowMs) {
+  if (Number.isNaN(publishedAtMs) || publishedAtMs > nowMs) {
     return false;
   }
 
-  if (scheduledAtMs !== null && !Number.isNaN(scheduledAtMs) && scheduledAtMs > nowMs) {
-    return false;
+  if (chapter.scheduledAt) {
+    const scheduledAtMs = Date.parse(chapter.scheduledAt);
+    // Unparseable scheduled_at on a row that bothered to set one is suspicious;
+    // hide it until the data is fixed.
+    if (Number.isNaN(scheduledAtMs) || scheduledAtMs > nowMs) {
+      return false;
+    }
   }
 
   return true;
@@ -117,6 +126,14 @@ export function useChapters(isAdmin = false) {
       document.removeEventListener('visibilitychange', handleVisibilityChange);
     };
   }, [fetchChapters]);
+
+  // Light-weight clock tick so that scheduled-at gates flip on time even
+  // between full chapter re-fetches. Avoids "next chapter is live but won't
+  // appear until the next 30-second poll" gaps.
+  useEffect(() => {
+    const id = window.setInterval(() => setNowMs(Date.now()), PUBLISH_TICK_INTERVAL_MS);
+    return () => window.clearInterval(id);
+  }, []);
 
   const incrementViews = useCallback(
     async (chapterId: string) => {
