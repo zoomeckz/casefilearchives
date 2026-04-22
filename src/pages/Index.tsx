@@ -106,6 +106,15 @@ const Index = () => {
     fetchGlossary();
   }, [fetchGlossary]);
 
+  // Whenever the user lands on the Codex/Characters page, drop any cached
+  // legacy glossary state and pull fresh entries from the backend so newly
+  // added terms, aliases, or first_chapter gating show up immediately.
+  useEffect(() => {
+    if (currentPage !== "characters") return;
+    setGlossary({});
+    fetchGlossary();
+  }, [currentPage, fetchGlossary]);
+
   // Page tracking
   usePageTracking(user, currentPage, selectedChapter);
 

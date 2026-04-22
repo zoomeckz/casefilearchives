@@ -1,7 +1,7 @@
 import React, { useState, useMemo, useEffect } from "react";
 import { GlossaryEntry } from "@/lib/data";
 import { CharacterRelationshipMap } from "@/components/CharacterRelationshipMap";
-import { Search, Menu, X, EyeOff, Eye, ChevronRight, Users, MapPin, Sparkles, BookOpen, Skull } from "lucide-react";
+import { Search, Menu, X, EyeOff, Eye, ChevronRight, ChevronLeft, Users, MapPin, Sparkles, BookOpen, Skull } from "lucide-react";
 
 type EntryType = GlossaryEntry["type"];
 
@@ -278,7 +278,22 @@ const SidebarContent: React.FC<SidebarProps> = ({
   onPick,
   maxRead,
   revealedSpoilers,
-}) => (
+}) => {
+  const PAGE_SIZE = 30;
+  const [page, setPage] = useState(1);
+
+  // Reset to first page whenever the visible list changes (search or category switch)
+  useEffect(() => {
+    setPage(1);
+  }, [activeCategory, search, entries.length]);
+
+  const totalPages = Math.max(1, Math.ceil(entries.length / PAGE_SIZE));
+  const safePage = Math.min(page, totalPages);
+  const pageStart = (safePage - 1) * PAGE_SIZE;
+  const pageEntries = entries.slice(pageStart, pageStart + PAGE_SIZE);
+  const query = search.trim();
+
+  return (
   <div className="space-y-5">
     {/* Search */}
     <div className="relative">
@@ -320,9 +335,14 @@ const SidebarContent: React.FC<SidebarProps> = ({
     <div className="border-t border-stone-800/60 pt-4">
       <p className="text-[10px] uppercase tracking-wider text-stone-600 mb-2 px-1">
         {entries.length} entr{entries.length === 1 ? "y" : "ies"}
+        {totalPages > 1 && (
+          <span className="ml-1 normal-case tracking-normal text-stone-600">
+            · page {safePage}/{totalPages}
+          </span>
+        )}
       </p>
       <ul className="space-y-0.5 max-h-[60vh] md:max-h-none overflow-y-auto pr-1">
-        {entries.map((e) => {
+        {pageEntries.map((e) => {
           const unlocked = isUnlocked(e, maxRead, revealedSpoilers);
           const active = selectedName === e.name;
           return (
@@ -335,7 +355,9 @@ const SidebarContent: React.FC<SidebarProps> = ({
                     : "text-stone-400 hover:text-stone-100 hover:bg-stone-900/60"
                 }`}
               >
-                <span className={unlocked ? "" : "blur-[3px] select-none"}>{unlocked ? e.name : "███████"}</span>
+                <span className={unlocked ? "truncate" : "blur-[3px] select-none truncate"}>
+                  {unlocked ? <Highlight text={e.name} query={query} /> : "███████"}
+                </span>
                 {!unlocked && <EyeOff className="w-3 h-3 text-stone-600 shrink-0" />}
               </button>
             </li>
@@ -345,9 +367,55 @@ const SidebarContent: React.FC<SidebarProps> = ({
           <li className="px-3 py-4 text-xs text-stone-600 italic">No entries match.</li>
         )}
       </ul>
+
+      {totalPages > 1 && (
+        <div className="flex items-center justify-between mt-3 px-1">
+          <button
+            onClick={() => setPage((p) => Math.max(1, p - 1))}
+            disabled={safePage === 1}
+            className="inline-flex items-center gap-1 px-2 py-1 rounded-md text-xs text-stone-400 hover:text-stone-100 hover:bg-stone-900/60 disabled:opacity-30 disabled:cursor-not-allowed disabled:hover:bg-transparent"
+            aria-label="Previous page"
+          >
+            <ChevronLeft className="w-3 h-3" /> Prev
+          </button>
+          <span className="text-[11px] text-stone-600">
+            {pageStart + 1}–{Math.min(pageStart + PAGE_SIZE, entries.length)} of {entries.length}
+          </span>
+          <button
+            onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
+            disabled={safePage === totalPages}
+            className="inline-flex items-center gap-1 px-2 py-1 rounded-md text-xs text-stone-400 hover:text-stone-100 hover:bg-stone-900/60 disabled:opacity-30 disabled:cursor-not-allowed disabled:hover:bg-transparent"
+            aria-label="Next page"
+          >
+            Next <ChevronRight className="w-3 h-3" />
+          </button>
+        </div>
+      )}
     </div>
   </div>
-);
+  );
+};
+
+// Renders text with the matching query substring highlighted. Case-insensitive.
+const Highlight: React.FC<{ text: string; query: string }> = ({ text, query }) => {
+  if (!query) return <>{text}</>;
+  const escaped = query.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+  const parts = text.split(new RegExp(`(${escaped})`, "ig"));
+  const lower = query.toLowerCase();
+  return (
+    <>
+      {parts.map((part, i) =>
+        part.toLowerCase() === lower ? (
+          <mark key={i} className="bg-amber-500/30 text-amber-100 rounded px-0.5">
+            {part}
+          </mark>
+        ) : (
+          <React.Fragment key={i}>{part}</React.Fragment>
+        )
+      )}
+    </>
+  );
+};
 
 // ---------- reading pane ----------
 
