@@ -340,13 +340,25 @@ const SidebarContent: React.FC<SidebarProps> = ({
     {/* Entry list */}
     <div className="border-t border-stone-800/60 pt-4">
       <p className="text-[10px] uppercase tracking-wider text-stone-600 mb-2 px-1">
-        {entries.length} entr{entries.length === 1 ? "y" : "ies"}
-        {totalPages > 1 && (
+        {loading && entries.length === 0 ? (
+          <span className="inline-flex items-center gap-1.5 normal-case tracking-normal text-stone-500">
+            <Loader2 className="w-3 h-3 animate-spin" /> loading codex…
+          </span>
+        ) : (
+          <>{entries.length} entr{entries.length === 1 ? "y" : "ies"}</>
+        )}
+        {!loading && totalPages > 1 && (
           <span className="ml-1 normal-case tracking-normal text-stone-600">
             · page {safePage}/{totalPages}
           </span>
         )}
       </p>
+      {loading && entries.length === 0 ? (
+        <div className="flex flex-col items-center justify-center py-10 gap-2 text-stone-500">
+          <Loader2 className="w-5 h-5 animate-spin text-amber-400/70" aria-hidden="true" />
+          <span className="text-xs">Fetching latest entries…</span>
+        </div>
+      ) : (
       <ul className="space-y-0.5 max-h-[60vh] md:max-h-none overflow-y-auto pr-1">
         {pageEntries.map((e) => {
           const unlocked = isUnlocked(e, maxRead, revealedSpoilers);
@@ -373,8 +385,9 @@ const SidebarContent: React.FC<SidebarProps> = ({
           <li className="px-3 py-4 text-xs text-stone-600 italic">No entries match.</li>
         )}
       </ul>
+      )}
 
-      {totalPages > 1 && (
+      {!loading && totalPages > 1 && (
         <div className="flex items-center justify-between mt-3 px-1">
           <button
             onClick={() => setPage((p) => Math.max(1, p - 1))}
