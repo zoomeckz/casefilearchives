@@ -115,6 +115,54 @@ export type Database = {
         }
         Relationships: []
       }
+      chapter_edit_audit: {
+        Row: {
+          action: string
+          actor_id: string | null
+          anchor_found: boolean
+          anchor_text: string | null
+          chapter_id: string
+          chapter_number: number | null
+          created_at: string
+          id: string
+          migration_id: string | null
+          new_content: string | null
+          note: string | null
+          previous_content: string | null
+          replacement_text: string | null
+        }
+        Insert: {
+          action?: string
+          actor_id?: string | null
+          anchor_found?: boolean
+          anchor_text?: string | null
+          chapter_id: string
+          chapter_number?: number | null
+          created_at?: string
+          id?: string
+          migration_id?: string | null
+          new_content?: string | null
+          note?: string | null
+          previous_content?: string | null
+          replacement_text?: string | null
+        }
+        Update: {
+          action?: string
+          actor_id?: string | null
+          anchor_found?: boolean
+          anchor_text?: string | null
+          chapter_id?: string
+          chapter_number?: number | null
+          created_at?: string
+          id?: string
+          migration_id?: string | null
+          new_content?: string | null
+          note?: string | null
+          previous_content?: string | null
+          replacement_text?: string | null
+        }
+        Relationships: []
+      }
       chapter_polls: {
         Row: {
           chapter_id: string
@@ -947,6 +995,20 @@ export type Database = {
       increment_chapter_views: {
         Args: { chapter_id: string }
         Returns: undefined
+      }
+      rollback_chapter_to_audit_entry: {
+        Args: { _audit_id: string }
+        Returns: Json
+      }
+      safe_replace_chapter_content: {
+        Args: {
+          _anchor: string
+          _chapter_id: string
+          _migration_id?: string
+          _note?: string
+          _replacement: string
+        }
+        Returns: Json
       }
     }
     Enums: {

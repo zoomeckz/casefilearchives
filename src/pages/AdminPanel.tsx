@@ -8,10 +8,11 @@ import { ChapterEditor, getAllDrafts, deleteDraft, type ChapterDraft } from "@/c
 import { GlossaryManager } from "@/components/GlossaryManager";
 import { AnalyticsDashboard } from "@/components/AnalyticsDashboard";
 import { ContentSearch } from "@/components/ContentSearch";
+import { EditAuditPanel } from "@/components/EditAuditPanel";
 import { toast } from "sonner";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { Input } from "@/components/ui/input";
-import { Menu, X, Search, ArrowUpDown, Globe, CheckCircle2, AlertCircle, Loader2, ExternalLink } from "lucide-react";
+import { Menu, X, Search, ArrowUpDown, Globe, CheckCircle2, AlertCircle, Loader2, ExternalLink, History } from "lucide-react";
 
 interface AdminPanelProps {
   glossary: Record<string, GlossaryEntry>;
@@ -248,6 +249,7 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ glossary, authToken, use
     { id: "analytics", label: "Analytics", icon: Icons.Eye },
     { id: "glossary", label: "Glossary", icon: Icons.Book },
     { id: "seo", label: "SEO", icon: Globe },
+    { id: "audit", label: "Edit Audit", icon: History },
   ];
 
   const refreshDrafts = useCallback(async () => {
@@ -272,7 +274,7 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ glossary, authToken, use
 
   useEffect(() => {
     const tabParam = searchParams.get('tab');
-    const nextTab = ['dashboard', 'chapters', 'search', 'analytics', 'glossary', 'seo'].includes(tabParam || '')
+    const nextTab = ['dashboard', 'chapters', 'search', 'analytics', 'glossary', 'seo', 'audit'].includes(tabParam || '')
       ? (tabParam as string)
       : 'dashboard';
     const nextSubTab = searchParams.get('subtab') === 'drafts' ? 'drafts' : 'published';
@@ -993,6 +995,10 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ glossary, authToken, use
                   </div>
                 )}
               </div>
+            )}
+
+            {activeTab === "audit" && (
+              <EditAuditPanel authToken={authToken} />
             )}
           </>
         )}
