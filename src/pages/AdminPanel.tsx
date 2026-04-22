@@ -274,7 +274,7 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ glossary, authToken, use
 
   useEffect(() => {
     const tabParam = searchParams.get('tab');
-    const nextTab = ['dashboard', 'chapters', 'search', 'analytics', 'glossary', 'seo'].includes(tabParam || '')
+    const nextTab = ['dashboard', 'chapters', 'search', 'analytics', 'glossary', 'seo', 'audit'].includes(tabParam || '')
       ? (tabParam as string)
       : 'dashboard';
     const nextSubTab = searchParams.get('subtab') === 'drafts' ? 'drafts' : 'published';
