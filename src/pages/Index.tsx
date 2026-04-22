@@ -72,7 +72,7 @@ const Index = () => {
   const { chapters, publishedChapters, incrementViews } = useChapters(user?.isAdmin);
 
   // Reading progress
-  const { isRead, markAsRead, markAsUnread, readCount } = useReadingProgress(user);
+  const { isRead, markAsRead, markAsUnread, readCount, readChapterIds } = useReadingProgress(user);
 
   // Bookmarks
   const { isBookmarked, toggleBookmark, bookmarkCount } = useBookmarks(user);
