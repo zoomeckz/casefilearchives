@@ -82,7 +82,7 @@ const Index = () => {
 
   const fetchGlossary = useCallback(async () => {
     const { data } = await dbFetch<any[]>('glossary', {
-      select: 'term,description,type,image_url,parent_term',
+      select: 'term,description,type,image_url,parent_term,first_chapter',
       order: 'term.asc',
     });
     if (data && data.length > 0) {
@@ -93,6 +93,7 @@ const Index = () => {
           description: entry.description,
           image: entry.image_url || undefined,
           parentTerm: entry.parent_term || undefined,
+          firstChapter: typeof entry.first_chapter === 'number' ? entry.first_chapter : undefined,
         };
       }
       const merged: Record<string, GlossaryEntry> = { ...defaultGlossary };
