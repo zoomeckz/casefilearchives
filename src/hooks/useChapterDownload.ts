@@ -1,10 +1,24 @@
 const url = import.meta.env.VITE_SUPABASE_URL;
 const key = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY;
 
+// Reads the current admin session token (if any) so RLS lets us fetch
+// scheduled/future chapters in addition to live ones.
+function getAuthToken(): string {
+  try {
+    const raw = localStorage.getItem('app-auth-session');
+    if (!raw) return key;
+    const session = JSON.parse(raw);
+    return session?.access_token || key;
+  } catch {
+    return key;
+  }
+}
+
 export async function downloadSingleChapter(chapterNumber: number, title: string) {
+  const token = getAuthToken();
   const response = await fetch(
     `${url}/rest/v1/chapters?select=title,content,chapter_number&chapter_number=eq.${chapterNumber}`,
-    { headers: { 'apikey': key, 'Authorization': `Bearer ${key}` } }
+    { headers: { 'apikey': key, 'Authorization': `Bearer ${token}` } }
   );
   if (!response.ok) throw new Error("Failed to fetch chapter");
   const data = await response.json();
