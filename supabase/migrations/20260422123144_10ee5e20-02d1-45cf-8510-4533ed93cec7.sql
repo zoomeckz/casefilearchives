@@ -1,0 +1,1 @@
+UPDATE public.glossary SET image_url = NULL WHERE term IN ('Velvet','Kassandra','Vehn','Grebby');
