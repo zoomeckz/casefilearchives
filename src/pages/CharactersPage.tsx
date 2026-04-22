@@ -210,6 +210,7 @@ export const CharactersPage: React.FC<CharactersPageProps> = ({
                   onPick={handlePick}
                   maxRead={maxRead}
                   revealedSpoilers={revealedSpoilers}
+                  loading={glossaryLoading}
                 />
               </div>
             </div>
@@ -268,6 +269,7 @@ interface SidebarProps {
   onPick: (name: string) => void;
   maxRead: number;
   revealedSpoilers: Set<string>;
+  loading?: boolean;
 }
 
 const SidebarContent: React.FC<SidebarProps> = ({
@@ -281,6 +283,7 @@ const SidebarContent: React.FC<SidebarProps> = ({
   onPick,
   maxRead,
   revealedSpoilers,
+  loading = false,
 }) => {
   const PAGE_SIZE = 30;
   const [page, setPage] = useState(1);
