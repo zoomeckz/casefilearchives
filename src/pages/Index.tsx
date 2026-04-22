@@ -79,27 +79,35 @@ const Index = () => {
 
   // Glossary — load from DB only so legacy local data cannot overwrite newer backend content
   const [glossary, setGlossary] = useState<Record<string, GlossaryEntry>>({});
+  const [glossaryLoading, setGlossaryLoading] = useState(true);
 
   const fetchGlossary = useCallback(async () => {
-    const { data } = await dbFetch<any[]>('glossary', {
-      select: 'term,description,type,image_url,parent_term,first_chapter,aliases',
-      order: 'term.asc',
-    });
-    if (!data) return;
+    setGlossaryLoading(true);
+    try {
+      const { data } = await dbFetch<any[]>('glossary', {
+        select: 'term,description,type,image_url,parent_term,first_chapter,aliases',
+        order: 'term.asc',
+      });
+      if (!data) return;
 
-    const mapped: Record<string, GlossaryEntry> = {};
-    for (const entry of data) {
-      mapped[entry.term] = {
-        type: entry.type as GlossaryEntry['type'],
-        description: entry.description,
-        image: entry.image_url || undefined,
-        parentTerm: entry.parent_term || undefined,
-        firstChapter: typeof entry.first_chapter === 'number' ? entry.first_chapter : undefined,
-        aliases: Array.isArray(entry.aliases) ? entry.aliases.filter((a: unknown): a is string => typeof a === 'string' && a.length > 0) : [],
-      };
+      const mapped: Record<string, GlossaryEntry> = {};
+      for (const entry of data) {
+        mapped[entry.term] = {
+          type: entry.type as GlossaryEntry['type'],
+          description: entry.description,
+          image: entry.image_url || undefined,
+          parentTerm: entry.parent_term || undefined,
+          firstChapter: typeof entry.first_chapter === 'number' ? entry.first_chapter : undefined,
+          aliases: Array.isArray(entry.aliases)
+            ? entry.aliases.filter((a: unknown): a is string => typeof a === 'string' && a.length > 0)
+            : [],
+        };
+      }
+
+      setGlossary(mapped);
+    } finally {
+      setGlossaryLoading(false);
     }
-
-    setGlossary(mapped);
   }, []);
 
   useEffect(() => {
@@ -175,6 +183,7 @@ const Index = () => {
         {currentPage === "characters" && (
           <CharactersPage
             glossary={glossary}
+            glossaryLoading={glossaryLoading}
             chapters={publishedChapters}
             readChapterIds={readChapterIds}
             isLoggedIn={!!user}
