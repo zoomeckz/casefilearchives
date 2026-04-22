@@ -74,14 +74,30 @@ export const InteractiveContent: React.FC<InteractiveContentProps> = ({
   } | null>(null);
 
   const processedContent = useMemo(() => {
-    const terms = Object.keys(glossary).sort((a, b) => b.length - a.length);
-    let processed = content;
+    // Build a list of (matchString -> canonicalTerm) pairs so aliases
+    // resolve back to the same glossary entry for popups + spoiler gating.
+    const escape = (s: string) => s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+    const pairs: Array<{ match: string; canonical: string }> = [];
+    for (const [term, entry] of Object.entries(glossary)) {
+      pairs.push({ match: term, canonical: term });
+      const aliases = entry.aliases ?? [];
+      for (const alias of aliases) {
+        if (alias && alias.trim()) pairs.push({ match: alias.trim(), canonical: term });
+      }
+    }
+    // Longest first so multi-word matches win over substrings.
+    pairs.sort((a, b) => b.match.length - a.match.length);
 
-    terms.forEach((term) => {
-      const regex = new RegExp(`\\b(${term})\\b(?![^<]*>)`, "gi");
+    let processed = content;
+    const seen = new Set<string>();
+    pairs.forEach(({ match, canonical }) => {
+      const key = match.toLowerCase();
+      if (seen.has(key)) return;
+      seen.add(key);
+      const regex = new RegExp(`\\b(${escape(match)})\\b(?![^<]*>)`, "gi");
       processed = processed.replace(
         regex,
-        `<span class="glossary-term" data-term="${term}">$1</span>`
+        `<span class="glossary-term" data-term="${canonical}">$1</span>`
       );
     });
 

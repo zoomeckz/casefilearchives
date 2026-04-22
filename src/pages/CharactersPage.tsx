@@ -71,7 +71,8 @@ export const CharactersPage: React.FC<CharactersPageProps> = ({
       if (!q) return true;
       return (
         e.name.toLowerCase().includes(q) ||
-        e.description.toLowerCase().includes(q)
+        e.description.toLowerCase().includes(q) ||
+        (e.aliases ?? []).some((a) => a.toLowerCase().includes(q))
       );
     });
   }, [allEntries, activeCategory, search]);
