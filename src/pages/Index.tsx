@@ -4,7 +4,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { useChapters, Chapter } from "@/hooks/useChapters";
 import { useReadingProgress } from "@/hooks/useReadingProgress";
 import { useBookmarks } from "@/hooks/useBookmarks";
-import { defaultGlossary, GlossaryEntry } from "@/lib/data";
+import { GlossaryEntry } from "@/lib/data";
 import { dbFetch } from "@/lib/dbFetch";
 import { Navigation } from "@/components/Navigation";
 import { Footer } from "@/components/Footer";
@@ -77,35 +77,28 @@ const Index = () => {
   // Bookmarks
   const { isBookmarked, toggleBookmark, bookmarkCount } = useBookmarks(user);
 
-  // Glossary — load from DB, fall back to defaults
-  const [glossary, setGlossary] = useState<Record<string, GlossaryEntry>>(defaultGlossary);
+  // Glossary — load from DB only so legacy local data cannot overwrite newer backend content
+  const [glossary, setGlossary] = useState<Record<string, GlossaryEntry>>({});
 
   const fetchGlossary = useCallback(async () => {
     const { data } = await dbFetch<any[]>('glossary', {
       select: 'term,description,type,image_url,parent_term,first_chapter',
       order: 'term.asc',
     });
-    if (data && data.length > 0) {
-      const mapped: Record<string, GlossaryEntry> = {};
-      for (const entry of data) {
-        mapped[entry.term] = {
-          type: entry.type as GlossaryEntry['type'],
-          description: entry.description,
-          image: entry.image_url || undefined,
-          parentTerm: entry.parent_term || undefined,
-          firstChapter: typeof entry.first_chapter === 'number' ? entry.first_chapter : undefined,
-        };
-      }
-      const merged: Record<string, GlossaryEntry> = { ...defaultGlossary };
-      for (const [term, entry] of Object.entries(mapped)) {
-        merged[term] = {
-          ...merged[term],
-          ...entry,
-          image: entry.image || merged[term]?.image || undefined,
-        };
-      }
-      setGlossary(merged);
+    if (!data) return;
+
+    const mapped: Record<string, GlossaryEntry> = {};
+    for (const entry of data) {
+      mapped[entry.term] = {
+        type: entry.type as GlossaryEntry['type'],
+        description: entry.description,
+        image: entry.image_url || undefined,
+        parentTerm: entry.parent_term || undefined,
+        firstChapter: typeof entry.first_chapter === 'number' ? entry.first_chapter : undefined,
+      };
     }
+
+    setGlossary(mapped);
   }, []);
 
   useEffect(() => {
