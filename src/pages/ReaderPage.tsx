@@ -54,6 +54,8 @@ export const ReaderPage: React.FC<ReaderPageProps> = ({
   toggleBookmark,
 }) => {
   const [randomPrompt] = useState(() => discussionPrompts[Math.floor(Math.random() * discussionPrompts.length)]);
+  const [scrollProgress, setScrollProgress] = useState(0);
+  const [showBackToTop, setShowBackToTop] = useState(false);
 
   useEffect(() => {
     if (chapter) {
@@ -65,6 +67,25 @@ export const ReaderPage: React.FC<ReaderPageProps> = ({
       if (user) markAsRead(chapter.id);
     }
   }, [chapter?.id, user?.id]);
+
+  useEffect(() => {
+    const onScroll = () => {
+      const scrollTop = window.scrollY || document.documentElement.scrollTop;
+      const docHeight =
+        (document.documentElement.scrollHeight || document.body.scrollHeight) -
+        window.innerHeight;
+      const pct = docHeight > 0 ? Math.min(100, Math.max(0, (scrollTop / docHeight) * 100)) : 0;
+      setScrollProgress(pct);
+      setShowBackToTop(scrollTop > 600);
+    };
+    onScroll();
+    window.addEventListener("scroll", onScroll, { passive: true });
+    window.addEventListener("resize", onScroll);
+    return () => {
+      window.removeEventListener("scroll", onScroll);
+      window.removeEventListener("resize", onScroll);
+    };
+  }, [chapter?.id]);
 
   if (!chapter) return null;
 
@@ -78,6 +99,17 @@ export const ReaderPage: React.FC<ReaderPageProps> = ({
 
   return (
     <div className="min-h-screen py-8 sm:py-12 px-4 sm:px-6">
+      {/* Reading progress bar */}
+      <div
+        className="fixed top-0 left-0 right-0 h-1 bg-transparent z-50 pointer-events-none"
+        aria-hidden="true"
+      >
+        <div
+          className="h-full bg-primary transition-[width] duration-150 ease-out"
+          style={{ width: `${scrollProgress}%` }}
+        />
+      </div>
+
       <div className="max-w-3xl mx-auto">
         <button
           onClick={() => setCurrentPage("chapters")}
@@ -223,6 +255,22 @@ export const ReaderPage: React.FC<ReaderPageProps> = ({
           ) : <div />}
         </div>
       </div>
+
+      {/* Floating back-to-top button */}
+      <button
+        type="button"
+        onClick={() =>
+          window.scrollTo({ top: 0, left: 0, behavior: "smooth" })
+        }
+        aria-label="Back to top"
+        className={`fixed bottom-6 right-6 z-40 flex h-11 w-11 items-center justify-center rounded-full bg-primary text-primary-foreground shadow-lg ring-1 ring-border/50 transition-all duration-200 hover:scale-105 hover:bg-primary/90 ${
+          showBackToTop
+            ? "opacity-100 translate-y-0 pointer-events-auto"
+            : "opacity-0 translate-y-4 pointer-events-none"
+        }`}
+      >
+        <Icons.ChevronLeft className="rotate-90" />
+      </button>
     </div>
   );
 };
