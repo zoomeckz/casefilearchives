@@ -174,6 +174,7 @@ export const CharactersPage: React.FC<CharactersPageProps> = ({
               onPick={handlePick}
               maxRead={maxRead}
               revealedSpoilers={revealedSpoilers}
+              loading={glossaryLoading}
             />
           </aside>
 
