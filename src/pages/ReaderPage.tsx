@@ -54,6 +54,8 @@ export const ReaderPage: React.FC<ReaderPageProps> = ({
   toggleBookmark,
 }) => {
   const [randomPrompt] = useState(() => discussionPrompts[Math.floor(Math.random() * discussionPrompts.length)]);
+  const [scrollProgress, setScrollProgress] = useState(0);
+  const [showBackToTop, setShowBackToTop] = useState(false);
 
   useEffect(() => {
     if (chapter) {
@@ -65,6 +67,25 @@ export const ReaderPage: React.FC<ReaderPageProps> = ({
       if (user) markAsRead(chapter.id);
     }
   }, [chapter?.id, user?.id]);
+
+  useEffect(() => {
+    const onScroll = () => {
+      const scrollTop = window.scrollY || document.documentElement.scrollTop;
+      const docHeight =
+        (document.documentElement.scrollHeight || document.body.scrollHeight) -
+        window.innerHeight;
+      const pct = docHeight > 0 ? Math.min(100, Math.max(0, (scrollTop / docHeight) * 100)) : 0;
+      setScrollProgress(pct);
+      setShowBackToTop(scrollTop > 600);
+    };
+    onScroll();
+    window.addEventListener("scroll", onScroll, { passive: true });
+    window.addEventListener("resize", onScroll);
+    return () => {
+      window.removeEventListener("scroll", onScroll);
+      window.removeEventListener("resize", onScroll);
+    };
+  }, [chapter?.id]);
 
   if (!chapter) return null;
 
