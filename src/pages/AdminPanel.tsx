@@ -249,6 +249,7 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ glossary, authToken, use
     { id: "analytics", label: "Analytics", icon: Icons.Eye },
     { id: "glossary", label: "Glossary", icon: Icons.Book },
     { id: "seo", label: "SEO", icon: Globe },
+    { id: "audit", label: "Edit Audit", icon: History },
   ];
 
   const refreshDrafts = useCallback(async () => {
