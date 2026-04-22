@@ -1,5 +1,5 @@
 import React, { useState, useMemo, useEffect } from "react";
-import { GlossaryEntry, Chapter } from "@/lib/data";
+import { GlossaryEntry } from "@/lib/data";
 import { CharacterRelationshipMap } from "@/components/CharacterRelationshipMap";
 import { Search, Menu, X, EyeOff, Eye, ChevronRight, Users, MapPin, Sparkles, BookOpen, Skull } from "lucide-react";
 
@@ -11,7 +11,7 @@ interface NamedEntry extends GlossaryEntry {
 
 interface CharactersPageProps {
   glossary: Record<string, GlossaryEntry>;
-  chapters?: Chapter[];
+  chapters?: Array<{ id: string; chapterNumber: number }>;
   readChapterIds?: Set<string>;
   isLoggedIn?: boolean;
 }
