@@ -28,6 +28,7 @@ export interface GlossaryEntry {
   description: string;
   image?: string;
   parentTerm?: string;
+  firstChapter?: number;
 }
 
 export interface ForumPost {
