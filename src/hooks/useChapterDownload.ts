@@ -83,13 +83,18 @@ function stripHtml(html: string): string {
 }
 
 export async function downloadAllChapters() {
+  // Use the admin's access token so RLS lets us include both live AND
+  // scheduled (future) chapters. Without it the anon key is filtered to
+  // only chapters whose scheduled_at is null or already in the past.
+  const token = getAuthToken();
+
   // Fetch all chapters in a single request with explicit high limit
   const response = await fetch(
     `${url}/rest/v1/chapters?select=title,content,chapter_number&order=chapter_number.asc&limit=1000`,
     {
       headers: {
         'apikey': key,
-        'Authorization': `Bearer ${key}`,
+        'Authorization': `Bearer ${token}`,
       },
     }
   );
