@@ -29,6 +29,7 @@ export interface GlossaryEntry {
   image?: string;
   parentTerm?: string;
   firstChapter?: number;
+  aliases?: string[];
 }
 
 export interface ForumPost {

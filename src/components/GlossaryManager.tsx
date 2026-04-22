@@ -9,6 +9,7 @@ interface GlossaryItem {
   description: string;
   type: string;
   image_url: string | null;
+  aliases?: string[] | null;
 }
 
 interface GlossaryManagerProps {
@@ -22,11 +23,11 @@ const TYPES = ['character', 'location', 'creature', 'concept'] as const;
 export const GlossaryManager: React.FC<GlossaryManagerProps> = ({ authToken, entries, onRefresh }) => {
   const [editingId, setEditingId] = useState<string | null>(null);
   const [showForm, setShowForm] = useState(false);
-  const [form, setForm] = useState({ term: '', description: '', type: 'character', image_url: '' });
+  const [form, setForm] = useState({ term: '', description: '', type: 'character', image_url: '', aliases: '' });
   const [saving, setSaving] = useState(false);
 
   const resetForm = () => {
-    setForm({ term: '', description: '', type: 'character', image_url: '' });
+    setForm({ term: '', description: '', type: 'character', image_url: '', aliases: '' });
     setEditingId(null);
     setShowForm(false);
   };
@@ -37,6 +38,7 @@ export const GlossaryManager: React.FC<GlossaryManagerProps> = ({ authToken, ent
       description: entry.description,
       type: entry.type,
       image_url: entry.image_url || '',
+      aliases: Array.isArray(entry.aliases) ? entry.aliases.join(', ') : '',
     });
     setEditingId(entry.id);
     setShowForm(true);
@@ -50,11 +52,16 @@ export const GlossaryManager: React.FC<GlossaryManagerProps> = ({ authToken, ent
 
     setSaving(true);
     try {
+      const aliases = form.aliases
+        .split(',')
+        .map((a) => a.trim())
+        .filter((a) => a.length > 0);
       const body: any = {
         term: form.term.trim(),
         description: form.description.trim(),
         type: form.type,
         image_url: form.image_url.trim() || null,
+        aliases,
       };
 
       if (editingId) {
@@ -161,6 +168,21 @@ export const GlossaryManager: React.FC<GlossaryManagerProps> = ({ authToken, ent
               placeholder="https://..."
               className="w-full px-4 py-2.5 bg-card border border-border rounded-lg text-foreground focus:outline-none focus:border-primary transition-colors"
             />
+          </div>
+          <div className="mb-4">
+            <label className="block text-sm text-muted-foreground mb-1">
+              Aliases (optional, comma-separated)
+            </label>
+            <input
+              type="text"
+              value={form.aliases}
+              onChange={(e) => setForm({ ...form, aliases: e.target.value })}
+              placeholder="e.g. Dorren, The Captain"
+              className="w-full px-4 py-2.5 bg-card border border-border rounded-lg text-foreground focus:outline-none focus:border-primary transition-colors"
+            />
+            <p className="text-xs text-muted-foreground mt-1">
+              Alternate names readers might search for. Each alias also gets wrapped in chapter prose and links back to this entry's spoiler-gating.
+            </p>
           </div>
           <div className="flex gap-3">
             <button
