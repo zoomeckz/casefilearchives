@@ -183,6 +183,7 @@ const Index = () => {
         {currentPage === "characters" && (
           <CharactersPage
             glossary={glossary}
+            glossaryLoading={glossaryLoading}
             chapters={publishedChapters}
             readChapterIds={readChapterIds}
             isLoggedIn={!!user}
