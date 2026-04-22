@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import { Link } from "react-router-dom";
 import { Icons } from "@/lib/icons";
 import { Chapter } from "@/hooks/useChapters";
@@ -56,6 +56,31 @@ export const ReaderPage: React.FC<ReaderPageProps> = ({
   const [randomPrompt] = useState(() => discussionPrompts[Math.floor(Math.random() * discussionPrompts.length)]);
   const [scrollProgress, setScrollProgress] = useState(0);
   const [showBackToTop, setShowBackToTop] = useState(false);
+  const containerRef = useRef<HTMLDivElement | null>(null);
+
+  // Find the nearest ancestor that is actually scrollable. If none, fall back to window.
+  const getScrollSource = (): HTMLElement | Window => {
+    let el: HTMLElement | null = containerRef.current;
+    while (el && el !== document.body) {
+      const style = window.getComputedStyle(el);
+      const overflowY = style.overflowY;
+      const isScrollable =
+        (overflowY === "auto" || overflowY === "scroll") &&
+        el.scrollHeight > el.clientHeight;
+      if (isScrollable) return el;
+      el = el.parentElement;
+    }
+    return window;
+  };
+
+  const scrollToTop = () => {
+    const src = getScrollSource();
+    if (src === window) {
+      window.scrollTo({ top: 0, left: 0, behavior: "smooth" });
+    } else {
+      (src as HTMLElement).scrollTo({ top: 0, left: 0, behavior: "smooth" });
+    }
+  };
 
   useEffect(() => {
     if (chapter) {
@@ -69,22 +94,52 @@ export const ReaderPage: React.FC<ReaderPageProps> = ({
   }, [chapter?.id, user?.id]);
 
   useEffect(() => {
+    const src = getScrollSource();
     const onScroll = () => {
-      const scrollTop = window.scrollY || document.documentElement.scrollTop;
-      const docHeight =
-        (document.documentElement.scrollHeight || document.body.scrollHeight) -
-        window.innerHeight;
+      let scrollTop: number;
+      let docHeight: number;
+      if (src === window) {
+        scrollTop = window.scrollY || document.documentElement.scrollTop;
+        docHeight =
+          (document.documentElement.scrollHeight || document.body.scrollHeight) -
+          window.innerHeight;
+      } else {
+        const el = src as HTMLElement;
+        scrollTop = el.scrollTop;
+        docHeight = el.scrollHeight - el.clientHeight;
+      }
       const pct = docHeight > 0 ? Math.min(100, Math.max(0, (scrollTop / docHeight) * 100)) : 0;
       setScrollProgress(pct);
       setShowBackToTop(scrollTop > 600);
     };
     onScroll();
-    window.addEventListener("scroll", onScroll, { passive: true });
+    src.addEventListener("scroll", onScroll, { passive: true } as AddEventListenerOptions);
     window.addEventListener("resize", onScroll);
     return () => {
-      window.removeEventListener("scroll", onScroll);
+      src.removeEventListener("scroll", onScroll);
       window.removeEventListener("resize", onScroll);
     };
+  }, [chapter?.id]);
+
+  // Keyboard shortcut: press "t" to scroll back to the top.
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      if (e.defaultPrevented || e.metaKey || e.ctrlKey || e.altKey) return;
+      const target = e.target as HTMLElement | null;
+      const tag = target?.tagName;
+      const isEditable =
+        target?.isContentEditable ||
+        tag === "INPUT" ||
+        tag === "TEXTAREA" ||
+        tag === "SELECT";
+      if (isEditable) return;
+      if (e.key === "t" || e.key === "T") {
+        e.preventDefault();
+        scrollToTop();
+      }
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
   }, [chapter?.id]);
 
   if (!chapter) return null;
