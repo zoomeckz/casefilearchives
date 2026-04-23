@@ -3,6 +3,7 @@ import { GlossaryEntry } from "@/lib/data";
 import { CharacterRelationshipMap } from "@/components/CharacterRelationshipMap";
 import { Search, Menu, X, EyeOff, Eye, ChevronRight, ChevronLeft, Users, MapPin, Sparkles, BookOpen, Skull, Loader2, Heart, Link2, Download, Maximize2 } from "lucide-react";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
+import { toast } from "sonner";
 import {
   ContextMenu,
   ContextMenuContent,
@@ -1051,9 +1052,15 @@ const ImageInspectModal: React.FC<{
       a.click();
       a.remove();
       URL.revokeObjectURL(url);
+      toast.success(`Downloaded ${image.name}`, {
+        description: `Saved as ${safeName}.${ext}`,
+      });
     } catch {
       // Fallback: open in new tab if cross-origin blocks the fetch
       window.open(image.src, "_blank", "noopener,noreferrer");
+      toast("Opened image in a new tab", {
+        description: "Direct download was blocked — use right-click → Save image as…",
+      });
     } finally {
       setDownloading(false);
     }
@@ -1067,8 +1074,11 @@ const ImageInspectModal: React.FC<{
     if (!image) return;
     try {
       await navigator.clipboard.writeText(image.src);
+      toast.success("Image URL copied", { description: image.name });
     } catch {
-      // ignore — clipboard might be blocked
+      toast.error("Couldn't copy URL", {
+        description: "Your browser blocked clipboard access.",
+      });
     }
   };
 
