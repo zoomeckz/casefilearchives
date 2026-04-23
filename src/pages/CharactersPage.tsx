@@ -714,8 +714,16 @@ const ReadingPane: React.FC<ReadingPaneProps> = ({
 
       {/* Hero image — shown after the text */}
       {entry.image && isUnlockedNow && (
-        <div className="aspect-[16/9] w-full overflow-hidden rounded-2xl border border-stone-800 mt-6">
+        <div className="relative group aspect-[16/9] w-full overflow-hidden rounded-2xl border border-stone-800 mt-6">
           <img src={entry.image} alt={entry.name} className="w-full h-full object-cover object-top" />
+          <button
+            type="button"
+            onClick={() => onInspectImage(entry.image!, entry.name)}
+            className="absolute top-3 right-3 inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-md bg-stone-950/70 hover:bg-stone-950/90 backdrop-blur-sm border border-stone-700/80 text-stone-100 text-xs opacity-0 group-hover:opacity-100 focus:opacity-100 transition-opacity"
+            aria-label={`Inspect image of ${entry.name}`}
+          >
+            <Maximize2 className="w-3.5 h-3.5" /> Inspect
+          </button>
         </div>
       )}
 
