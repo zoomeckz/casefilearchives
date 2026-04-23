@@ -100,19 +100,43 @@ export const CharactersPage: React.FC<CharactersPageProps> = ({
   }, [allEntries]);
 
   const filteredByCategory = useMemo(() => {
-    const q = search.trim().toLowerCase();
+    const terms = search.trim().toLowerCase().split(/\s+/).filter(Boolean);
     return allEntries.filter((e) => {
       if (e.type !== activeCategory) return false;
       if (favoritesOnly && !favorites.has(e.name)) return false;
-      if (!q) return true;
-      return (
-        e.name.toLowerCase().includes(q) ||
-        e.description.toLowerCase().includes(q) ||
-        (e.aliases ?? []).some((a) => a.toLowerCase().includes(q)) ||
-        (e.parentTerm ?? "").toLowerCase().includes(q)
-      );
+      if (terms.length === 0) return true;
+      const haystack = [
+        e.name,
+        e.description,
+        e.parentTerm ?? "",
+        ...(e.aliases ?? []),
+        e.type,
+      ]
+        .join(" \u0001 ")
+        .toLowerCase();
+      return terms.every((t) => haystack.includes(t));
     });
   }, [allEntries, activeCategory, search, favoritesOnly, favorites]);
+
+  // Favorites across ALL categories — shown as a dedicated section in the sidebar.
+  // Also respects the active search query so users can find a favorite quickly.
+  const favoriteEntries = useMemo(() => {
+    const terms = search.trim().toLowerCase().split(/\s+/).filter(Boolean);
+    return allEntries.filter((e) => {
+      if (!favorites.has(e.name)) return false;
+      if (terms.length === 0) return true;
+      const haystack = [
+        e.name,
+        e.description,
+        e.parentTerm ?? "",
+        ...(e.aliases ?? []),
+        e.type,
+      ]
+        .join(" \u0001 ")
+        .toLowerCase();
+      return terms.every((t) => haystack.includes(t));
+    });
+  }, [allEntries, favorites, search]);
 
   // Auto-pick the first non-spoiler entry in a category if none selected
   useEffect(() => {
@@ -245,6 +269,7 @@ export const CharactersPage: React.FC<CharactersPageProps> = ({
               loading={glossaryLoading}
               favorites={favorites}
               onToggleFavorite={toggleFavorite}
+              favoriteEntries={favoriteEntries}
             />
           </aside>
 
@@ -283,6 +308,7 @@ export const CharactersPage: React.FC<CharactersPageProps> = ({
                   loading={glossaryLoading}
                   favorites={favorites}
                   onToggleFavorite={toggleFavorite}
+                  favoriteEntries={favoriteEntries}
                 />
               </div>
             </div>
@@ -358,6 +384,7 @@ interface SidebarProps {
   loading?: boolean;
   favorites: Set<string>;
   onToggleFavorite: (name: string) => void;
+  favoriteEntries: NamedEntry[];
 }
 
 const SidebarContent: React.FC<SidebarProps> = ({
@@ -374,6 +401,7 @@ const SidebarContent: React.FC<SidebarProps> = ({
   loading = false,
   favorites,
   onToggleFavorite,
+  favoriteEntries,
 }) => {
   const PAGE_SIZE = 30;
   const [page, setPage] = useState(1);
@@ -388,6 +416,7 @@ const SidebarContent: React.FC<SidebarProps> = ({
   const pageStart = (safePage - 1) * PAGE_SIZE;
   const pageEntries = entries.slice(pageStart, pageStart + PAGE_SIZE);
   const query = search.trim();
+  const queryTerms = query.split(/\s+/).filter(Boolean);
 
   return (
   <div className="space-y-5">
@@ -397,10 +426,64 @@ const SidebarContent: React.FC<SidebarProps> = ({
       <input
         value={search}
         onChange={(e) => setSearch(e.target.value)}
-        placeholder="Search by name, alias, or keyword…"
+        placeholder="Search by name, alias, keyword… (multi-word)"
         className="w-full pl-9 pr-3 py-2 bg-stone-900 border border-stone-800 rounded-lg text-stone-200 text-sm placeholder:text-stone-600 focus:outline-none focus:border-amber-500/50"
       />
+      {queryTerms.length > 1 && (
+        <p className="mt-1.5 px-1 text-[10px] text-stone-500">
+          Matching all {queryTerms.length} terms: {queryTerms.map((t) => `"${t}"`).join(" + ")}
+        </p>
+      )}
     </div>
+
+    {/* Favorites — pinned section across categories */}
+    {favoriteEntries.length > 0 && (
+      <div className="rounded-lg border border-rose-500/20 bg-rose-500/[0.04] p-2">
+        <div className="flex items-center justify-between px-2 pb-1.5">
+          <span className="inline-flex items-center gap-1.5 text-[10px] uppercase tracking-wider text-rose-200/80">
+            <Heart className="w-3 h-3 fill-rose-400 text-rose-300" />
+            Favorites
+          </span>
+          <span className="text-[10px] text-stone-500">{favoriteEntries.length}</span>
+        </div>
+        <ul className="space-y-0.5 max-h-48 overflow-y-auto overscroll-contain pr-1">
+          {favoriteEntries.map((e) => {
+            const unlocked = isUnlocked(e, maxRead, revealedSpoilers);
+            const active = selectedName === e.name;
+            return (
+              <li key={`fav-${e.name}`}>
+                <div
+                  className={`group w-full px-2 py-1 rounded-md text-sm transition-colors flex items-center gap-1 ${
+                    active ? "bg-stone-800 text-amber-100" : "text-stone-300 hover:bg-stone-900/60"
+                  }`}
+                >
+                  <button
+                    onClick={(ev) => {
+                      ev.stopPropagation();
+                      onToggleFavorite(e.name);
+                    }}
+                    className="shrink-0 p-1 rounded text-rose-400 hover:text-rose-300"
+                    aria-label={`Remove ${e.name} from favorites`}
+                    aria-pressed
+                  >
+                    <Heart className="w-3.5 h-3.5 fill-rose-400" />
+                  </button>
+                  <button
+                    onClick={() => onPick(e.name)}
+                    className="flex-1 text-left flex items-center justify-between gap-2 hover:text-stone-100 min-w-0"
+                  >
+                    <span className={unlocked ? "truncate" : "blur-[3px] select-none truncate"}>
+                      {unlocked ? <Highlight text={e.name} terms={queryTerms} /> : "███████"}
+                    </span>
+                    <span className="text-[10px] text-stone-500 shrink-0 capitalize">{e.type}</span>
+                  </button>
+                </div>
+              </li>
+            );
+          })}
+        </ul>
+      </div>
+    )}
 
     {/* Category tabs */}
     <nav className="space-y-1">
@@ -483,7 +566,7 @@ const SidebarContent: React.FC<SidebarProps> = ({
                   className="flex-1 text-left flex items-center justify-between gap-2 hover:text-stone-100"
                 >
                   <span className={unlocked ? "truncate" : "blur-[3px] select-none truncate"}>
-                    {unlocked ? <Highlight text={e.name} query={query} /> : "███████"}
+                    {unlocked ? <Highlight text={e.name} terms={queryTerms} /> : "███████"}
                   </span>
                   {!unlocked && <EyeOff className="w-3 h-3 text-stone-600 shrink-0" />}
                 </button>
@@ -525,16 +608,20 @@ const SidebarContent: React.FC<SidebarProps> = ({
   );
 };
 
-// Renders text with the matching query substring highlighted. Case-insensitive.
-const Highlight: React.FC<{ text: string; query: string }> = ({ text, query }) => {
-  if (!query) return <>{text}</>;
-  const escaped = query.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
-  const parts = text.split(new RegExp(`(${escaped})`, "ig"));
-  const lower = query.toLowerCase();
+// Renders text with all matching query terms highlighted. Case-insensitive.
+const Highlight: React.FC<{ text: string; terms: string[] }> = ({ text, terms }) => {
+  const cleaned = terms.filter(Boolean);
+  if (cleaned.length === 0) return <>{text}</>;
+  const escaped = cleaned
+    .map((t) => t.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"))
+    .join("|");
+  const re = new RegExp(`(${escaped})`, "ig");
+  const parts = text.split(re);
+  const lowers = new Set(cleaned.map((t) => t.toLowerCase()));
   return (
     <>
       {parts.map((part, i) =>
-        part.toLowerCase() === lower ? (
+        lowers.has(part.toLowerCase()) ? (
           <mark key={i} className="bg-amber-500/30 text-amber-100 rounded px-0.5">
             {part}
           </mark>
