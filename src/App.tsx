@@ -24,13 +24,36 @@ const App = () => {
       smoothWheel: true,
     });
 
+    let rafId = 0;
     function raf(time: number) {
-      lenis.raf(time);
-      requestAnimationFrame(raf);
+      // When the tab is hidden, skip stepping Lenis. Otherwise the first
+      // frame after returning gets a huge time delta which makes Lenis
+      // "snap" the page and temporarily hijack wheel events on nested
+      // scroll containers (e.g. the Codex sidebar can scroll down but
+      // not up until the snap settles).
+      if (!document.hidden) {
+        lenis.raf(time);
+      }
+      rafId = requestAnimationFrame(raf);
     }
-    requestAnimationFrame(raf);
+    rafId = requestAnimationFrame(raf);
 
-    return () => lenis.destroy();
+    // Stop any in-flight smooth scroll when leaving the tab so we don't
+    // resume mid-animation with stale momentum on return.
+    const handleVisibility = () => {
+      if (document.hidden) {
+        lenis.stop();
+      } else {
+        lenis.start();
+      }
+    };
+    document.addEventListener("visibilitychange", handleVisibility);
+
+    return () => {
+      document.removeEventListener("visibilitychange", handleVisibility);
+      cancelAnimationFrame(rafId);
+      lenis.destroy();
+    };
   }, []);
 
   return (
