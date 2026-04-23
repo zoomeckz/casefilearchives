@@ -4,6 +4,7 @@ import MiraImage from "@/assets/Mira_Sedorium.png";
 import SamImage from "@/assets/Sam_Sedorium.png";
 import RathelImage from "@/assets/Rathel_Sedorium.png";
 import FelmImage from "@/assets/Felm.png";
+import AgathaImage from "@/assets/Agatha_Sedorium.png";
 
 export interface Chapter {
   id: string;
@@ -244,6 +245,7 @@ export const defaultGlossary: Record<string, GlossaryEntry> = {
   },
   'Agatha': {
     type: 'character',
+    image: AgathaImage,
     description: 'A blind master tailor formerly employed by King Rashad. Has pale, clouded grey eyes and an arresting face. Her hands can read a body like a cartographer reads a landscape — cataloguing every contour through touch with precision sighted tailors cannot replicate. Known for her sharp tongue, biting wit, and Irish-inflected speech. Mother of Daria. Suffered a crippling injury on the Sedi thoroughfare.'
   },
   'Daria': {
