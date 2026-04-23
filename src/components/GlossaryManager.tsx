@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { Icons } from '@/lib/icons';
 import { dbFetch } from '@/lib/dbFetch';
 import { toast } from 'sonner';
+import { supabase } from '@/integrations/supabase/client';
 
 interface GlossaryItem {
   id: string;
@@ -25,6 +26,14 @@ export const GlossaryManager: React.FC<GlossaryManagerProps> = ({ authToken, ent
   const [showForm, setShowForm] = useState(false);
   const [form, setForm] = useState({ term: '', description: '', type: 'character', image_url: '', aliases: '' });
   const [saving, setSaving] = useState(false);
+  const [syncing, setSyncing] = useState(false);
+  const [syncReport, setSyncReport] = useState<null | {
+    matched: number;
+    updated: number;
+    cleared: number;
+    unmatchedFiles: string[];
+    changes: Array<{ term: string; from: string | null; to: string | null; reason: string }>;
+  }>(null);
 
   const resetForm = () => {
     setForm({ term: '', description: '', type: 'character', image_url: '', aliases: '' });
@@ -106,18 +115,116 @@ export const GlossaryManager: React.FC<GlossaryManagerProps> = ({ authToken, ent
     }
   };
 
+  const runSync = async (dryRun: boolean) => {
+    setSyncing(true);
+    setSyncReport(null);
+    try {
+      const { data, error } = await supabase.functions.invoke(
+        `sync-glossary-images${dryRun ? '?dryRun=1' : ''}`,
+        { method: 'POST' },
+      );
+      if (error) throw error;
+      const payload = data as any;
+      setSyncReport({
+        matched: payload.matched ?? 0,
+        updated: payload.updated ?? 0,
+        cleared: payload.cleared ?? 0,
+        unmatchedFiles: payload.unmatchedFiles ?? [],
+        changes: payload.changes ?? [],
+      });
+      const verb = dryRun ? 'Preview' : 'Sync complete';
+      toast.success(
+        `${verb}: ${payload.updated ?? 0} linked, ${payload.cleared ?? 0} cleared`,
+      );
+      if (!dryRun) onRefresh();
+    } catch (err: any) {
+      toast.error(err?.message || 'Sync failed');
+    } finally {
+      setSyncing(false);
+    }
+  };
+
   return (
     <div>
       <div className="flex items-center justify-between mb-8">
         <h1 className="font-display text-3xl text-accent">Glossary</h1>
-        <button
-          onClick={() => { resetForm(); setShowForm(true); }}
-          className="flex items-center gap-2 px-5 py-2.5 bg-primary hover:bg-primary/90 text-primary-foreground rounded-lg font-medium transition-colors"
-        >
-          <Icons.Plus className="w-4 h-4" />
-          New Entry
-        </button>
+        <div className="flex items-center gap-2">
+          <button
+            onClick={() => runSync(true)}
+            disabled={syncing}
+            title="Preview which entries would be updated, without writing changes"
+            className="px-4 py-2.5 bg-secondary hover:bg-secondary/80 text-foreground rounded-lg text-sm font-medium transition-colors disabled:opacity-50"
+          >
+            {syncing ? 'Scanning…' : 'Preview Sync'}
+          </button>
+          <button
+            onClick={() => runSync(false)}
+            disabled={syncing}
+            title="Scan storage and link missing/mismatched glossary images"
+            className="px-4 py-2.5 bg-accent/20 hover:bg-accent/30 text-accent rounded-lg text-sm font-medium transition-colors disabled:opacity-50"
+          >
+            {syncing ? 'Syncing…' : 'Sync Images'}
+          </button>
+          <button
+            onClick={() => { resetForm(); setShowForm(true); }}
+            className="flex items-center gap-2 px-5 py-2.5 bg-primary hover:bg-primary/90 text-primary-foreground rounded-lg font-medium transition-colors"
+          >
+            <Icons.Plus className="w-4 h-4" />
+            New Entry
+          </button>
+        </div>
       </div>
+
+      {syncReport && (
+        <div className="mb-6 p-4 bg-card/50 rounded-xl border border-border text-sm">
+          <div className="flex items-center justify-between mb-3">
+            <h3 className="font-display text-base text-foreground">Sync Report</h3>
+            <button
+              onClick={() => setSyncReport(null)}
+              className="text-xs text-muted-foreground hover:text-foreground"
+            >
+              Dismiss
+            </button>
+          </div>
+          <p className="text-muted-foreground mb-3">
+            <span className="text-foreground font-medium">{syncReport.matched}</span> matched ·{' '}
+            <span className="text-foreground font-medium">{syncReport.updated}</span> linked ·{' '}
+            <span className="text-foreground font-medium">{syncReport.cleared}</span> cleared
+          </p>
+          {syncReport.changes.length > 0 && (
+            <details className="mb-2" open>
+              <summary className="cursor-pointer text-foreground mb-2">
+                Changes ({syncReport.changes.length})
+              </summary>
+              <ul className="space-y-1 ml-4 text-xs text-muted-foreground">
+                {syncReport.changes.map((c, i) => (
+                  <li key={i}>
+                    <span className="text-foreground">{c.term}</span> — {c.reason}
+                    {c.to && (
+                      <span className="text-accent"> → {c.to.split('/').pop()}</span>
+                    )}
+                  </li>
+                ))}
+              </ul>
+            </details>
+          )}
+          {syncReport.unmatchedFiles.length > 0 && (
+            <details>
+              <summary className="cursor-pointer text-foreground mb-2">
+                Unmatched files in storage ({syncReport.unmatchedFiles.length})
+              </summary>
+              <ul className="space-y-1 ml-4 text-xs text-muted-foreground">
+                {syncReport.unmatchedFiles.map((f) => (
+                  <li key={f}>{f}</li>
+                ))}
+              </ul>
+              <p className="text-xs text-muted-foreground mt-2 ml-4">
+                Tip: name files like <code className="text-accent">TermName_Sedorium.png</code> for auto-matching.
+              </p>
+            </details>
+          )}
+        </div>
+      )}
 
       {/* Add/Edit Form */}
       {showForm && (
