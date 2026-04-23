@@ -426,10 +426,64 @@ const SidebarContent: React.FC<SidebarProps> = ({
       <input
         value={search}
         onChange={(e) => setSearch(e.target.value)}
-        placeholder="Search by name, alias, or keyword…"
+        placeholder="Search by name, alias, keyword… (multi-word)"
         className="w-full pl-9 pr-3 py-2 bg-stone-900 border border-stone-800 rounded-lg text-stone-200 text-sm placeholder:text-stone-600 focus:outline-none focus:border-amber-500/50"
       />
+      {queryTerms.length > 1 && (
+        <p className="mt-1.5 px-1 text-[10px] text-stone-500">
+          Matching all {queryTerms.length} terms: {queryTerms.map((t) => `"${t}"`).join(" + ")}
+        </p>
+      )}
     </div>
+
+    {/* Favorites — pinned section across categories */}
+    {favoriteEntries.length > 0 && (
+      <div className="rounded-lg border border-rose-500/20 bg-rose-500/[0.04] p-2">
+        <div className="flex items-center justify-between px-2 pb-1.5">
+          <span className="inline-flex items-center gap-1.5 text-[10px] uppercase tracking-wider text-rose-200/80">
+            <Heart className="w-3 h-3 fill-rose-400 text-rose-300" />
+            Favorites
+          </span>
+          <span className="text-[10px] text-stone-500">{favoriteEntries.length}</span>
+        </div>
+        <ul className="space-y-0.5 max-h-48 overflow-y-auto overscroll-contain pr-1">
+          {favoriteEntries.map((e) => {
+            const unlocked = isUnlocked(e, maxRead, revealedSpoilers);
+            const active = selectedName === e.name;
+            return (
+              <li key={`fav-${e.name}`}>
+                <div
+                  className={`group w-full px-2 py-1 rounded-md text-sm transition-colors flex items-center gap-1 ${
+                    active ? "bg-stone-800 text-amber-100" : "text-stone-300 hover:bg-stone-900/60"
+                  }`}
+                >
+                  <button
+                    onClick={(ev) => {
+                      ev.stopPropagation();
+                      onToggleFavorite(e.name);
+                    }}
+                    className="shrink-0 p-1 rounded text-rose-400 hover:text-rose-300"
+                    aria-label={`Remove ${e.name} from favorites`}
+                    aria-pressed
+                  >
+                    <Heart className="w-3.5 h-3.5 fill-rose-400" />
+                  </button>
+                  <button
+                    onClick={() => onPick(e.name)}
+                    className="flex-1 text-left flex items-center justify-between gap-2 hover:text-stone-100 min-w-0"
+                  >
+                    <span className={unlocked ? "truncate" : "blur-[3px] select-none truncate"}>
+                      {unlocked ? <Highlight text={e.name} terms={queryTerms} /> : "███████"}
+                    </span>
+                    <span className="text-[10px] text-stone-500 shrink-0 capitalize">{e.type}</span>
+                  </button>
+                </div>
+              </li>
+            );
+          })}
+        </ul>
+      </div>
+    )}
 
     {/* Category tabs */}
     <nav className="space-y-1">
