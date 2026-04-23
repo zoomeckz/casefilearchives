@@ -3,6 +3,13 @@ import { GlossaryEntry } from "@/lib/data";
 import { CharacterRelationshipMap } from "@/components/CharacterRelationshipMap";
 import { Search, Menu, X, EyeOff, Eye, ChevronRight, ChevronLeft, Users, MapPin, Sparkles, BookOpen, Skull, Loader2, Heart, Link2, Download, Maximize2 } from "lucide-react";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
+import {
+  ContextMenu,
+  ContextMenuContent,
+  ContextMenuItem,
+  ContextMenuSeparator,
+  ContextMenuTrigger,
+} from "@/components/ui/context-menu";
 
 type EntryType = GlossaryEntry["type"];
 
@@ -1052,20 +1059,57 @@ const ImageInspectModal: React.FC<{
     }
   };
 
+  const handleOpenInNewTab = () => {
+    if (image) window.open(image.src, "_blank", "noopener,noreferrer");
+  };
+
+  const handleCopyUrl = async () => {
+    if (!image) return;
+    try {
+      await navigator.clipboard.writeText(image.src);
+    } catch {
+      // ignore — clipboard might be blocked
+    }
+  };
+
   return (
     <Dialog open={!!image} onOpenChange={(open) => { if (!open) onClose(); }}>
       <DialogContent className="max-w-5xl bg-stone-950/95 border-stone-800 p-0 overflow-hidden">
         {image && (
           <div className="relative">
-            <div data-lenis-prevent className="max-h-[85vh] overflow-auto overscroll-contain bg-stone-950 flex items-center justify-center">
-              <img
-                src={image.src}
-                alt={image.name}
-                className="max-w-full max-h-[85vh] object-contain"
-              />
-            </div>
+            <ContextMenu>
+              <ContextMenuTrigger asChild>
+                <div data-lenis-prevent className="max-h-[85vh] overflow-auto overscroll-contain bg-stone-950 flex items-center justify-center">
+                  {/* Native browser context menu (Save Image As…) is preserved by stopping
+                      propagation so Radix Dialog overlays don't swallow it. */}
+                  <img
+                    src={image.src}
+                    alt={image.name}
+                    crossOrigin="anonymous"
+                    draggable
+                    onContextMenu={(e) => e.stopPropagation()}
+                    className="max-w-full max-h-[85vh] object-contain select-auto"
+                  />
+                </div>
+              </ContextMenuTrigger>
+              <ContextMenuContent className="bg-stone-950 border-stone-800 text-stone-200">
+                <ContextMenuItem onSelect={handleDownload} className="gap-2 focus:bg-stone-900 focus:text-amber-100">
+                  <Download className="w-3.5 h-3.5" /> Download image
+                </ContextMenuItem>
+                <ContextMenuItem onSelect={handleOpenInNewTab} className="gap-2 focus:bg-stone-900 focus:text-amber-100">
+                  <Maximize2 className="w-3.5 h-3.5" /> Open in new tab
+                </ContextMenuItem>
+                <ContextMenuSeparator className="bg-stone-800" />
+                <ContextMenuItem onSelect={handleCopyUrl} className="gap-2 focus:bg-stone-900 focus:text-amber-100">
+                  <Link2 className="w-3.5 h-3.5" /> Copy image URL
+                </ContextMenuItem>
+              </ContextMenuContent>
+            </ContextMenu>
             <div className="flex items-center justify-between gap-3 px-4 py-3 border-t border-stone-800 bg-stone-950">
-              <div className="text-sm text-stone-300 truncate">{image.name}</div>
+              <div className="text-sm text-stone-300 truncate">
+                {image.name}
+                <span className="ml-2 text-[11px] text-stone-500 hidden sm:inline">· right-click for more</span>
+              </div>
               <button
                 type="button"
                 onClick={handleDownload}
