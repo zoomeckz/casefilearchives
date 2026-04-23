@@ -1010,4 +1010,81 @@ const RelChip: React.FC<{
   );
 };
 
+// ---------- Image inspect / lightbox modal ----------
+
+const ImageInspectModal: React.FC<{
+  image: { src: string; name: string } | null;
+  onClose: () => void;
+}> = ({ image, onClose }) => {
+  const [downloading, setDownloading] = useState(false);
+
+  // Close on Escape
+  useEffect(() => {
+    if (!image) return;
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape") onClose();
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [image, onClose]);
+
+  const handleDownload = async () => {
+    if (!image) return;
+    setDownloading(true);
+    try {
+      const res = await fetch(image.src, { mode: "cors" });
+      const blob = await res.blob();
+      const ext = (blob.type.split("/")[1] || "png").split("+")[0];
+      const safeName = image.name.replace(/[^a-z0-9_-]+/gi, "_");
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `${safeName}.${ext}`;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      URL.revokeObjectURL(url);
+    } catch {
+      // Fallback: open in new tab if cross-origin blocks the fetch
+      window.open(image.src, "_blank", "noopener,noreferrer");
+    } finally {
+      setDownloading(false);
+    }
+  };
+
+  return (
+    <Dialog open={!!image} onOpenChange={(open) => { if (!open) onClose(); }}>
+      <DialogContent className="max-w-5xl bg-stone-950/95 border-stone-800 p-0 overflow-hidden">
+        {image && (
+          <div className="relative">
+            <div data-lenis-prevent className="max-h-[85vh] overflow-auto overscroll-contain bg-stone-950 flex items-center justify-center">
+              <img
+                src={image.src}
+                alt={image.name}
+                className="max-w-full max-h-[85vh] object-contain"
+              />
+            </div>
+            <div className="flex items-center justify-between gap-3 px-4 py-3 border-t border-stone-800 bg-stone-950">
+              <div className="text-sm text-stone-300 truncate">{image.name}</div>
+              <button
+                type="button"
+                onClick={handleDownload}
+                disabled={downloading}
+                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-md bg-amber-500/15 hover:bg-amber-500/25 border border-amber-500/40 text-amber-100 text-xs disabled:opacity-60"
+              >
+                {downloading ? (
+                  <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                ) : (
+                  <Download className="w-3.5 h-3.5" />
+                )}
+                {downloading ? "Preparing…" : "Download"}
+              </button>
+            </div>
+          </div>
+        )}
+      </DialogContent>
+    </Dialog>
+  );
+};
+
 export default CharactersPage;
