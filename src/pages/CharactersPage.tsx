@@ -269,6 +269,7 @@ export const CharactersPage: React.FC<CharactersPageProps> = ({
               loading={glossaryLoading}
               favorites={favorites}
               onToggleFavorite={toggleFavorite}
+              favoriteEntries={favoriteEntries}
             />
           </aside>
 
@@ -307,6 +308,7 @@ export const CharactersPage: React.FC<CharactersPageProps> = ({
                   loading={glossaryLoading}
                   favorites={favorites}
                   onToggleFavorite={toggleFavorite}
+                  favoriteEntries={favoriteEntries}
                 />
               </div>
             </div>
