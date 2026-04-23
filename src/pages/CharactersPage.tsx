@@ -637,6 +637,7 @@ interface ReadingPaneProps {
   allEntries: NamedEntry[];
   maxRead: number;
   revealedSpoilers: Set<string>;
+  onInspectImage: (src: string, name: string) => void;
 }
 
 const ReadingPane: React.FC<ReadingPaneProps> = ({
@@ -649,6 +650,7 @@ const ReadingPane: React.FC<ReadingPaneProps> = ({
   allEntries,
   maxRead,
   revealedSpoilers,
+  onInspectImage,
 }) => {
   const accent = categoryAccent(entry.type);
   const parent = entry.parentTerm && glossary[entry.parentTerm]
