@@ -676,4 +676,249 @@ const EmptyState: React.FC = () => (
   </div>
 );
 
+// ---------- detail modal ----------
+
+interface EntryDetailModalProps {
+  name: string | null;
+  glossary: Record<string, GlossaryEntry>;
+  allEntries: NamedEntry[];
+  maxRead: number;
+  revealedSpoilers: Set<string>;
+  favorites: Set<string>;
+  onToggleFavorite: (name: string) => void;
+  onReveal: (name: string) => void;
+  onClose: () => void;
+  onPickRelated: (name: string) => void;
+}
+
+const EntryDetailModal: React.FC<EntryDetailModalProps> = ({
+  name,
+  glossary,
+  allEntries,
+  maxRead,
+  revealedSpoilers,
+  favorites,
+  onToggleFavorite,
+  onReveal,
+  onClose,
+  onPickRelated,
+}) => {
+  const entry: NamedEntry | null =
+    name && glossary[name] ? { name, ...glossary[name] } : null;
+
+  const accent = entry ? categoryAccent(entry.type) : "text-stone-200";
+  const unlocked = entry ? isUnlocked(entry, maxRead, revealedSpoilers) : false;
+  const fav = entry ? favorites.has(entry.name) : false;
+
+  const parent =
+    entry?.parentTerm && glossary[entry.parentTerm]
+      ? { name: entry.parentTerm, ...glossary[entry.parentTerm] }
+      : null;
+
+  // Sub-locations
+  const children = useMemo(() => {
+    if (!entry || entry.type !== "location") return [];
+    return allEntries.filter(
+      (e) => e.type === "location" && e.parentTerm === entry.name,
+    );
+  }, [entry, allEntries]);
+
+  // Cross-references: other entries whose description mentions this entry's name
+  // or any of its aliases (whole-word, case-insensitive).
+  const mentions = useMemo(() => {
+    if (!entry) return [] as NamedEntry[];
+    const needles = [entry.name, ...(entry.aliases ?? [])]
+      .map((s) => s.trim())
+      .filter(Boolean);
+    if (needles.length === 0) return [];
+    const escaped = needles.map((n) => n.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"));
+    const re = new RegExp(`\\b(${escaped.join("|")})\\b`, "i");
+    return allEntries.filter(
+      (e) => e.name !== entry.name && re.test(e.description),
+    );
+  }, [entry, allEntries]);
+
+  return (
+    <Dialog open={!!entry} onOpenChange={(o) => !o && onClose()}>
+      <DialogContent className="max-w-3xl bg-stone-950 border-stone-800 text-stone-200 p-0 overflow-hidden">
+        {entry && (
+          <div data-lenis-prevent className="max-h-[85vh] overflow-y-auto overscroll-contain">
+            {/* Hero image */}
+            {entry.image && unlocked && (
+              <div className="aspect-[16/7] w-full overflow-hidden bg-stone-900 border-b border-stone-800">
+                <img
+                  src={entry.image}
+                  alt={entry.name}
+                  className="w-full h-full object-cover object-top"
+                />
+              </div>
+            )}
+
+            <div className="p-6 sm:p-8">
+              <div className="flex flex-wrap items-center gap-2 mb-4">
+                <h2 className="font-display text-2xl sm:text-3xl text-amber-100">
+                  {entry.name}
+                </h2>
+                <span
+                  className={`text-xs px-2.5 py-1 rounded-full bg-stone-900 border border-stone-800 ${accent}`}
+                >
+                  {entry.type}
+                </span>
+                {typeof entry.firstChapter === "number" && (
+                  <span className="text-xs px-2.5 py-1 rounded-full bg-stone-900 border border-stone-800 text-stone-400 inline-flex items-center gap-1">
+                    <BookOpen className="w-3 h-3" /> Ch {entry.firstChapter}
+                  </span>
+                )}
+                <button
+                  onClick={() => onToggleFavorite(entry.name)}
+                  className={`ml-auto inline-flex items-center gap-1.5 text-xs px-2.5 py-1 rounded-full border transition-colors ${
+                    fav
+                      ? "bg-rose-500/15 border-rose-400/50 text-rose-200"
+                      : "bg-stone-900 border-stone-800 text-stone-400 hover:text-rose-200 hover:border-rose-400/40"
+                  }`}
+                  aria-pressed={fav}
+                >
+                  <Heart className={`w-3 h-3 ${fav ? "fill-rose-400" : ""}`} />
+                  {fav ? "Favorited" : "Favorite"}
+                </button>
+              </div>
+
+              {parent && (
+                <p className="text-xs text-stone-500 mb-4">
+                  Within{" "}
+                  <button
+                    onClick={() => onPickRelated(parent.name)}
+                    className="text-amber-400/80 hover:text-amber-300 underline decoration-dotted"
+                  >
+                    {parent.name}
+                  </button>
+                </p>
+              )}
+
+              {entry.aliases && entry.aliases.length > 0 && unlocked && (
+                <p className="text-[11px] uppercase tracking-wider text-stone-600 mb-4">
+                  Also known as:{" "}
+                  <span className="text-stone-400 normal-case tracking-normal">
+                    {entry.aliases.join(", ")}
+                  </span>
+                </p>
+              )}
+
+              {/* Body */}
+              {unlocked ? (
+                <div className="prose prose-invert max-w-none">
+                  <p className="text-stone-300 leading-relaxed whitespace-pre-line">
+                    {entry.description}
+                  </p>
+                </div>
+              ) : (
+                <div className="rounded-xl border border-amber-500/30 bg-amber-500/5 p-5">
+                  <div className="flex items-start gap-3">
+                    <EyeOff className="w-5 h-5 text-amber-300 mt-0.5 shrink-0" />
+                    <div className="flex-1">
+                      <p className="text-amber-200 text-sm font-medium">
+                        This entry first appears in chapter {entry.firstChapter}.
+                      </p>
+                      <p className="text-stone-400 text-xs mt-1">
+                        You haven't reached it yet — revealing may spoil what's ahead.
+                      </p>
+                      <button
+                        onClick={() => onReveal(entry.name)}
+                        className="mt-3 inline-flex items-center gap-2 px-3 py-1.5 rounded-md bg-amber-500/20 hover:bg-amber-500/30 text-amber-100 text-xs border border-amber-500/40"
+                      >
+                        <Eye className="w-3 h-3" /> Reveal anyway
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* Relationships */}
+              {unlocked && (parent || children.length > 0 || mentions.length > 0) && (
+                <section className="mt-8 pt-6 border-t border-stone-800/60">
+                  <h3 className="font-display text-base text-amber-100/90 mb-3 inline-flex items-center gap-2">
+                    <Link2 className="w-4 h-4 text-amber-400/80" /> Relationships
+                  </h3>
+
+                  {parent && (
+                    <RelGroup label="Parent">
+                      <RelChip
+                        entry={parent}
+                        unlocked={isUnlocked(parent, maxRead, revealedSpoilers)}
+                        onClick={() => onPickRelated(parent.name)}
+                      />
+                    </RelGroup>
+                  )}
+
+                  {children.length > 0 && (
+                    <RelGroup label={`Within ${entry.name}`}>
+                      {children.map((c) => (
+                        <RelChip
+                          key={c.name}
+                          entry={c}
+                          unlocked={isUnlocked(c, maxRead, revealedSpoilers)}
+                          onClick={() => onPickRelated(c.name)}
+                        />
+                      ))}
+                    </RelGroup>
+                  )}
+
+                  {mentions.length > 0 && (
+                    <RelGroup label="Mentioned in">
+                      {mentions.slice(0, 24).map((m) => (
+                        <RelChip
+                          key={m.name}
+                          entry={m}
+                          unlocked={isUnlocked(m, maxRead, revealedSpoilers)}
+                          onClick={() => onPickRelated(m.name)}
+                        />
+                      ))}
+                      {mentions.length > 24 && (
+                        <span className="text-[11px] text-stone-600 self-center">
+                          +{mentions.length - 24} more
+                        </span>
+                      )}
+                    </RelGroup>
+                  )}
+                </section>
+              )}
+            </div>
+          </div>
+        )}
+      </DialogContent>
+    </Dialog>
+  );
+};
+
+const RelGroup: React.FC<{ label: string; children: React.ReactNode }> = ({
+  label,
+  children,
+}) => (
+  <div className="mb-3">
+    <p className="text-[10px] uppercase tracking-wider text-stone-600 mb-1.5">
+      {label}
+    </p>
+    <div className="flex flex-wrap gap-1.5">{children}</div>
+  </div>
+);
+
+const RelChip: React.FC<{
+  entry: NamedEntry;
+  unlocked: boolean;
+  onClick: () => void;
+}> = ({ entry, unlocked, onClick }) => {
+  const accent = categoryAccent(entry.type);
+  return (
+    <button
+      onClick={onClick}
+      className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-stone-900 border border-stone-800 hover:border-amber-500/40 text-xs text-stone-300 hover:text-amber-100 transition-colors"
+    >
+      <span className={`w-1.5 h-1.5 rounded-full bg-current ${accent}`} />
+      <span className={unlocked ? "" : "blur-[3px] select-none"}>
+        {unlocked ? entry.name : "███████"}
+      </span>
+    </button>
+  );
+};
+
 export default CharactersPage;
