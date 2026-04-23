@@ -3,6 +3,13 @@ import { GlossaryEntry } from "@/lib/data";
 import { CharacterRelationshipMap } from "@/components/CharacterRelationshipMap";
 import { Search, Menu, X, EyeOff, Eye, ChevronRight, ChevronLeft, Users, MapPin, Sparkles, BookOpen, Skull, Loader2, Heart, Link2, Download, Maximize2 } from "lucide-react";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
+import {
+  ContextMenu,
+  ContextMenuContent,
+  ContextMenuItem,
+  ContextMenuSeparator,
+  ContextMenuTrigger,
+} from "@/components/ui/context-menu";
 
 type EntryType = GlossaryEntry["type"];
 
