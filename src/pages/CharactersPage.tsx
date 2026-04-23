@@ -1,7 +1,8 @@
 import React, { useState, useMemo, useEffect } from "react";
 import { GlossaryEntry } from "@/lib/data";
 import { CharacterRelationshipMap } from "@/components/CharacterRelationshipMap";
-import { Search, Menu, X, EyeOff, Eye, ChevronRight, ChevronLeft, Users, MapPin, Sparkles, BookOpen, Skull, Loader2 } from "lucide-react";
+import { Search, Menu, X, EyeOff, Eye, ChevronRight, ChevronLeft, Users, MapPin, Sparkles, BookOpen, Skull, Loader2, Heart, Link2 } from "lucide-react";
+import { Dialog, DialogContent } from "@/components/ui/dialog";
 
 type EntryType = GlossaryEntry["type"];
 
