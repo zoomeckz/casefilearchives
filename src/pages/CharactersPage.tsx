@@ -100,19 +100,43 @@ export const CharactersPage: React.FC<CharactersPageProps> = ({
   }, [allEntries]);
 
   const filteredByCategory = useMemo(() => {
-    const q = search.trim().toLowerCase();
+    const terms = search.trim().toLowerCase().split(/\s+/).filter(Boolean);
     return allEntries.filter((e) => {
       if (e.type !== activeCategory) return false;
       if (favoritesOnly && !favorites.has(e.name)) return false;
-      if (!q) return true;
-      return (
-        e.name.toLowerCase().includes(q) ||
-        e.description.toLowerCase().includes(q) ||
-        (e.aliases ?? []).some((a) => a.toLowerCase().includes(q)) ||
-        (e.parentTerm ?? "").toLowerCase().includes(q)
-      );
+      if (terms.length === 0) return true;
+      const haystack = [
+        e.name,
+        e.description,
+        e.parentTerm ?? "",
+        ...(e.aliases ?? []),
+        e.type,
+      ]
+        .join(" \u0001 ")
+        .toLowerCase();
+      return terms.every((t) => haystack.includes(t));
     });
   }, [allEntries, activeCategory, search, favoritesOnly, favorites]);
+
+  // Favorites across ALL categories — shown as a dedicated section in the sidebar.
+  // Also respects the active search query so users can find a favorite quickly.
+  const favoriteEntries = useMemo(() => {
+    const terms = search.trim().toLowerCase().split(/\s+/).filter(Boolean);
+    return allEntries.filter((e) => {
+      if (!favorites.has(e.name)) return false;
+      if (terms.length === 0) return true;
+      const haystack = [
+        e.name,
+        e.description,
+        e.parentTerm ?? "",
+        ...(e.aliases ?? []),
+        e.type,
+      ]
+        .join(" \u0001 ")
+        .toLowerCase();
+      return terms.every((t) => haystack.includes(t));
+    });
+  }, [allEntries, favorites, search]);
 
   // Auto-pick the first non-spoiler entry in a category if none selected
   useEffect(() => {
