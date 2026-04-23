@@ -204,6 +204,19 @@ export const CharactersPage: React.FC<CharactersPageProps> = ({
             >
               <EyeOff className="w-3 h-3" /> Hide all
             </button>
+            <button
+              onClick={() => setFavoritesOnly((v) => !v)}
+              className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-[11px] uppercase tracking-wider border transition-colors ${
+                favoritesOnly
+                  ? "bg-rose-500/15 border-rose-400/50 text-rose-200"
+                  : "bg-stone-900 border-stone-800 text-stone-300 hover:text-rose-200 hover:border-rose-400/40"
+              }`}
+              aria-pressed={favoritesOnly}
+              aria-label="Show only favorites"
+            >
+              <Heart className={`w-3 h-3 ${favoritesOnly ? "fill-rose-400 text-rose-300" : ""}`} />
+              Favorites {favorites.size > 0 && <span className="opacity-70">({favorites.size})</span>}
+            </button>
           </div>
         </div>
       </div>
