@@ -50,7 +50,7 @@ export const CharactersPage: React.FC<CharactersPageProps> = ({
     }
   });
   const [favoritesOnly, setFavoritesOnly] = useState(false);
-  const [modalName, setModalName] = useState<string | null>(null);
+  const [inspectImage, setInspectImage] = useState<{ src: string; name: string } | null>(null);
 
   // Persist favorites
   useEffect(() => {
