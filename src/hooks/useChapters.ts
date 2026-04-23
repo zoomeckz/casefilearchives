@@ -25,6 +25,21 @@ function mapChapter(c: any): Chapter {
 const CHAPTER_REFRESH_INTERVAL_MS = 30_000;
 const PUBLISH_TICK_INTERVAL_MS = 60_000;
 
+// Reads the current admin session token (if any) so RLS lets us fetch
+// scheduled/future chapters in addition to live ones. Falls back to the
+// anon key when no session is present.
+function getAuthToken(): string {
+  const key = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY;
+  try {
+    const raw = localStorage.getItem('app-auth-session');
+    if (!raw) return key;
+    const session = JSON.parse(raw);
+    return session?.access_token || key;
+  } catch {
+    return key;
+  }
+}
+
 function isChapterPublished(chapter: Chapter, nowMs: number): boolean {
   // Defense-in-depth: a chapter is "published" only when BOTH
   //   - it has a valid published_at that has already passed, AND
