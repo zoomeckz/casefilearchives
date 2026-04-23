@@ -153,6 +153,24 @@ export const CharactersPage: React.FC<CharactersPageProps> = ({
               <CharacterRelationshipMap glossary={glossary} />
             </div>
           )}
+
+          {/* Reveal / Hide all spoilers */}
+          <div className="mt-3 flex flex-wrap items-center gap-2">
+            <button
+              onClick={() => setRevealedSpoilers(new Set(allEntries.map((e) => e.name)))}
+              className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-[11px] uppercase tracking-wider bg-stone-900 border border-stone-800 text-stone-300 hover:text-amber-200 hover:border-amber-500/40 transition-colors"
+              aria-label="Reveal all codex entries"
+            >
+              <Eye className="w-3 h-3" /> Reveal all
+            </button>
+            <button
+              onClick={() => setRevealedSpoilers(new Set())}
+              className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-[11px] uppercase tracking-wider bg-stone-900 border border-stone-800 text-stone-300 hover:text-amber-200 hover:border-amber-500/40 transition-colors"
+              aria-label="Hide all codex entries"
+            >
+              <EyeOff className="w-3 h-3" /> Hide all
+            </button>
+          </div>
         </div>
       </div>
 
