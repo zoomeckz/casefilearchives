@@ -439,21 +439,41 @@ const SidebarContent: React.FC<SidebarProps> = ({
         {pageEntries.map((e) => {
           const unlocked = isUnlocked(e, maxRead, revealedSpoilers);
           const active = selectedName === e.name;
+          const fav = favorites.has(e.name);
           return (
             <li key={e.name}>
-              <button
-                onClick={() => onPick(e.name)}
-                className={`w-full text-left px-3 py-1.5 rounded-md text-sm transition-colors flex items-center justify-between gap-2 ${
+              <div
+                className={`group w-full px-2 py-1 rounded-md text-sm transition-colors flex items-center gap-1 ${
                   active
                     ? "bg-stone-800 text-amber-100"
-                    : "text-stone-400 hover:text-stone-100 hover:bg-stone-900/60"
+                    : "text-stone-400 hover:bg-stone-900/60"
                 }`}
               >
-                <span className={unlocked ? "truncate" : "blur-[3px] select-none truncate"}>
-                  {unlocked ? <Highlight text={e.name} query={query} /> : "███████"}
-                </span>
-                {!unlocked && <EyeOff className="w-3 h-3 text-stone-600 shrink-0" />}
-              </button>
+                <button
+                  onClick={(ev) => {
+                    ev.stopPropagation();
+                    onToggleFavorite(e.name);
+                  }}
+                  className={`shrink-0 p-1 rounded transition-colors ${
+                    fav
+                      ? "text-rose-400"
+                      : "text-stone-600 hover:text-rose-300 opacity-60 group-hover:opacity-100"
+                  }`}
+                  aria-label={fav ? `Remove ${e.name} from favorites` : `Add ${e.name} to favorites`}
+                  aria-pressed={fav}
+                >
+                  <Heart className={`w-3.5 h-3.5 ${fav ? "fill-rose-400" : ""}`} />
+                </button>
+                <button
+                  onClick={() => onPick(e.name)}
+                  className="flex-1 text-left flex items-center justify-between gap-2 hover:text-stone-100"
+                >
+                  <span className={unlocked ? "truncate" : "blur-[3px] select-none truncate"}>
+                    {unlocked ? <Highlight text={e.name} query={query} /> : "███████"}
+                  </span>
+                  {!unlocked && <EyeOff className="w-3 h-3 text-stone-600 shrink-0" />}
+                </button>
+              </div>
             </li>
           );
         })}
