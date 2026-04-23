@@ -4,6 +4,7 @@ import MiraImage from "@/assets/Mira_Sedorium.png";
 import SamImage from "@/assets/Sam_Sedorium.png";
 import RathelImage from "@/assets/Rathel_Sedorium.png";
 import FelmImage from "@/assets/Felm.png";
+import AgathaImage from "@/assets/Agatha_Sedorium.png";
 
 export interface Chapter {
   id: string;
