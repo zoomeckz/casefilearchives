@@ -383,7 +383,7 @@ const SidebarContent: React.FC<SidebarProps> = ({
       <input
         value={search}
         onChange={(e) => setSearch(e.target.value)}
-        placeholder="Search the codex…"
+        placeholder="Search by name, alias, or keyword…"
         className="w-full pl-9 pr-3 py-2 bg-stone-900 border border-stone-800 rounded-lg text-stone-200 text-sm placeholder:text-stone-600 focus:outline-none focus:border-amber-500/50"
       />
     </div>
