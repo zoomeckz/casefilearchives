@@ -40,6 +40,38 @@ export const CharactersPage: React.FC<CharactersPageProps> = ({
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [revealedSpoilers, setRevealedSpoilers] = useState<Set<string>>(new Set());
   const [showRelationshipMap, setShowRelationshipMap] = useState(false);
+  const [favorites, setFavorites] = useState<Set<string>>(() => {
+    if (typeof window === "undefined") return new Set();
+    try {
+      const raw = window.localStorage.getItem("codex.favorites");
+      return raw ? new Set(JSON.parse(raw) as string[]) : new Set();
+    } catch {
+      return new Set();
+    }
+  });
+  const [favoritesOnly, setFavoritesOnly] = useState(false);
+  const [modalName, setModalName] = useState<string | null>(null);
+
+  // Persist favorites
+  useEffect(() => {
+    try {
+      window.localStorage.setItem(
+        "codex.favorites",
+        JSON.stringify(Array.from(favorites)),
+      );
+    } catch {
+      // ignore
+    }
+  }, [favorites]);
+
+  const toggleFavorite = (name: string) => {
+    setFavorites((prev) => {
+      const next = new Set(prev);
+      if (next.has(name)) next.delete(name);
+      else next.add(name);
+      return next;
+    });
+  };
 
   // Compute the highest chapter number the reader has finished.
   // Logged-out visitors get a default of VISIBLE_FOR_GUESTS so early entries stay visible.
@@ -71,14 +103,16 @@ export const CharactersPage: React.FC<CharactersPageProps> = ({
     const q = search.trim().toLowerCase();
     return allEntries.filter((e) => {
       if (e.type !== activeCategory) return false;
+      if (favoritesOnly && !favorites.has(e.name)) return false;
       if (!q) return true;
       return (
         e.name.toLowerCase().includes(q) ||
         e.description.toLowerCase().includes(q) ||
-        (e.aliases ?? []).some((a) => a.toLowerCase().includes(q))
+        (e.aliases ?? []).some((a) => a.toLowerCase().includes(q)) ||
+        (e.parentTerm ?? "").toLowerCase().includes(q)
       );
     });
-  }, [allEntries, activeCategory, search]);
+  }, [allEntries, activeCategory, search, favoritesOnly, favorites]);
 
   // Auto-pick the first non-spoiler entry in a category if none selected
   useEffect(() => {
@@ -92,8 +126,7 @@ export const CharactersPage: React.FC<CharactersPageProps> = ({
   const handlePick = (name: string) => {
     setSelectedName(name);
     setDrawerOpen(false);
-    // Scroll reading pane to top on mobile
-    if (typeof window !== "undefined") window.scrollTo({ top: 0, behavior: "smooth" });
+    setModalName(name);
   };
 
   const revealEntry = (name: string) =>
