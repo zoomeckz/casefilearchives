@@ -85,11 +85,12 @@ export function useChapters(isAdmin = false) {
 
   const fetchChapters = useCallback(async (): Promise<Chapter[]> => {
     const key = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY;
+    const token = getAuthToken();
 
     const response = await fetch(buildChaptersUrl(isAdmin), {
       headers: {
         'apikey': key,
-        'Authorization': `Bearer ${key}`,
+        'Authorization': `Bearer ${token}`,
       },
     });
 
