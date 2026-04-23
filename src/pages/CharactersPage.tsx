@@ -243,6 +243,8 @@ export const CharactersPage: React.FC<CharactersPageProps> = ({
               maxRead={maxRead}
               revealedSpoilers={revealedSpoilers}
               loading={glossaryLoading}
+              favorites={favorites}
+              onToggleFavorite={toggleFavorite}
             />
           </aside>
 
@@ -279,6 +281,8 @@ export const CharactersPage: React.FC<CharactersPageProps> = ({
                   maxRead={maxRead}
                   revealedSpoilers={revealedSpoilers}
                   loading={glossaryLoading}
+                  favorites={favorites}
+                  onToggleFavorite={toggleFavorite}
                 />
               </div>
             </div>
