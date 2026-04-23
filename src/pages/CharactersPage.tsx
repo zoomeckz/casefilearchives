@@ -608,16 +608,20 @@ const SidebarContent: React.FC<SidebarProps> = ({
   );
 };
 
-// Renders text with the matching query substring highlighted. Case-insensitive.
-const Highlight: React.FC<{ text: string; query: string }> = ({ text, query }) => {
-  if (!query) return <>{text}</>;
-  const escaped = query.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
-  const parts = text.split(new RegExp(`(${escaped})`, "ig"));
-  const lower = query.toLowerCase();
+// Renders text with all matching query terms highlighted. Case-insensitive.
+const Highlight: React.FC<{ text: string; terms: string[] }> = ({ text, terms }) => {
+  const cleaned = terms.filter(Boolean);
+  if (cleaned.length === 0) return <>{text}</>;
+  const escaped = cleaned
+    .map((t) => t.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"))
+    .join("|");
+  const re = new RegExp(`(${escaped})`, "ig");
+  const parts = text.split(re);
+  const lowers = new Set(cleaned.map((t) => t.toLowerCase()));
   return (
     <>
       {parts.map((part, i) =>
-        part.toLowerCase() === lower ? (
+        lowers.has(part.toLowerCase()) ? (
           <mark key={i} className="bg-amber-500/30 text-amber-100 rounded px-0.5">
             {part}
           </mark>
