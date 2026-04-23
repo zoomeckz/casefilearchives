@@ -308,6 +308,20 @@ export const CharactersPage: React.FC<CharactersPageProps> = ({
           </main>
         </div>
       </div>
+
+      {/* Detail modal */}
+      <EntryDetailModal
+        name={modalName}
+        glossary={glossary}
+        allEntries={allEntries}
+        maxRead={maxRead}
+        revealedSpoilers={revealedSpoilers}
+        favorites={favorites}
+        onToggleFavorite={toggleFavorite}
+        onReveal={revealEntry}
+        onClose={() => setModalName(null)}
+        onPickRelated={(n) => setModalName(n)}
+      />
     </div>
   );
 };
