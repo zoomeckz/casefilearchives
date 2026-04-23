@@ -342,6 +342,8 @@ interface SidebarProps {
   maxRead: number;
   revealedSpoilers: Set<string>;
   loading?: boolean;
+  favorites: Set<string>;
+  onToggleFavorite: (name: string) => void;
 }
 
 const SidebarContent: React.FC<SidebarProps> = ({
@@ -356,6 +358,8 @@ const SidebarContent: React.FC<SidebarProps> = ({
   maxRead,
   revealedSpoilers,
   loading = false,
+  favorites,
+  onToggleFavorite,
 }) => {
   const PAGE_SIZE = 30;
   const [page, setPage] = useState(1);
