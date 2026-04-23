@@ -384,6 +384,7 @@ interface SidebarProps {
   loading?: boolean;
   favorites: Set<string>;
   onToggleFavorite: (name: string) => void;
+  favoriteEntries: NamedEntry[];
 }
 
 const SidebarContent: React.FC<SidebarProps> = ({
@@ -400,6 +401,7 @@ const SidebarContent: React.FC<SidebarProps> = ({
   loading = false,
   favorites,
   onToggleFavorite,
+  favoriteEntries,
 }) => {
   const PAGE_SIZE = 30;
   const [page, setPage] = useState(1);
@@ -414,6 +416,7 @@ const SidebarContent: React.FC<SidebarProps> = ({
   const pageStart = (safePage - 1) * PAGE_SIZE;
   const pageEntries = entries.slice(pageStart, pageStart + PAGE_SIZE);
   const query = search.trim();
+  const queryTerms = query.split(/\s+/).filter(Boolean);
 
   return (
   <div className="space-y-5">
