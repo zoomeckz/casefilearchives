@@ -102,7 +102,7 @@ export const HomePage: React.FC<HomePageProps> = ({
             SEDORIUM
           </h1>
           <p
-            className="text-foreground/85 text-base sm:text-lg max-w-xl mx-auto leading-relaxed mb-3 italic font-display"
+            className="text-foreground/85 text-sm sm:text-base max-w-2xl mx-auto leading-relaxed mb-3 italic font-display whitespace-nowrap overflow-hidden text-ellipsis"
           >
             A dark fantasy of broken thrones, following the trail of a long-gone lycan.
           </p>
