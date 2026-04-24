@@ -57,6 +57,13 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ glossary, authToken, use
   const [drafts, setDrafts] = useState<ChapterDraft[]>([]);
   const [chapters, setChapters] = useState<any[]>([]);
   const [glossaryEntries, setGlossaryEntries] = useState<any[]>([]);
+  // Per-chapter translations modal — open when admin clicks "Translate" on a row.
+  const [translatingChapter, setTranslatingChapter] = useState<{
+    id: string;
+    chapter_number: number;
+    title: string;
+    content: string;
+  } | null>(null);
 
   const fetchGlossaryEntries = useCallback(async () => {
     const { data } = await dbFetch<any[]>('glossary', {
