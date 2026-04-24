@@ -8,6 +8,24 @@ const corsHeaders = {
 
 const SITE_URL = "https://www.thefivethrones.com";
 
+/**
+ * Single source of truth for languages this sitemap covers.
+ * The FIRST entry is the default language (no URL prefix). Every other entry
+ * is served at `/<code>/...`. To add a new language, append its code here —
+ * no other changes needed in this file.
+ *
+ * Keep this in sync with `SUPPORTED_LANGUAGES` in `src/i18n/index.ts`.
+ */
+const SUPPORTED_LANGUAGES = ["en", "bg"] as const;
+type Lang = (typeof SUPPORTED_LANGUAGES)[number];
+const DEFAULT_LANG: Lang = SUPPORTED_LANGUAGES[0];
+const langPath = (path: string, lang: Lang) =>
+  lang === DEFAULT_LANG
+    ? path
+    : path === "/"
+    ? `/${lang}`
+    : `/${lang}${path}`;
+
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
@@ -30,8 +48,8 @@ Deno.serve(async (req) => {
       (c) => !c.scheduled_at || new Date(c.scheduled_at) <= new Date()
     );
 
-    // Static routes — each path is emitted twice (English + Bulgarian) with
-    // hreflang alternates so Google indexes both language variants.
+    // Static routes — each path is emitted once per supported language with
+    // hreflang alternates so Google indexes every language variant.
     type StaticRoute = { path: string; priority: string; changefreq: string };
     const staticRoutes: StaticRoute[] = [
       { path: "/", priority: "1.0", changefreq: "weekly" },
@@ -48,40 +66,35 @@ Deno.serve(async (req) => {
     ];
 
     const buildAlternates = (path: string) => {
-      const en = `${SITE_URL}${path}`;
-      const bgPath = path === "/" ? "/bg" : `/bg${path}`;
-      const bg = `${SITE_URL}${bgPath}`;
-      return (
-        `    <xhtml:link rel="alternate" hreflang="en" href="${en}" />\n` +
-        `    <xhtml:link rel="alternate" hreflang="bg" href="${bg}" />\n` +
-        `    <xhtml:link rel="alternate" hreflang="x-default" href="${en}" />`
+      const lines = SUPPORTED_LANGUAGES.map(
+        (l) =>
+          `    <xhtml:link rel="alternate" hreflang="${l}" href="${SITE_URL}${langPath(path, l)}" />`,
       );
+      // x-default points at the default-language version.
+      lines.push(
+        `    <xhtml:link rel="alternate" hreflang="x-default" href="${SITE_URL}${path}" />`,
+      );
+      return lines.join("\n");
     };
 
-    const renderStatic = (r: StaticRoute, lang: "en" | "bg") => {
-      const path = r.path;
-      const url =
-        lang === "en"
-          ? `${SITE_URL}${path}`
-          : path === "/"
-          ? `${SITE_URL}/bg`
-          : `${SITE_URL}/bg${path}`;
+    const renderStatic = (r: StaticRoute, lang: Lang) => {
+      const url = `${SITE_URL}${langPath(r.path, lang)}`;
       return (
         `  <url>\n` +
         `    <loc>${url}</loc>\n` +
         `    <changefreq>${r.changefreq}</changefreq>\n` +
         `    <priority>${r.priority}</priority>\n` +
-        buildAlternates(path) +
+        buildAlternates(r.path) +
         `\n  </url>`
       );
     };
 
     const renderChapter = (
       c: { chapter_number: number; updated_at: string | null; published_at: string | null },
-      lang: "en" | "bg",
+      lang: Lang,
     ) => {
       const path = `/chapters/${c.chapter_number}`;
-      const url = lang === "en" ? `${SITE_URL}${path}` : `${SITE_URL}/bg${path}`;
+      const url = `${SITE_URL}${langPath(path, lang)}`;
       const lastmod = (c.updated_at || c.published_at || "").slice(0, 10);
       return (
         `  <url>\n` +
@@ -96,12 +109,10 @@ Deno.serve(async (req) => {
 
     const blocks: string[] = [];
     for (const r of staticRoutes) {
-      blocks.push(renderStatic(r, "en"));
-      blocks.push(renderStatic(r, "bg"));
+      for (const l of SUPPORTED_LANGUAGES) blocks.push(renderStatic(r, l));
     }
     for (const c of publishedChapters) {
-      blocks.push(renderChapter(c, "en"));
-      blocks.push(renderChapter(c, "bg"));
+      for (const l of SUPPORTED_LANGUAGES) blocks.push(renderChapter(c, l));
     }
 
     const xml =
