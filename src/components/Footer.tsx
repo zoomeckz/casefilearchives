@@ -1,11 +1,13 @@
 import React, { useState } from "react";
 import { toast } from "sonner";
+import { useTranslation } from "react-i18next";
 
 interface FooterProps {
   setCurrentPage: (page: string) => void;
 }
 
 export const Footer: React.FC<FooterProps> = ({ setCurrentPage }) => {
+  const { t } = useTranslation();
   const [email, setEmail] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const [showAuthHint, setShowAuthHint] = useState(false);

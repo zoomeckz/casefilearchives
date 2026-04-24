@@ -23,6 +23,7 @@ import { MangaPage } from "@/pages/MangaPage";
 import { LeaderboardPage } from "@/pages/LeaderboardPage";
 import { WorldMapPage } from "@/pages/WorldMapPage";
 import { usePageTracking } from "@/hooks/usePageTracking";
+import { stripLanguagePrefix, withLanguagePrefix, detectLanguageFromPath } from "@/i18n";
 
 const Index = () => {
   const navigate = useNavigate();
@@ -32,7 +33,7 @@ const Index = () => {
 
   // Derive current page from URL
   const currentPage = (() => {
-    const path = location.pathname;
+    const path = stripLanguagePrefix(location.pathname);
     if (path.startsWith("/chapters/")) return "reader";
     if (path === "/chapters") return "chapters";
     if (path === "/characters") return "characters";
@@ -49,19 +50,21 @@ const Index = () => {
   })();
 
   const setCurrentPage = (page: string) => {
-    if (page === "home") navigate("/");
-    else if (page === "chapters") navigate("/chapters");
-    else if (page === "characters") navigate("/characters");
-    else if (page === "forum") navigate("/forum");
-    else if (page === "rewards") navigate("/rewards");
-    else if (page === "profile") navigate("/profile");
-    else if (page === "admin") navigate("/admin");
-    else if (page === "about") navigate("/about");
-    else if (page === "manga") navigate("/manga");
-    else if (page === "leaderboard") navigate("/leaderboard");
-    else if (page === "world") navigate("/world");
+    const lang = detectLanguageFromPath(location.pathname);
+    const go = (path: string) => navigate(withLanguagePrefix(path, lang));
+    if (page === "home") go("/");
+    else if (page === "chapters") go("/chapters");
+    else if (page === "characters") go("/characters");
+    else if (page === "forum") go("/forum");
+    else if (page === "rewards") go("/rewards");
+    else if (page === "profile") go("/profile");
+    else if (page === "admin") go("/admin");
+    else if (page === "about") go("/about");
+    else if (page === "manga") go("/manga");
+    else if (page === "leaderboard") go("/leaderboard");
+    else if (page === "world") go("/world");
     else if (page === "reader" && selectedChapter) {
-      navigate(`/chapters/${selectedChapter.chapterNumber}`);
+      go(`/chapters/${selectedChapter.chapterNumber}`);
     }
   };
 
@@ -128,7 +131,7 @@ const Index = () => {
 
   // Resolve chapter from URL param
   useEffect(() => {
-    const match = location.pathname.match(/^\/chapters\/(\d+)$/);
+    const match = stripLanguagePrefix(location.pathname).match(/^\/chapters\/(\d+)$/);
     if (match && chapters.length > 0) {
       const num = parseInt(match[1]);
       const ch = chapters.find(c => c.chapterNumber === num);
@@ -138,7 +141,8 @@ const Index = () => {
 
   const handleSelectChapter = (chapter: Chapter) => {
     setSelectedChapter(chapter);
-    navigate(`/chapters/${chapter.chapterNumber}`);
+    const lang = detectLanguageFromPath(location.pathname);
+    navigate(withLanguagePrefix(`/chapters/${chapter.chapterNumber}`, lang));
   };
 
   const handleSignOut = async () => {

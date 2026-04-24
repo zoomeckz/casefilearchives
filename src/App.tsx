@@ -4,15 +4,55 @@ import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { BrowserRouter, Routes, Route } from "react-router-dom";
+import { BrowserRouter, Routes, Route, useLocation } from "react-router-dom";
 import Index from "./pages/Index";
 import NotFound from "./pages/NotFound";
 import { useDynamicSeo } from "./hooks/useDynamicSeo";
+import { useTranslation } from "react-i18next";
+import { detectLanguageFromPath, SUPPORTED_LANGUAGES } from "./i18n";
 
 const queryClient = new QueryClient();
 
 const DynamicSeo = () => {
   useDynamicSeo();
+  return null;
+};
+
+/**
+ * Watches the URL prefix (`/bg/...`) and keeps i18n + the <html lang> attribute
+ * in sync. Also writes hreflang alternate tags for SEO.
+ */
+const LanguageSync = () => {
+  const location = useLocation();
+  const { i18n } = useTranslation();
+
+  useEffect(() => {
+    const lang = detectLanguageFromPath(location.pathname);
+    if (i18n.language !== lang) {
+      i18n.changeLanguage(lang);
+    }
+    document.documentElement.setAttribute("lang", lang);
+
+    // hreflang alternates — every page advertises both variants so Google can pair them.
+    const origin = window.location.origin;
+    const cleanPath = location.pathname.replace(/^\/(bg)(?=\/|$)/, "") || "/";
+    const ensureLink = (hreflang: string, href: string) => {
+      let el = document.head.querySelector<HTMLLinkElement>(
+        `link[rel="alternate"][hreflang="${hreflang}"]`,
+      );
+      if (!el) {
+        el = document.createElement("link");
+        el.rel = "alternate";
+        el.hreflang = hreflang;
+        document.head.appendChild(el);
+      }
+      el.href = href;
+    };
+    ensureLink("en", `${origin}${cleanPath}`);
+    ensureLink("bg", `${origin}/bg${cleanPath === "/" ? "" : cleanPath}`);
+    ensureLink("x-default", `${origin}${cleanPath}`);
+  }, [location.pathname, i18n]);
+
   return null;
 };
 
@@ -68,6 +108,7 @@ const App = () => {
       <Sonner />
       <BrowserRouter>
         <DynamicSeo />
+        <LanguageSync />
         <Routes>
           <Route path="/" element={<Index />} />
           <Route path="/chapters" element={<Index />} />
@@ -83,6 +124,21 @@ const App = () => {
           <Route path="/about" element={<Index />} />
           <Route path="/leaderboard" element={<Index />} />
           <Route path="/world" element={<Index />} />
+          {/* Bulgarian — same components, /bg/ prefix for SEO */}
+          <Route path="/bg" element={<Index />} />
+          <Route path="/bg/chapters" element={<Index />} />
+          <Route path="/bg/chapters/:chapterNumber" element={<Index />} />
+          <Route path="/bg/characters" element={<Index />} />
+          <Route path="/bg/forum" element={<Index />} />
+          <Route path="/bg/forum/:postId" element={<Index />} />
+          <Route path="/bg/rewards" element={<Index />} />
+          <Route path="/bg/user/:userId" element={<Index />} />
+          <Route path="/bg/profile" element={<Index />} />
+          <Route path="/bg/admin" element={<Index />} />
+          <Route path="/bg/manga" element={<Index />} />
+          <Route path="/bg/about" element={<Index />} />
+          <Route path="/bg/leaderboard" element={<Index />} />
+          <Route path="/bg/world" element={<Index />} />
           {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
           <Route path="*" element={<NotFound />} />
         </Routes>
