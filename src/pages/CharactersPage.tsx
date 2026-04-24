@@ -570,10 +570,14 @@ const SidebarContent: React.FC<SidebarProps> = ({
                   onClick={() => onPick(e.name)}
                   className="flex-1 text-left flex items-center justify-between gap-2 hover:text-stone-100"
                 >
-                  <span className={unlocked ? "truncate" : "blur-[3px] select-none truncate"}>
-                    {unlocked ? <Highlight text={e.name} terms={queryTerms} /> : "███████"}
-                  </span>
-                  {!unlocked && <EyeOff className="w-3 h-3 text-stone-600 shrink-0" />}
+                  {unlocked ? (
+                    <span className="truncate"><Highlight text={e.name} terms={queryTerms} /></span>
+                  ) : (
+                    <span className="inline-flex items-center gap-1.5 truncate text-stone-500 italic">
+                      <Lock className="w-3 h-3 shrink-0" aria-hidden="true" />
+                      <span className="truncate">Locked</span>
+                    </span>
+                  )}
                 </button>
               </div>
             </li>
