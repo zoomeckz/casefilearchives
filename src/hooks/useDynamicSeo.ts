@@ -117,9 +117,10 @@ async function applySiteMeta(pathname: string): Promise<void> {
   const override = SITE_META_BY_LANG[lang];
   const title = override?.title ?? meta.title;
   const description = override?.description ?? meta.description;
-  // Canonical includes a trailing slash for the home page in every language.
-  const langPrefix = withLanguagePrefix("/", lang);
-  const canonical = `${SITE_URL}${langPrefix === "/" ? "/" : `${langPrefix}/`}`;
+  // Home-page canonical: default language ends with `/`, non-default languages
+  // use the bare prefix (`/bg`) — matching the static fallback in index.html
+  // and the sitemap, so Google sees one consistent URL per locale.
+  const canonical = `${SITE_URL}${withLanguagePrefix("/", lang)}`;
 
   document.title = title;
   setMeta("description", description);
