@@ -3,6 +3,8 @@ import { useNavigate } from "react-router-dom";
 import { Icons } from "@/lib/icons";
 import { AuthUser } from "@/hooks/useAuth";
 import { NotificationBell } from "@/components/NotificationBell";
+import { LanguageSwitcher } from "@/components/LanguageSwitcher";
+import { useTranslation } from "react-i18next";
 
 interface NavigationProps {
   currentPage: string;
@@ -20,27 +22,28 @@ export const Navigation: React.FC<NavigationProps> = ({
   onSignOut,
 }) => {
   const navigate = useNavigate();
+  const { t } = useTranslation();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [communityOpen, setCommunityOpen] = useState(false);
 
   const navItems = [
-    { id: "home", label: "Home" },
-    { id: "chapters", label: "Chapters" },
-    { id: "characters", label: "Codex" },
+    { id: "home", label: t("nav.home") },
+    { id: "chapters", label: t("nav.chapters") },
+    { id: "characters", label: t("nav.codex") },
   ];
 
   const communityItems = [
-    { id: "forum", label: "Forum" },
-    { id: "leaderboard", label: "Leaderboard" },
-    { id: "world", label: "World Atlas" },
+    { id: "forum", label: t("nav.forum") },
+    { id: "leaderboard", label: t("nav.leaderboard") },
+    { id: "world", label: t("nav.worldAtlas") },
   ];
 
   const extraItems: { id: string; label: string }[] = [];
   if (user) {
-    extraItems.push({ id: "rewards", label: "Rewards" });
+    extraItems.push({ id: "rewards", label: t("nav.rewards") });
   }
   if (user?.isAdmin) {
-    extraItems.push({ id: "admin", label: "Admin" });
+    extraItems.push({ id: "admin", label: t("nav.admin") });
   }
 
   const communityActive = communityItems.some(c => currentPage === c.id);
@@ -128,6 +131,7 @@ export const Navigation: React.FC<NavigationProps> = ({
 
           {/* Right side - auth */}
           <div className="hidden md:flex items-center gap-3">
+            <LanguageSwitcher variant="desktop" />
             {user ? (
               <>
                 <NotificationBell user={user} onNavigate={(path) => navigate(path)} />
@@ -144,7 +148,7 @@ export const Navigation: React.FC<NavigationProps> = ({
                 <button
                   onClick={onSignOut}
                   className="text-muted-foreground hover:text-foreground transition-colors"
-                  title="Sign out"
+                  title={t("nav.signOut")}
                 >
                   <Icons.Logout className="w-4 h-4" />
                 </button>
@@ -154,7 +158,7 @@ export const Navigation: React.FC<NavigationProps> = ({
                 onClick={() => setShowAuthModal(true)}
                 className="text-sm px-3.5 py-1.5 rounded-full bg-primary/15 hover:bg-primary/25 text-primary border border-primary/30 transition-colors"
               >
-                Register / Sign In
+                {t("nav.signIn")}
               </button>
             )}
           </div>
@@ -182,7 +186,7 @@ export const Navigation: React.FC<NavigationProps> = ({
                 {item.label}
               </button>
             ))}
-            <div className="py-1 text-xs text-muted-foreground/50 uppercase tracking-wider">Community</div>
+            <div className="py-1 text-xs text-muted-foreground/50 uppercase tracking-wider">{t("nav.community")}</div>
             {communityItems.map((item) => (
               <button
                 key={item.id}
@@ -211,13 +215,13 @@ export const Navigation: React.FC<NavigationProps> = ({
                   onClick={() => { setCurrentPage("profile"); setMobileMenuOpen(false); }}
                   className="block w-full text-left py-2 text-muted-foreground hover:text-foreground"
                 >
-                  Profile
+                  {t("nav.profile")}
                 </button>
                 <button
                   onClick={() => { onSignOut(); setMobileMenuOpen(false); }}
                   className="block w-full text-left py-2 text-muted-foreground hover:text-destructive"
                 >
-                  Sign Out
+                  {t("nav.signOut")}
                 </button>
               </>
             ) : (
@@ -225,9 +229,10 @@ export const Navigation: React.FC<NavigationProps> = ({
                 onClick={() => { setShowAuthModal(true); setMobileMenuOpen(false); }}
                 className="block w-full text-left py-2 text-muted-foreground hover:text-primary"
               >
-                Register / Sign In
+                {t("nav.signIn")}
               </button>
             )}
+            <LanguageSwitcher variant="mobile" />
           </div>
         )}
       </div>
