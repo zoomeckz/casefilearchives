@@ -454,6 +454,13 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ glossary, authToken, use
   // padding can react via the `md:pl-*` modifier instead of using a flex row,
   // which avoided a subtle bug where the off-canvas mobile drawer would push
   // the main column sideways.
+  //
+  // IMPORTANT: we drive desktop-vs-mobile layout with Tailwind responsive
+  // classes (`hidden md:block`, `md:pl-*`) rather than the JS `isMobile`
+  // flag, because `useIsMobile()` returns `false` on the very first render
+  // (state initialised to `undefined`). Reading it for layout caused the
+  // desktop fixed sidebar to flash — and on real mobile to stay rendered
+  // until hydration — pushing the main column off-screen.
   const sidebarWidthClass = sidebarCollapsed ? "md:w-16" : "md:w-64";
   const sidebarPadClass = sidebarCollapsed ? "md:pl-16" : "md:pl-64";
   const showLabels = !sidebarCollapsed;
@@ -496,8 +503,7 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ glossary, authToken, use
   return (
     <div className="min-h-screen bg-background">
       {/* Mobile top bar — visible only below md. */}
-      {isMobile && (
-        <div className="flex items-center justify-between p-4 bg-card border-b border-border sticky top-0 z-30">
+      <div className="md:hidden flex items-center justify-between p-4 bg-card border-b border-border sticky top-0 z-30">
           <div className="flex items-center gap-2">
             <button
               onClick={() => setSidebarOpen(!sidebarOpen)}
@@ -509,14 +515,16 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ glossary, authToken, use
             <h2 className="font-display text-lg text-accent">Admin</h2>
           </div>
           <span className="text-xs text-muted-foreground capitalize">{activeTab}</span>
-        </div>
-      )}
+      </div>
 
       {/* Mobile off-canvas drawer */}
-      {isMobile && sidebarOpen && (
+      {sidebarOpen && (
         <>
-          <div className="fixed inset-0 bg-black/50 z-30" onClick={() => setSidebarOpen(false)} />
-          <aside className="fixed top-0 left-0 h-full z-40 w-64 bg-card border-r border-border p-4 overflow-y-auto animate-in slide-in-from-left">
+          <div
+            className="md:hidden fixed inset-0 bg-black/50 z-30"
+            onClick={() => setSidebarOpen(false)}
+          />
+          <aside className="md:hidden fixed top-0 left-0 h-full z-40 w-64 bg-card border-r border-border p-4 overflow-y-auto animate-in slide-in-from-left">
             <div className="flex items-center justify-between mb-6">
               <h2 className="font-display text-lg text-accent">Admin Panel</h2>
               <button
@@ -533,10 +541,9 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ glossary, authToken, use
       )}
 
       {/* Desktop fixed sidebar */}
-      {!isMobile && (
-        <aside
-          className={`fixed inset-y-0 left-0 z-30 ${sidebarWidthClass} bg-card border-r border-border p-3 overflow-y-auto transition-all duration-200`}
-        >
+      <aside
+        className={`hidden md:block fixed inset-y-0 left-0 z-30 ${sidebarWidthClass} bg-card border-r border-border p-3 overflow-y-auto transition-all duration-200`}
+      >
           <div className={`flex items-center ${showLabels ? "justify-between" : "justify-center"} mb-6 px-2`}>
             {showLabels && (
               <div>
@@ -554,10 +561,9 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ glossary, authToken, use
             </button>
           </div>
           {renderNav(handleTabClick, sidebarCollapsed)}
-        </aside>
-      )}
+      </aside>
 
-      <main className={`flex-1 p-4 md:p-8 overflow-y-auto transition-all duration-200 ${!isMobile ? sidebarPadClass : ""}`}>
+      <main className={`flex-1 p-4 md:p-8 overflow-y-auto transition-all duration-200 ${sidebarPadClass}`}>
         {loading ? (
           <p className="text-muted-foreground">Loading...</p>
         ) : (
