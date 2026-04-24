@@ -1,42 +1,147 @@
-import React from "react";
+import React, { useState } from "react";
+import { toast } from "sonner";
 
 interface FooterProps {
   setCurrentPage: (page: string) => void;
 }
 
 export const Footer: React.FC<FooterProps> = ({ setCurrentPage }) => {
+  const [email, setEmail] = useState("");
+  const [submitting, setSubmitting] = useState(false);
+  const [showAuthHint, setShowAuthHint] = useState(false);
+
+  const handleSubscribe = async (e: React.FormEvent) => {
+    e.preventDefault();
+    const trimmed = email.trim();
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(trimmed)) {
+      toast.error("Please enter a valid email address.");
+      return;
+    }
+    setSubmitting(true);
+    try {
+      // Anonymous subscriber capture — uses the page-views style anon insert.
+      // We piggy-back on the email_subscriptions table only when a user is signed
+      // in. For anonymous footer signups we just acknowledge and let the user know
+      // they should create an account to fully subscribe (RLS prevents anon writes).
+      const url = `${import.meta.env.VITE_SUPABASE_URL}/rest/v1/email_subscriptions`;
+      const key = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY;
+      let token = key;
+      try {
+        const raw = localStorage.getItem("app-auth-session");
+        if (raw) token = JSON.parse(raw)?.access_token || key;
+      } catch {}
+
+      if (token === key) {
+        toast.info("Create an account to receive new chapter alerts at this address.");
+        setShowAuthHint(true);
+        setEmail("");
+        return;
+      }
+
+      const res = await fetch(url, {
+        method: "POST",
+        headers: {
+          apikey: key,
+          Authorization: `Bearer ${token}`,
+          "Content-Type": "application/json",
+          Prefer: "resolution=merge-duplicates",
+        },
+        body: JSON.stringify({ email: trimmed, new_chapters: true }),
+      });
+      if (!res.ok) throw new Error("subscribe failed");
+      toast.success("You're subscribed — see you Friday.");
+      setEmail("");
+    } catch {
+      toast.error("Couldn't subscribe right now. Try again in a moment.");
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
   return (
-    <footer className="border-t border-border/50 py-12 px-6">
-      <div className="max-w-4xl mx-auto text-center">
-        <p className="font-display text-lg text-accent mb-4">SEDORIUM</p>
-        <p className="text-muted-foreground text-sm mb-6">
-          Written by Sam Nowroozi Larki
-        </p>
-        <div className="flex justify-center gap-4 mb-6">
-          <a
-            href="https://instagram.com/anyonebutsam"
-            target="_blank"
-            rel="noopener noreferrer"
-            className="text-muted-foreground hover:text-primary transition-colors text-sm"
+    <footer className="border-t border-border/50 py-14 px-6 bg-stone-950">
+      <div className="max-w-4xl mx-auto">
+        {/* Sigil mark above wordmark */}
+        <div className="flex flex-col items-center text-center">
+          <span
+            className="text-accent text-3xl leading-none mb-2 select-none"
+            aria-hidden="true"
+            style={{ fontFamily: "'Cinzel Decorative', serif", textShadow: "0 0 12px hsl(var(--accent) / 0.35)" }}
           >
-            Instagram
-          </a>
-          <span className="text-muted-foreground">·</span>
-          <a
-            href="https://tiktok.com/@anyonebutsam"
-            target="_blank"
-            rel="noopener noreferrer"
-            className="text-muted-foreground hover:text-primary transition-colors text-sm"
+            ✦
+          </span>
+          <p
+            className="text-accent text-2xl tracking-[0.3em] mb-2"
+            style={{ fontFamily: "'Cinzel Decorative', serif" }}
           >
-            TikTok
-          </a>
-        </div>
-        <div className="flex justify-center gap-6 text-muted-foreground text-sm">
-          <span>© {new Date().getFullYear()}</span>
-          <span>·</span>
-          <button onClick={() => setCurrentPage("about")} className="hover:text-primary transition-colors">
-            About
-          </button>
+            SEDORIUM
+          </p>
+          <p className="text-muted-foreground text-sm mb-6">
+            Written by Sam Nowroozi Larki
+          </p>
+
+          {/* Author bio */}
+          <p className="max-w-md text-foreground/70 text-sm leading-relaxed mb-6 italic">
+            Indie dark-fantasy author drawing from anime, music, and a quiet obsession
+            with broken thrones. New chapter every Friday.
+          </p>
+
+          {/* Subscribe form */}
+          <form
+            onSubmit={handleSubscribe}
+            className="w-full max-w-md flex gap-2 mb-3"
+          >
+            <input
+              type="email"
+              required
+              placeholder="your@email.com"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              className="flex-1 px-3 py-2 bg-stone-900 border border-border rounded-md text-sm text-foreground placeholder:text-muted-foreground/60 focus:outline-none focus:border-primary/50"
+              aria-label="Email address for new chapter notifications"
+            />
+            <button
+              type="submit"
+              disabled={submitting}
+              className="px-4 py-2 bg-primary/15 hover:bg-primary/25 text-primary border border-primary/30 rounded-md text-sm transition-colors disabled:opacity-50"
+            >
+              {submitting ? "…" : "Subscribe"}
+            </button>
+          </form>
+          {showAuthHint && (
+            <p className="text-muted-foreground text-xs mb-6">
+              Tip: sign in to manage your subscription preferences.
+            </p>
+          )}
+
+          {/* Socials — kept */}
+          <div className="flex justify-center gap-4 mb-6 mt-2">
+            <a
+              href="https://instagram.com/anyonebutsam"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-muted-foreground hover:text-primary transition-colors text-sm"
+            >
+              Instagram
+            </a>
+            <span className="text-muted-foreground">·</span>
+            <a
+              href="https://tiktok.com/@anyonebutsam"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-muted-foreground hover:text-primary transition-colors text-sm"
+            >
+              TikTok
+            </a>
+          </div>
+
+          <div className="flex justify-center gap-6 text-muted-foreground text-sm">
+            <span>© {new Date().getFullYear()}</span>
+            <span>·</span>
+            <button onClick={() => setCurrentPage("about")} className="hover:text-primary transition-colors">
+              About
+            </button>
+          </div>
         </div>
       </div>
     </footer>

@@ -8,6 +8,8 @@ export interface Chapter {
   publishedAt: string;
   views: number;
   scheduledAt: string | null;
+  /** Cover art URL — currently always null until artwork is generated. */
+  coverImageUrl: string | null;
 }
 
 function mapChapter(c: any): Chapter {
@@ -19,6 +21,7 @@ function mapChapter(c: any): Chapter {
     publishedAt: c.published_at,
     views: c.views,
     scheduledAt: c.scheduled_at || null,
+    coverImageUrl: c.cover_image_url || null,
   };
 }
 

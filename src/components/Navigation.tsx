@@ -50,15 +50,25 @@ export const Navigation: React.FC<NavigationProps> = ({
       <div className="max-w-4xl mx-auto px-4 sm:px-6">
         <div className="flex items-center justify-between h-14">
 
+          {/* Mobile sigil — replaces a naked hamburger with a small brand mark */}
+          <button
+            onClick={() => setCurrentPage("home")}
+            className="md:hidden font-display text-accent text-xl tracking-[0.2em] leading-none"
+            style={{ fontFamily: "'Cinzel Decorative', serif" }}
+            aria-label="Sedorium home"
+          >
+            S
+          </button>
+
           {/* Centered Nav */}
           <div className="hidden md:flex items-center justify-center gap-6 flex-1">
             {navItems.map((item) => (
               <button
                 key={item.id}
                 onClick={() => setCurrentPage(item.id)}
-                className={`text-sm transition-colors ${
+                className={`relative text-sm transition-colors pb-1 ${
                   currentPage === item.id
-                    ? "text-primary"
+                    ? "text-primary nav-active-underline"
                     : "text-muted-foreground hover:text-foreground"
                 }`}
               >
@@ -71,8 +81,8 @@ export const Navigation: React.FC<NavigationProps> = ({
               <button
                 onClick={() => setCommunityOpen(!communityOpen)}
                 onBlur={() => setTimeout(() => setCommunityOpen(false), 200)}
-                className={`text-sm transition-colors flex items-center gap-1 ${
-                  communityActive ? "text-primary" : "text-muted-foreground hover:text-foreground"
+                className={`relative text-sm transition-colors flex items-center gap-1 pb-1 ${
+                  communityActive ? "text-primary nav-active-underline" : "text-muted-foreground hover:text-foreground"
                 }`}
               >
                 Community
@@ -105,9 +115,9 @@ export const Navigation: React.FC<NavigationProps> = ({
               <button
                 key={item.id}
                 onClick={() => setCurrentPage(item.id)}
-                className={`text-sm transition-colors ${
+                className={`relative text-sm transition-colors pb-1 ${
                   currentPage === item.id
-                    ? "text-primary"
+                    ? "text-primary nav-active-underline"
                     : "text-muted-foreground hover:text-foreground"
                 }`}
               >
@@ -142,7 +152,7 @@ export const Navigation: React.FC<NavigationProps> = ({
             ) : (
               <button
                 onClick={() => setShowAuthModal(true)}
-                className="text-sm text-muted-foreground hover:text-primary transition-colors"
+                className="text-sm px-3.5 py-1.5 rounded-full bg-primary/15 hover:bg-primary/25 text-primary border border-primary/30 transition-colors"
               >
                 Register / Sign In
               </button>

@@ -90,22 +90,44 @@ export const HomePage: React.FC<HomePageProps> = ({
       <section className="relative py-20 sm:py-32 px-4 sm:px-6 text-center overflow-hidden bg-stone-950">
         <div className="absolute inset-0 bg-gradient-to-b from-stone-900/50 via-stone-950/80 to-stone-950" />
         <div className="relative max-w-2xl mx-auto z-10">
-          <h1 className="text-4xl sm:text-5xl md:text-7xl text-accent mb-4 tracking-[0.2em]" style={{ fontFamily: "'Cinzel Decorative', serif", WebkitTextStroke: '4px black', paintOrder: 'stroke fill', textShadow: '0 0 10px rgba(0,0,0,0.8), 0 0 20px rgba(0,0,0,0.5)' }}>
+          <h1
+            className="text-4xl sm:text-5xl md:text-7xl text-accent mb-6 tracking-[0.2em]"
+            style={{
+              fontFamily: "'Cinzel Decorative', serif",
+              WebkitTextStroke: '4px black',
+              paintOrder: 'stroke fill',
+              textShadow: '0 0 10px rgba(0,0,0,0.8), 0 0 20px rgba(0,0,0,0.5)',
+            }}
+          >
             SEDORIUM
           </h1>
-          <p className="text-muted-foreground text-sm sm:text-base tracking-widest uppercase mb-2" style={{ fontFamily: "'Cinzel', serif" }}>
-            A new chapter every Friday!
-          </p>
-          <button
-            onClick={() => {
-              if (chapters[0]) {
-                setSelectedChapter(chapters[0]);
-              }
-            }}
-            className="mt-8 px-8 py-3 bg-primary/90 hover:bg-primary text-primary-foreground rounded-lg font-medium transition-colors shadow-lg backdrop-blur-sm"
+          <p
+            className="text-foreground/85 text-base sm:text-lg max-w-xl mx-auto leading-relaxed mb-3 italic font-display"
           >
-            Start Reading →
-          </button>
+            A dark fantasy of broken thrones following a trail of long-gone lycan.
+          </p>
+          <p
+            className="text-muted-foreground text-xs sm:text-sm tracking-[0.25em] uppercase"
+            style={{ fontFamily: "'Cinzel', serif" }}
+          >
+            New chapter every Friday
+          </p>
+          <div className="mt-8 flex flex-wrap items-center justify-center gap-3">
+            <button
+              onClick={() => {
+                if (chapters[0]) setSelectedChapter(chapters[0]);
+              }}
+              className="px-7 py-3 bg-primary hover:bg-primary/90 text-primary-foreground rounded-lg font-medium transition-colors shadow-lg"
+            >
+              Start Reading →
+            </button>
+            <button
+              onClick={() => setCurrentPage("characters")}
+              className="px-7 py-3 bg-transparent hover:bg-accent/10 text-accent border border-accent/40 rounded-lg font-medium transition-colors"
+            >
+              Browse the Codex
+            </button>
+          </div>
         </div>
       </section>
 
@@ -114,32 +136,44 @@ export const HomePage: React.FC<HomePageProps> = ({
         <div className="max-w-5xl mx-auto grid grid-cols-1 lg:grid-cols-2 gap-8 lg:gap-12">
           {/* Latest Chapters */}
           <div>
-            <h2 className="font-display text-sm uppercase tracking-[0.2em] text-muted-foreground mb-8 text-center">
+            <h2 className="font-display text-sm uppercase tracking-[0.2em] text-muted-foreground mb-6">
               Latest Chapters
             </h2>
 
             {chapters.length === 0 ? (
               <p className="text-muted-foreground text-center">No chapters yet.</p>
             ) : (
-              <div className="space-y-1">
-                {chapters.slice().reverse().slice(0, 5).map((chapter) => (
-                  <div
-                    key={chapter.id}
-                    onClick={() => setSelectedChapter(chapter)}
-                    className="group cursor-pointer py-4 px-4 rounded-lg hover:bg-secondary/30 transition-all duration-200 text-center"
-                  >
-                    <span className="text-muted-foreground text-xs uppercase tracking-wider">
-                      Chapter {chapter.chapterNumber} · {new Date(chapter.publishedAt).toLocaleDateString("en-US", { month: "short", day: "numeric" })}
-                    </span>
-                    <h3 className="font-display text-lg text-foreground/80 group-hover:text-primary transition-colors mt-0.5">
-                      {chapter.title}
-                    </h3>
-                  </div>
-                ))}
-              </div>
+              <ul className="divide-y divide-border/40">
+                {chapters.slice().reverse().slice(0, 8).map((chapter) => {
+                  const wordCount = (chapter.content || "").replace(/<[^>]*>/g, "").split(/\s+/).length;
+                  const readMin = Math.max(1, Math.ceil(wordCount / 220));
+                  return (
+                    <li key={chapter.id}>
+                      <button
+                        onClick={() => setSelectedChapter(chapter)}
+                        className="group w-full text-left py-2.5 px-3 rounded-md hover:bg-secondary/30 transition-colors flex items-baseline gap-3"
+                      >
+                        {/* Cover-art placeholder slot — wired now, art coming later */}
+                        {/* TODO(cover-art): render <img src={chapter.coverImageUrl} /> when populated */}
+                        <span className="font-display text-xs text-muted-foreground tabular-nums w-10 shrink-0">
+                          Ch.{chapter.chapterNumber}
+                        </span>
+                        <span className="flex-1 min-w-0">
+                          <span className="font-display text-base text-foreground/85 group-hover:text-primary transition-colors block truncate">
+                            {chapter.title}
+                          </span>
+                        </span>
+                        <span className="text-muted-foreground text-xs whitespace-nowrap shrink-0">
+                          {readMin} min
+                        </span>
+                      </button>
+                    </li>
+                  );
+                })}
+              </ul>
             )}
 
-            {chapters.length > 5 && (
+            {chapters.length > 8 && (
               <div className="text-center mt-6">
                 <button
                   onClick={() => setCurrentPage("chapters")}
@@ -153,7 +187,8 @@ export const HomePage: React.FC<HomePageProps> = ({
 
           {/* Latest Forum Posts */}
           <div>
-            <h2 className="font-display text-sm uppercase tracking-[0.2em] text-muted-foreground mb-8 text-center">
+            <h2 className="font-display text-sm uppercase tracking-[0.2em] text-muted-foreground mb-6">
+              Latest Discussions
             </h2>
 
             {forumPosts.length === 0 ? (
