@@ -1,7 +1,7 @@
 import React, { useState, useMemo, useEffect } from "react";
 import { GlossaryEntry } from "@/lib/data";
 import { CharacterRelationshipMap } from "@/components/CharacterRelationshipMap";
-import { Search, Menu, X, EyeOff, Eye, ChevronRight, ChevronLeft, Users, MapPin, Sparkles, BookOpen, Skull, Loader2, Heart, Link2, Download, Maximize2 } from "lucide-react";
+import { Search, Menu, X, EyeOff, Eye, ChevronRight, ChevronLeft, Users, MapPin, Sparkles, BookOpen, Skull, Loader2, Heart, Link2, Download, Maximize2, Lock } from "lucide-react";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
 import { toast } from "sonner";
 import {
@@ -197,11 +197,11 @@ export const CharactersPage: React.FC<CharactersPageProps> = ({
           {/* Spoiler-progress hint */}
           {isLoggedIn ? (
             <p className="text-stone-600 text-xs mt-3">
-              Showing entries safe through chapter {maxRead}. Later entries are blurred — click to reveal.
+              Showing entries safe through chapter {maxRead}. Later entries are locked — click the lock to reveal.
             </p>
           ) : (
             <p className="text-stone-600 text-xs mt-3">
-              You're browsing as a guest. Entries from chapters {VISIBLE_FOR_GUESTS + 1}+ are blurred to avoid spoilers.
+              You're browsing as a guest. Entries from chapters {VISIBLE_FOR_GUESTS + 1}+ are locked to avoid spoilers.
             </p>
           )}
 
@@ -472,9 +472,14 @@ const SidebarContent: React.FC<SidebarProps> = ({
                     onClick={() => onPick(e.name)}
                     className="flex-1 text-left flex items-center justify-between gap-2 hover:text-stone-100 min-w-0"
                   >
-                    <span className={unlocked ? "truncate" : "blur-[3px] select-none truncate"}>
-                      {unlocked ? <Highlight text={e.name} terms={queryTerms} /> : "███████"}
-                    </span>
+                    {unlocked ? (
+                      <span className="truncate"><Highlight text={e.name} terms={queryTerms} /></span>
+                    ) : (
+                      <span className="inline-flex items-center gap-1.5 truncate text-stone-500 italic">
+                        <Lock className="w-3 h-3 shrink-0" aria-hidden="true" />
+                        <span className="truncate">Locked</span>
+                      </span>
+                    )}
                     <span className="text-[10px] text-stone-500 shrink-0 capitalize">{e.type}</span>
                   </button>
                 </div>
@@ -565,10 +570,14 @@ const SidebarContent: React.FC<SidebarProps> = ({
                   onClick={() => onPick(e.name)}
                   className="flex-1 text-left flex items-center justify-between gap-2 hover:text-stone-100"
                 >
-                  <span className={unlocked ? "truncate" : "blur-[3px] select-none truncate"}>
-                    {unlocked ? <Highlight text={e.name} terms={queryTerms} /> : "███████"}
-                  </span>
-                  {!unlocked && <EyeOff className="w-3 h-3 text-stone-600 shrink-0" />}
+                  {unlocked ? (
+                    <span className="truncate"><Highlight text={e.name} terms={queryTerms} /></span>
+                  ) : (
+                    <span className="inline-flex items-center gap-1.5 truncate text-stone-500 italic">
+                      <Lock className="w-3 h-3 shrink-0" aria-hidden="true" />
+                      <span className="truncate">Locked</span>
+                    </span>
+                  )}
                 </button>
               </div>
             </li>

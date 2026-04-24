@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef } from "react";
 import { ProfileFrame } from "@/components/ProfileFrame";
 import { useNavigate, useParams } from "react-router-dom";
 import { Icons } from "@/lib/icons";
+import { MessageCircle } from "lucide-react";
 import { AuthUser } from "@/hooks/useAuth";
 import { dbFetch } from "@/lib/dbFetch";
 import { supabase } from "@/integrations/supabase/client";
@@ -27,6 +28,21 @@ function slugify(title: string): string {
 
 function postUrl(post: { id: string; title: string }): string {
   return `/forum/${slugify(post.title)}--${post.id.slice(0, 8)}`;
+}
+
+function formatRelativeTime(iso: string): string {
+  const then = new Date(iso).getTime();
+  const now = Date.now();
+  const diffSec = Math.max(0, Math.floor((now - then) / 1000));
+  if (diffSec < 60) return "just now";
+  const diffMin = Math.floor(diffSec / 60);
+  if (diffMin < 60) return `${diffMin}m ago`;
+  const diffHr = Math.floor(diffMin / 60);
+  if (diffHr < 24) return `${diffHr}h ago`;
+  const diffDay = Math.floor(diffHr / 24);
+  if (diffDay < 7) return `${diffDay}d ago`;
+  if (diffDay < 30) return `${Math.floor(diffDay / 7)}w ago`;
+  return new Date(iso).toLocaleDateString();
 }
 
 function parsePostId(param: string | undefined, posts: { id: string; title: string }[]): string | null {
@@ -573,19 +589,35 @@ export const ForumPage: React.FC<ForumPageProps> = ({
           ) : (
             filteredPosts.map((post) => (
               <div key={post.id} onClick={() => navigate(postUrl(post))}
-                className={`group py-5 px-5 cursor-pointer rounded-lg hover:bg-secondary/30 transition-colors ${post.isPinned ? 'border border-accent/20 bg-accent/5' : ''}`}
+                className={`group py-5 px-5 cursor-pointer rounded-lg hover:bg-secondary/30 transition-colors flex gap-4 items-start ${post.isPinned ? 'border border-accent/20 bg-accent/5' : ''}`}
               >
-                <div className="flex items-center gap-2 text-sm text-muted-foreground mb-1">
-                  {post.isPinned && <span className="text-accent">📌</span>}
-                  <span>{post.category}</span>
-                  <span>·</span>
-                  <span>{post.replies} replies</span>
+                <div
+                  className="shrink-0 mt-0.5"
+                  onClick={(e) => { e.stopPropagation(); navigate(`/user/${post.authorId}`); }}
+                >
+                  <ProfileFrame
+                    avatarUrl={post.authorAvatar}
+                    name={post.author}
+                    frame={post.authorFrame}
+                    size={40}
+                  />
                 </div>
-                <h3 className="text-lg text-foreground group-hover:text-primary transition-colors">{post.title}</h3>
-                <p className="text-muted-foreground text-sm mt-1 line-clamp-2" dangerouslySetInnerHTML={{ __html: renderFormatted(post.content) }} />
-                <p className="text-muted-foreground/60 text-xs mt-2">
-                  by <span className="text-primary/80 cursor-pointer hover:underline" onClick={(e) => { e.stopPropagation(); navigate(`/user/${post.authorId}`); }}>{post.author}</span> · {new Date(post.createdAt).toLocaleDateString()}
-                </p>
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center gap-2 text-xs text-muted-foreground mb-1 flex-wrap">
+                    {post.isPinned && <span className="text-accent">📌</span>}
+                    <span className="px-1.5 py-0.5 rounded bg-secondary/50 text-foreground/70">{post.category}</span>
+                    <span>·</span>
+                    <span className="inline-flex items-center gap-1">
+                      <MessageCircle className="w-3 h-3" />
+                      {post.replies} {post.replies === 1 ? 'reply' : 'replies'}
+                    </span>
+                  </div>
+                  <h3 className="text-lg text-foreground group-hover:text-primary transition-colors truncate">{post.title}</h3>
+                  <p className="text-muted-foreground text-sm mt-1 line-clamp-2" dangerouslySetInnerHTML={{ __html: renderFormatted(post.content) }} />
+                  <p className="text-muted-foreground/60 text-xs mt-2">
+                    by <span className="text-primary/80 cursor-pointer hover:underline" onClick={(e) => { e.stopPropagation(); navigate(`/user/${post.authorId}`); }}>{post.author}</span> · {formatRelativeTime(post.createdAt)}
+                  </p>
+                </div>
               </div>
             ))
           )}
