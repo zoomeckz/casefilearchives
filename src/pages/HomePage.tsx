@@ -4,6 +4,7 @@ import { Chapter } from "@/hooks/useChapters";
 import { dbFetch } from "@/lib/dbFetch";
 import { ProfileFrame } from "@/components/ProfileFrame";
 import { useTranslation } from "react-i18next";
+import { LOCALE_TAGS, type SupportedLanguage } from "@/i18n";
 
 interface ForumPostPreview {
   id: string;
@@ -218,7 +219,10 @@ export const HomePage: React.FC<HomePageProps> = ({
                       <span className="text-muted-foreground/60 text-xs">{post.author}</span>
                       <span className="text-muted-foreground/40 text-xs">·</span>
                       <span className="text-muted-foreground/60 text-xs">
-                        {new Date(post.createdAt).toLocaleDateString(i18n.language === "bg" ? "bg-BG" : "en-US", { month: "short", day: "numeric" })}
+                        {new Date(post.createdAt).toLocaleDateString(
+                          LOCALE_TAGS[(i18n.language as SupportedLanguage)] ?? LOCALE_TAGS.en,
+                          { month: "short", day: "numeric" },
+                        )}
                       </span>
                     </div>
                   </div>
