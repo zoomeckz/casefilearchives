@@ -5,6 +5,7 @@ import { useTranslation } from "react-i18next";
 import {
   SUPPORTED_LANGUAGES,
   LANGUAGE_LABELS,
+  LANGUAGE_FLAGS,
   detectLanguageFromPath,
   withLanguagePrefix,
   type SupportedLanguage,
@@ -52,7 +53,14 @@ export const LanguageSwitcher: React.FC<Props> = ({ variant = "desktop" }) => {
               current === lang ? "text-primary" : "text-muted-foreground hover:text-foreground"
             }`}
           >
-            <span>{LANGUAGE_LABELS[lang]}</span>
+            <span className="flex items-center gap-2">
+              {/* The flag uses a fixed-width emoji slot so labels in different
+                  scripts (Latin, Cyrillic, Devanagari, Arabic, CJK) line up. */}
+              <span aria-hidden="true" className="inline-block w-5 text-base leading-none">
+                {LANGUAGE_FLAGS[lang]}
+              </span>
+              <span>{LANGUAGE_LABELS[lang]}</span>
+            </span>
             {current === lang && <Check className="w-4 h-4" />}
           </button>
         ))}
@@ -69,7 +77,11 @@ export const LanguageSwitcher: React.FC<Props> = ({ variant = "desktop" }) => {
         aria-expanded={open}
         className="text-muted-foreground hover:text-foreground transition-colors p-1 rounded-md flex items-center gap-1.5"
       >
-        <Globe className="w-4 h-4" />
+        {/* Show the active language's flag in the trigger; fall back to the
+            globe icon only if a flag is somehow missing (defensive). */}
+        <span aria-hidden="true" className="text-base leading-none">
+          {LANGUAGE_FLAGS[current] ?? <Globe className="w-4 h-4" />}
+        </span>
         <span className="text-xs uppercase tracking-wider">{current}</span>
       </button>
       <div
@@ -90,7 +102,12 @@ export const LanguageSwitcher: React.FC<Props> = ({ variant = "desktop" }) => {
                 : "text-muted-foreground hover:text-foreground hover:bg-secondary/50"
             }`}
           >
-            <span>{LANGUAGE_LABELS[lang]}</span>
+            <span className="flex items-center gap-2">
+              <span aria-hidden="true" className="inline-block w-5 text-base leading-none">
+                {LANGUAGE_FLAGS[lang]}
+              </span>
+              <span>{LANGUAGE_LABELS[lang]}</span>
+            </span>
             {current === lang && <Check className="w-3.5 h-3.5" />}
           </button>
         ))}
