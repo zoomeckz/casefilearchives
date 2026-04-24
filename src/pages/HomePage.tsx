@@ -190,7 +190,7 @@ export const HomePage: React.FC<HomePageProps> = ({
 
           {/* Latest Forum Posts */}
           <div>
-            <h2 className="font-display text-sm uppercase tracking-[0.2em] text-muted-foreground mb-6">
+            <h2 className="font-display text-sm uppercase tracking-[0.2em] text-muted-foreground mb-6 text-center">
               {t("home.latestDiscussions")}
             </h2>
 
