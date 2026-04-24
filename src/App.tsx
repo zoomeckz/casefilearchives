@@ -9,7 +9,13 @@ import Index from "./pages/Index";
 import NotFound from "./pages/NotFound";
 import { useDynamicSeo } from "./hooks/useDynamicSeo";
 import { useTranslation } from "react-i18next";
-import { detectLanguageFromPath, SUPPORTED_LANGUAGES } from "./i18n";
+import {
+  detectLanguageFromPath,
+  SUPPORTED_LANGUAGES,
+  NON_DEFAULT_LANGUAGES,
+  withLanguagePrefix,
+  stripLanguagePrefix,
+} from "./i18n";
 
 const queryClient = new QueryClient();
 
@@ -19,8 +25,10 @@ const DynamicSeo = () => {
 };
 
 /**
- * Watches the URL prefix (`/bg/...`) and keeps i18n + the <html lang> attribute
- * in sync. Also writes hreflang alternate tags for SEO.
+ * Watches the URL language prefix (e.g. `/bg/...`, `/es/...`) and keeps i18n +
+ * the `<html lang>` attribute in sync. Also writes one `hreflang` alternate
+ * link for every supported language so adding a new locale is just one line
+ * in `src/i18n/index.ts` — no edits here required.
  */
 const LanguageSync = () => {
   const location = useLocation();
@@ -33,10 +41,26 @@ const LanguageSync = () => {
     }
     document.documentElement.setAttribute("lang", lang);
 
-    // hreflang alternates — every page advertises both variants so Google can pair them.
+    // hreflang alternates — emit one per supported language plus x-default.
+    // We rewrite-by-replacement (instead of append) so old links from previous
+    // renders are kept fresh, and remove any stray ones for languages that
+    // are no longer in SUPPORTED_LANGUAGES.
     const origin = window.location.origin;
-    const cleanPath = location.pathname.replace(/^\/(bg)(?=\/|$)/, "") || "/";
-    const ensureLink = (hreflang: string, href: string) => {
+    const cleanPath = stripLanguagePrefix(location.pathname);
+    const wanted = new Map<string, string>();
+    for (const lang of SUPPORTED_LANGUAGES) {
+      wanted.set(lang, `${origin}${withLanguagePrefix(cleanPath, lang)}`);
+    }
+    wanted.set("x-default", `${origin}${cleanPath}`);
+
+    // Remove any alternates that don't belong (stale or removed languages).
+    document.head
+      .querySelectorAll<HTMLLinkElement>('link[rel="alternate"][hreflang]')
+      .forEach((el) => {
+        if (!wanted.has(el.hreflang)) el.remove();
+      });
+
+    wanted.forEach((href, hreflang) => {
       let el = document.head.querySelector<HTMLLinkElement>(
         `link[rel="alternate"][hreflang="${hreflang}"]`,
       );
@@ -47,14 +71,34 @@ const LanguageSync = () => {
         document.head.appendChild(el);
       }
       el.href = href;
-    };
-    ensureLink("en", `${origin}${cleanPath}`);
-    ensureLink("bg", `${origin}/bg${cleanPath === "/" ? "" : cleanPath}`);
-    ensureLink("x-default", `${origin}${cleanPath}`);
+    });
   }, [location.pathname, i18n]);
 
   return null;
 };
+
+/**
+ * Single source of truth for the app's URL shape. Adding a localized variant
+ * for every page used to require editing dozens of lines in `<Routes>`. Now we
+ * just iterate non-default languages and prepend their prefix at render time,
+ * so a brand-new language drops in via `SUPPORTED_LANGUAGES` only.
+ */
+const APP_ROUTES: { path: string }[] = [
+  { path: "/" },
+  { path: "/chapters" },
+  { path: "/chapters/:chapterNumber" },
+  { path: "/characters" },
+  { path: "/forum" },
+  { path: "/forum/:postId" },
+  { path: "/rewards" },
+  { path: "/user/:userId" },
+  { path: "/profile" },
+  { path: "/admin" },
+  { path: "/manga" },
+  { path: "/about" },
+  { path: "/leaderboard" },
+  { path: "/world" },
+];
 
 const App = () => {
   useEffect(() => {
@@ -110,35 +154,19 @@ const App = () => {
         <DynamicSeo />
         <LanguageSync />
         <Routes>
-          <Route path="/" element={<Index />} />
-          <Route path="/chapters" element={<Index />} />
-          <Route path="/chapters/:chapterNumber" element={<Index />} />
-          <Route path="/characters" element={<Index />} />
-          <Route path="/forum" element={<Index />} />
-          <Route path="/forum/:postId" element={<Index />} />
-          <Route path="/rewards" element={<Index />} />
-          <Route path="/user/:userId" element={<Index />} />
-          <Route path="/profile" element={<Index />} />
-          <Route path="/admin" element={<Index />} />
-          <Route path="/manga" element={<Index />} />
-          <Route path="/about" element={<Index />} />
-          <Route path="/leaderboard" element={<Index />} />
-          <Route path="/world" element={<Index />} />
-          {/* Bulgarian — same components, /bg/ prefix for SEO */}
-          <Route path="/bg" element={<Index />} />
-          <Route path="/bg/chapters" element={<Index />} />
-          <Route path="/bg/chapters/:chapterNumber" element={<Index />} />
-          <Route path="/bg/characters" element={<Index />} />
-          <Route path="/bg/forum" element={<Index />} />
-          <Route path="/bg/forum/:postId" element={<Index />} />
-          <Route path="/bg/rewards" element={<Index />} />
-          <Route path="/bg/user/:userId" element={<Index />} />
-          <Route path="/bg/profile" element={<Index />} />
-          <Route path="/bg/admin" element={<Index />} />
-          <Route path="/bg/manga" element={<Index />} />
-          <Route path="/bg/about" element={<Index />} />
-          <Route path="/bg/leaderboard" element={<Index />} />
-          <Route path="/bg/world" element={<Index />} />
+          {/* Default-language routes (no prefix). */}
+          {APP_ROUTES.map((r) => (
+            <Route key={r.path} path={r.path} element={<Index />} />
+          ))}
+          {/* Localized variants — one set per non-default language, generated
+              automatically. To add e.g. Spanish: append "es" to SUPPORTED_LANGUAGES
+              in src/i18n/index.ts and the routes appear here for free. */}
+          {NON_DEFAULT_LANGUAGES.flatMap((lang) =>
+            APP_ROUTES.map((r) => {
+              const path = r.path === "/" ? `/${lang}` : `/${lang}${r.path}`;
+              return <Route key={path} path={path} element={<Index />} />;
+            }),
+          )}
           {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
           <Route path="*" element={<NotFound />} />
         </Routes>
