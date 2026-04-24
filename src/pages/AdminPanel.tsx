@@ -290,15 +290,40 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ glossary, authToken, use
     }
   };
 
-  const tabs = [
-    { id: "dashboard", label: "Dashboard", icon: Icons.Dashboard },
-    { id: "chapters", label: "Chapters", icon: Icons.Book },
-    { id: "search", label: "Search Content", icon: Search },
-    { id: "analytics", label: "Analytics", icon: Icons.Eye },
-    { id: "glossary", label: "Glossary", icon: Icons.Book },
-    { id: "seo", label: "SEO", icon: Globe },
-    { id: "audit", label: "Edit Audit", icon: History },
+  // Sidebar navigation grouped by job-to-be-done.
+  // - CONTENT: things you write or edit day-to-day.
+  // - INSIGHTS: read-only views into how the site is doing.
+  // - SYSTEM: rare, technical, "set and forget" controls.
+  // The flat `tabs` list is preserved (derived) for the URL-routing effect that
+  // validates the `?tab=` parameter, so no routing logic needs to change.
+  const navGroups: Array<{
+    label: string;
+    items: Array<{ id: string; label: string; icon: React.ComponentType<{ className?: string }> }>;
+  }> = [
+    {
+      label: "Content",
+      items: [
+        { id: "chapters", label: "Chapters", icon: BookOpen },
+        { id: "glossary", label: "Glossary", icon: Sparkles },
+        { id: "search", label: "Search & replace", icon: Search },
+      ],
+    },
+    {
+      label: "Insights",
+      items: [
+        { id: "dashboard", label: "Dashboard", icon: Icons.Dashboard },
+        { id: "analytics", label: "Analytics", icon: BarChart3 },
+      ],
+    },
+    {
+      label: "System",
+      items: [
+        { id: "seo", label: "SEO & feeds", icon: Globe },
+        { id: "audit", label: "Edit audit", icon: History },
+      ],
+    },
   ];
+  const tabs = navGroups.flatMap((g) => g.items);
 
   const refreshDrafts = useCallback(async () => {
     const d = await getAllDrafts(authToken);
