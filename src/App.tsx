@@ -40,6 +40,11 @@ const LanguageSync = () => {
       i18n.changeLanguage(lang);
     }
     document.documentElement.setAttribute("lang", lang);
+    // RTL languages need `dir="rtl"` so the entire layout (nav, footer, text
+    // alignment, scrollbar position) flips. Add a language code here when the
+    // i18n config gains another RTL locale (e.g. "he", "fa", "ur").
+    const RTL_LANGUAGES: ReadonlySet<string> = new Set(["ar"]);
+    document.documentElement.setAttribute("dir", RTL_LANGUAGES.has(lang) ? "rtl" : "ltr");
 
     // hreflang alternates — emit one per supported language plus x-default.
     // We rewrite-by-replacement (instead of append) so old links from previous
