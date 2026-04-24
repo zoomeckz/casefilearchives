@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef } from "react";
+import { useTranslation } from "react-i18next";
 import { ProfileFrame } from "@/components/ProfileFrame";
 import { useNavigate, useParams } from "react-router-dom";
 import { Icons } from "@/lib/icons";
@@ -102,6 +103,7 @@ export const ForumPage: React.FC<ForumPageProps> = ({
   user,
   setShowAuthModal,
 }) => {
+  const { t } = useTranslation();
   const navigate = useNavigate();
   const { postId } = useParams<{ postId?: string }>();
   const [posts, setPosts] = useState<ForumPost[]>([]);
@@ -350,7 +352,7 @@ export const ForumPage: React.FC<ForumPageProps> = ({
   if (loading) {
     return (
       <div className="min-h-screen py-12 px-6 flex items-center justify-center">
-        <p className="text-muted-foreground">Loading forum...</p>
+        <p className="text-muted-foreground">{t("forum.loading")}</p>
       </div>
     );
   }
@@ -361,7 +363,7 @@ export const ForumPage: React.FC<ForumPageProps> = ({
       <div className="min-h-screen py-12 px-6">
         <div className="max-w-4xl mx-auto">
           <button onClick={() => setEditingPost(null)} className="flex items-center gap-2 text-muted-foreground hover:text-foreground mb-8">
-            <Icons.ChevronLeft /> Cancel editing
+            <Icons.ChevronLeft /> {t("forum.cancel")}
           </button>
           <h2 className="font-display text-2xl text-accent mb-6">Edit Post</h2>
           <form onSubmit={handleEditPost} className="space-y-6">
@@ -402,7 +404,7 @@ export const ForumPage: React.FC<ForumPageProps> = ({
       <div className="min-h-screen py-8 sm:py-12 px-4 sm:px-6">
         <div className="max-w-4xl mx-auto">
           <button onClick={() => navigate('/forum')} className="flex items-center gap-2 text-muted-foreground hover:text-foreground mb-6 sm:mb-8">
-            <Icons.ChevronLeft /> Back to forum
+            <Icons.ChevronLeft /> {t("forum.back")}
           </button>
           <div className="mb-12">
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 mb-2">
@@ -532,11 +534,11 @@ export const ForumPage: React.FC<ForumPageProps> = ({
       <div className="max-w-4xl mx-auto">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-8">
           <div>
-            <h1 className="font-display text-3xl sm:text-4xl text-accent mb-2">Forum</h1>
-            <p className="text-muted-foreground">Discuss theories and connect with fellow readers</p>
+            <h1 className="font-display text-3xl sm:text-4xl text-accent mb-2">{t("forum.title")}</h1>
+            <p className="text-muted-foreground">{t("forum.subtitle")}</p>
           </div>
           <button onClick={() => (user ? setShowNewPost(true) : setShowAuthModal(true))}
-            className="text-primary hover:text-primary/80 transition-colors self-start sm:self-auto">+ New Post</button>
+            className="text-primary hover:text-primary/80 transition-colors self-start sm:self-auto">{t("forum.newPost")}</button>
         </div>
 
         <div className="flex flex-wrap gap-2 mb-8">
@@ -544,7 +546,7 @@ export const ForumPage: React.FC<ForumPageProps> = ({
             onClick={() => setSelectedCategory(null)}
             className={`px-3 py-1.5 rounded-lg text-sm transition-colors ${!selectedCategory ? 'bg-primary text-primary-foreground' : 'bg-secondary text-muted-foreground hover:text-foreground'}`}
           >
-            All
+            {t("forum.all")}
           </button>
           {forumCategories.map(cat => (
             <button key={cat} onClick={() => setSelectedCategory(cat)}
@@ -555,29 +557,29 @@ export const ForumPage: React.FC<ForumPageProps> = ({
 
         {showNewPost && (
           <div className="mb-12 py-8 border-b border-border/50 animate-fade-in">
-            <h3 className="text-xl font-display text-accent mb-6">Create New Post</h3>
+            <h3 className="text-xl font-display text-accent mb-6">{t("forum.newPost")}</h3>
             <form onSubmit={handleCreatePost} className="space-y-6">
               <div>
-                <label className="block text-muted-foreground text-sm mb-2">Category</label>
+                <label className="block text-muted-foreground text-sm mb-2">{t("forum.category")}</label>
                 <select value={newPost.category} onChange={(e) => setNewPost({ ...newPost, category: e.target.value })}
                   className="w-full px-4 py-2 bg-secondary border border-border rounded-lg text-foreground focus:outline-none focus:border-primary">
                   {forumCategories.map((cat) => <option key={cat} value={cat}>{cat}</option>)}
                 </select>
               </div>
               <div>
-                <label className="block text-muted-foreground text-sm mb-2">Title</label>
+                <label className="block text-muted-foreground text-sm mb-2">{t("forum.postTitle")}</label>
                 <input type="text" value={newPost.title} onChange={(e) => setNewPost({ ...newPost, title: e.target.value })}
-                  className="w-full px-4 py-2 bg-secondary border border-border rounded-lg text-foreground focus:outline-none focus:border-primary" placeholder="Enter post title" />
+                  className="w-full px-4 py-2 bg-secondary border border-border rounded-lg text-foreground focus:outline-none focus:border-primary" placeholder={t("forum.placeholderTitle")} />
               </div>
               <div>
-                <label className="block text-muted-foreground text-sm mb-2">Content</label>
+                <label className="block text-muted-foreground text-sm mb-2">{t("forum.content")}</label>
                 <FormatToolbar textareaRef={newPostRef} value={newPost.content} onChange={(v) => setNewPost({ ...newPost, content: v })} />
                 <textarea ref={newPostRef} value={newPost.content} onChange={(e) => setNewPost({ ...newPost, content: e.target.value })}
-                  className="w-full px-4 py-2 bg-secondary border border-border rounded-lg text-foreground focus:outline-none focus:border-primary resize-none font-mono text-sm" rows={6} placeholder="What's on your mind?" />
+                  className="w-full px-4 py-2 bg-secondary border border-border rounded-lg text-foreground focus:outline-none focus:border-primary resize-none font-mono text-sm" rows={6} placeholder={t("forum.placeholderContent")} />
               </div>
               <div className="flex gap-4">
-                <button type="submit" className="text-primary hover:text-primary/80 transition-colors">Post →</button>
-                <button type="button" onClick={() => setShowNewPost(false)} className="text-muted-foreground hover:text-foreground transition-colors">Cancel</button>
+                <button type="submit" className="text-primary hover:text-primary/80 transition-colors">{t("forum.post")} →</button>
+                <button type="button" onClick={() => setShowNewPost(false)} className="text-muted-foreground hover:text-foreground transition-colors">{t("forum.cancel")}</button>
               </div>
             </form>
           </div>
@@ -585,7 +587,7 @@ export const ForumPage: React.FC<ForumPageProps> = ({
 
         <div className="space-y-1">
           {filteredPosts.length === 0 ? (
-            <p className="text-muted-foreground text-center py-12">No discussions yet. Be the first to start one!</p>
+            <p className="text-muted-foreground text-center py-12">{t("forum.noDiscussions")}</p>
           ) : (
             filteredPosts.map((post) => (
               <div key={post.id} onClick={() => navigate(postUrl(post))}
@@ -609,13 +611,13 @@ export const ForumPage: React.FC<ForumPageProps> = ({
                     <span>·</span>
                     <span className="inline-flex items-center gap-1">
                       <MessageCircle className="w-3 h-3" />
-                      {post.replies} {post.replies === 1 ? 'reply' : 'replies'}
+                      {post.replies} {post.replies === 1 ? t("forum.replyOne") : t("forum.replies")}
                     </span>
                   </div>
                   <h3 className="text-lg text-foreground group-hover:text-primary transition-colors truncate">{post.title}</h3>
                   <p className="text-muted-foreground text-sm mt-1 line-clamp-2" dangerouslySetInnerHTML={{ __html: renderFormatted(post.content) }} />
                   <p className="text-muted-foreground/60 text-xs mt-2">
-                    by <span className="text-primary/80 cursor-pointer hover:underline" onClick={(e) => { e.stopPropagation(); navigate(`/user/${post.authorId}`); }}>{post.author}</span> · {formatRelativeTime(post.createdAt)}
+                    {t("forum.by")} <span className="text-primary/80 cursor-pointer hover:underline" onClick={(e) => { e.stopPropagation(); navigate(`/user/${post.authorId}`); }}>{post.author}</span> · {formatRelativeTime(post.createdAt)}
                   </p>
                 </div>
               </div>
