@@ -91,9 +91,30 @@ export const StoriesPage: React.FC<StoriesPageProps> = ({
               <div
                 key={chapter.id}
                 onClick={() => setSelectedChapter(chapter)}
-                className="group py-6 px-6 cursor-pointer rounded-lg hover:bg-secondary/30 transition-all duration-200"
+                className="group py-5 px-5 cursor-pointer rounded-lg hover:bg-secondary/30 transition-all duration-200 flex items-start gap-4"
               >
-                <div className="flex items-center justify-center gap-3 mb-2 flex-wrap">
+                {/* Cover-art slot — renders a faint placeholder until cover_image_url is populated */}
+                <div className="hidden sm:flex shrink-0 w-16 h-20 rounded-md overflow-hidden border border-border/40 bg-stone-900 items-center justify-center">
+                  {chapter.coverImageUrl ? (
+                    <img
+                      src={chapter.coverImageUrl}
+                      alt={`Chapter ${chapter.chapterNumber} cover`}
+                      className="w-full h-full object-cover"
+                      loading="lazy"
+                    />
+                  ) : (
+                    <span
+                      className="text-accent/40 text-xl"
+                      style={{ fontFamily: "'Cinzel Decorative', serif" }}
+                      aria-hidden="true"
+                    >
+                      ✦
+                    </span>
+                  )}
+                </div>
+
+                <div className="flex-1 min-w-0">
+                <div className="flex items-center gap-3 mb-2 flex-wrap">
                   <span className="text-muted-foreground text-xs uppercase tracking-wider">
                     Chapter {chapter.chapterNumber} ·{" "}
                     {new Date(chapter.publishedAt).toLocaleDateString()}
@@ -118,10 +139,10 @@ export const StoriesPage: React.FC<StoriesPageProps> = ({
                     />
                   )}
                 </div>
-                <h3 className="font-display text-xl text-foreground group-hover:text-primary transition-colors text-center">
+                <h3 className="font-display text-xl text-foreground group-hover:text-primary transition-colors">
                   {chapter.title}
                 </h3>
-                <div className="flex items-center justify-center gap-4 mt-2 text-xs text-muted-foreground">
+                <div className="flex items-center gap-4 mt-2 text-xs text-muted-foreground">
                   <span className="flex items-center gap-1">
                     <Icons.Eye className="w-3 h-3" /> {chapter.views} views
                   </span>
@@ -130,6 +151,7 @@ export const StoriesPage: React.FC<StoriesPageProps> = ({
                       📅 Releases {new Date(chapter.scheduledAt).toLocaleDateString('sv-SE', { timeZone: 'Europe/Stockholm' })}
                     </span>
                   )}
+                </div>
                 </div>
               </div>
             );
