@@ -1147,3 +1147,186 @@ const StatCard = ({ label, value }: { label: string; value: number }) => (
 );
 
 export default AdminPanel;
+
+// ===========================================================================
+// ChapterTable — sortable, hover-action table for the published chapters list.
+// Lifted out of AdminPanel to keep the main component readable.
+// ===========================================================================
+
+type ChapterRow = {
+  id: string;
+  title: string;
+  chapter_number: number;
+  views: number;
+  published_at: string | null;
+  scheduled_at: string | null;
+};
+
+type SortKey = 'number-asc' | 'number-desc' | 'views-desc' | 'views-asc' | 'newest' | 'oldest';
+
+interface ChapterTableProps {
+  chapters: ChapterRow[];
+  translationCounts: Record<string, number>;
+  totalLanguages: number;
+  chapterSort: SortKey;
+  onSortChange: (s: SortKey) => void;
+  onEdit: (id: string) => void;
+  onDelete: (id: string, title: string) => void;
+  onDownload: (num: number, title: string) => void;
+  onTranslate: (id: string) => void;
+}
+
+const ChapterTable: React.FC<ChapterTableProps> = ({
+  chapters,
+  translationCounts,
+  totalLanguages,
+  chapterSort,
+  onSortChange,
+  onEdit,
+  onDelete,
+  onDownload,
+  onTranslate,
+}) => {
+  // Each header maps a column to its (asc, desc) sort keys. Clicking a header
+  // toggles between the two; the active one shows a directional caret.
+  type Column = { key: 'number' | 'title' | 'views' | 'date'; label: string; ascKey?: SortKey; descKey?: SortKey; align?: string; hideOnMobile?: boolean };
+  const columns: Column[] = [
+    { key: 'number', label: '#', ascKey: 'number-asc', descKey: 'number-desc' },
+    { key: 'title', label: 'Title' },
+    { key: 'views', label: 'Views', ascKey: 'views-asc', descKey: 'views-desc', align: 'text-right', hideOnMobile: true },
+    { key: 'date', label: 'Published', ascKey: 'oldest', descKey: 'newest', hideOnMobile: true },
+  ];
+
+  const cycle = (col: Column) => {
+    if (!col.ascKey || !col.descKey) return;
+    onSortChange(chapterSort === col.descKey ? col.ascKey : col.descKey);
+  };
+
+  const caretFor = (col: Column) => {
+    if (chapterSort === col.ascKey) return <ChevronDown className="w-3 h-3 rotate-180 inline-block" />;
+    if (chapterSort === col.descKey) return <ChevronDown className="w-3 h-3 inline-block" />;
+    return <ArrowUpDown className="w-3 h-3 inline-block opacity-30" />;
+  };
+
+  return (
+    <div className="rounded-lg border border-border/60 overflow-hidden bg-card/30">
+      <div className="overflow-x-auto">
+        <table className="w-full text-sm">
+          <thead>
+            <tr className="text-left text-[11px] uppercase tracking-wider text-muted-foreground bg-card/60 border-b border-border/60">
+              {columns.map((col) => (
+                <th
+                  key={col.key}
+                  className={`px-3 md:px-4 py-2.5 font-medium ${col.align ?? ''} ${col.hideOnMobile ? 'hidden md:table-cell' : ''}`}
+                >
+                  {col.ascKey ? (
+                    <button
+                      onClick={() => cycle(col)}
+                      className="inline-flex items-center gap-1 hover:text-foreground transition-colors"
+                    >
+                      {col.label} {caretFor(col)}
+                    </button>
+                  ) : (
+                    col.label
+                  )}
+                </th>
+              ))}
+              <th className="px-3 md:px-4 py-2.5 font-medium hidden lg:table-cell">Translations</th>
+              <th className="px-3 md:px-4 py-2.5 font-medium text-right">Actions</th>
+            </tr>
+          </thead>
+          <tbody>
+            {chapters.map((ch) => {
+              const count = translationCounts[ch.id] ?? 0;
+              const isScheduled = ch.scheduled_at && new Date(ch.scheduled_at) > new Date();
+              return (
+                <tr
+                  key={ch.id}
+                  className="border-b border-border/40 last:border-b-0 hover:bg-card/60 group transition-colors"
+                >
+                  <td className="px-3 md:px-4 py-3 text-muted-foreground tabular-nums">{ch.chapter_number}</td>
+                  <td className="px-3 md:px-4 py-3 min-w-0">
+                    <div className="text-foreground font-medium truncate">{ch.title}</div>
+                    <div className="md:hidden text-xs text-muted-foreground mt-0.5">
+                      {ch.views} views · {ch.published_at ? new Date(ch.published_at).toLocaleDateString() : 'No date'}
+                    </div>
+                  </td>
+                  <td className="px-3 md:px-4 py-3 text-right tabular-nums text-muted-foreground hidden md:table-cell">
+                    {ch.views.toLocaleString()}
+                  </td>
+                  <td className="px-3 md:px-4 py-3 hidden md:table-cell">
+                    {isScheduled ? (
+                      <span className="inline-flex items-center gap-1 text-xs text-accent">
+                        <Calendar className="w-3 h-3" />
+                        {new Date(ch.scheduled_at!).toLocaleDateString('sv-SE', { timeZone: 'Europe/Stockholm' })}
+                      </span>
+                    ) : (
+                      <span className="text-xs text-muted-foreground">
+                        {ch.published_at ? new Date(ch.published_at).toLocaleDateString() : '—'}
+                      </span>
+                    )}
+                  </td>
+                  <td className="px-3 md:px-4 py-3 hidden lg:table-cell">
+                    <TranslationBadge count={count} total={totalLanguages} />
+                  </td>
+                  <td className="px-3 md:px-4 py-3 text-right">
+                    <DropdownMenu>
+                      <DropdownMenuTrigger asChild>
+                        <button
+                          className="p-1.5 rounded hover:bg-secondary text-muted-foreground hover:text-foreground transition-colors"
+                          aria-label={`Actions for chapter ${ch.chapter_number}`}
+                        >
+                          <MoreHorizontal className="w-4 h-4" />
+                        </button>
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent align="end" className="w-48">
+                        <DropdownMenuLabel>Ch. {ch.chapter_number}</DropdownMenuLabel>
+                        <DropdownMenuSeparator />
+                        <DropdownMenuItem onClick={() => onEdit(ch.id)}>
+                          <Edit3 className="w-4 h-4 mr-2" /> Edit
+                        </DropdownMenuItem>
+                        <DropdownMenuItem onClick={() => onTranslate(ch.id)}>
+                          <Globe className="w-4 h-4 mr-2" /> Translations
+                          <span className="ml-auto text-xs text-muted-foreground">{count}/{totalLanguages}</span>
+                        </DropdownMenuItem>
+                        <DropdownMenuItem asChild>
+                          <a href={`/chapters/${ch.chapter_number}`} target="_blank" rel="noopener noreferrer">
+                            <Eye className="w-4 h-4 mr-2" /> Preview
+                          </a>
+                        </DropdownMenuItem>
+                        <DropdownMenuItem onClick={() => onDownload(ch.chapter_number, ch.title)}>
+                          <Download className="w-4 h-4 mr-2" /> Download
+                        </DropdownMenuItem>
+                        <DropdownMenuSeparator />
+                        <DropdownMenuItem
+                          onClick={() => onDelete(ch.id, ch.title)}
+                          className="text-destructive focus:text-destructive"
+                        >
+                          <Trash2 className="w-4 h-4 mr-2" /> Delete
+                        </DropdownMenuItem>
+                      </DropdownMenuContent>
+                    </DropdownMenu>
+                  </td>
+                </tr>
+              );
+            })}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  );
+};
+
+const TranslationBadge: React.FC<{ count: number; total: number }> = ({ count, total }) => {
+  const ratio = total === 0 ? 0 : count / total;
+  const tone =
+    ratio === 0 ? "text-muted-foreground border-border" :
+    ratio < 1 ? "text-accent border-accent/40" :
+    "text-primary border-primary/40";
+  return (
+    <span className={`inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full text-xs border bg-background/40 ${tone}`}>
+      <Globe className="w-3 h-3" />
+      {count}/{total}
+    </span>
+  );
+};
