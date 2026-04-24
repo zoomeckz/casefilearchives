@@ -1,5 +1,4 @@
 import React, { useState } from "react";
-import { dbFetch } from "@/lib/dbFetch";
 import { toast } from "sonner";
 
 interface FooterProps {
@@ -9,6 +8,7 @@ interface FooterProps {
 export const Footer: React.FC<FooterProps> = ({ setCurrentPage }) => {
   const [email, setEmail] = useState("");
   const [submitting, setSubmitting] = useState(false);
+  const [showAuthHint, setShowAuthHint] = useState(false);
 
   const handleSubscribe = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -57,8 +57,6 @@ export const Footer: React.FC<FooterProps> = ({ setCurrentPage }) => {
       setSubmitting(false);
     }
   };
-
-  const [showAuthHint, setShowAuthHint] = useState(false);
 
   return (
     <footer className="border-t border-border/50 py-14 px-6 bg-stone-950">
