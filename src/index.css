@@ -144,7 +144,7 @@
   }
 
   /* Drop cap — first letter of the first paragraph */
-  .prose-story > p:first-of-type::first-letter {
+  .prose-story:not(.no-dropcap) > p:first-of-type::first-letter {
     font-family: 'Cinzel Decorative', serif;
     float: left;
     font-size: 3.6em;
