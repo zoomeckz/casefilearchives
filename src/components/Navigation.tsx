@@ -5,6 +5,12 @@ import { AuthUser } from "@/hooks/useAuth";
 import { NotificationBell } from "@/components/NotificationBell";
 import { LanguageSwitcher } from "@/components/LanguageSwitcher";
 import { useTranslation } from "react-i18next";
+import {
+  NAV_GROUPS,
+  COMMUNITY_GROUP_KEY,
+  NAV_CHROME_KEYS,
+  type NavEntry,
+} from "@/i18n/navKeys";
 
 interface NavigationProps {
   currentPage: string;
@@ -26,24 +32,18 @@ export const Navigation: React.FC<NavigationProps> = ({
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [communityOpen, setCommunityOpen] = useState(false);
 
-  const navItems = [
-    { id: "home", label: t("nav.home") },
-    { id: "chapters", label: t("nav.chapters") },
-    { id: "characters", label: t("nav.codex") },
-  ];
+  // All labels resolve through the typed `NAV_GROUPS` registry so adding /
+  // renaming a nav item happens in exactly one place. See `src/i18n/navKeys.ts`.
+  const labelFor = (entry: NavEntry) => t(`nav.${entry.i18nKey}`);
 
-  const communityItems = [
-    { id: "forum", label: t("nav.forum") },
-    { id: "leaderboard", label: t("nav.leaderboard") },
-    { id: "world", label: t("nav.worldAtlas") },
-  ];
-
+  const navItems = NAV_GROUPS.primary.map((e) => ({ id: e.id, label: labelFor(e) }));
+  const communityItems = NAV_GROUPS.community.map((e) => ({ id: e.id, label: labelFor(e) }));
   const extraItems: { id: string; label: string }[] = [];
   if (user) {
-    extraItems.push({ id: "rewards", label: t("nav.rewards") });
+    extraItems.push(...NAV_GROUPS.authed.map((e) => ({ id: e.id, label: labelFor(e) })));
   }
   if (user?.isAdmin) {
-    extraItems.push({ id: "admin", label: t("nav.admin") });
+    extraItems.push(...NAV_GROUPS.admin.map((e) => ({ id: e.id, label: labelFor(e) })));
   }
 
   const communityActive = communityItems.some(c => currentPage === c.id);
@@ -88,7 +88,7 @@ export const Navigation: React.FC<NavigationProps> = ({
                   communityActive ? "text-primary nav-active-underline" : "text-muted-foreground hover:text-foreground"
                 }`}
               >
-                {t("nav.community")}
+                {t(`nav.${COMMUNITY_GROUP_KEY}`)}
                 <svg className={`w-3 h-3 transition-transform ${communityOpen ? "rotate-180" : ""}`} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                   <polyline points="6 9 12 15 18 9" />
                 </svg>
@@ -148,7 +148,7 @@ export const Navigation: React.FC<NavigationProps> = ({
                 <button
                   onClick={onSignOut}
                   className="text-muted-foreground hover:text-foreground transition-colors"
-                  title={t("nav.signOut")}
+                  title={t(`nav.${NAV_CHROME_KEYS.signOut}`)}
                 >
                   <Icons.Logout className="w-4 h-4" />
                 </button>
@@ -158,7 +158,7 @@ export const Navigation: React.FC<NavigationProps> = ({
                 onClick={() => setShowAuthModal(true)}
                 className="text-sm px-3.5 py-1.5 rounded-full bg-primary/15 hover:bg-primary/25 text-primary border border-primary/30 transition-colors"
               >
-                {t("nav.signIn")}
+                {t(`nav.${NAV_CHROME_KEYS.signIn}`)}
               </button>
             )}
           </div>
@@ -186,7 +186,7 @@ export const Navigation: React.FC<NavigationProps> = ({
                 {item.label}
               </button>
             ))}
-            <div className="py-1 text-xs text-muted-foreground/50 uppercase tracking-wider">{t("nav.community")}</div>
+            <div className="py-1 text-xs text-muted-foreground/50 uppercase tracking-wider">{t(`nav.${COMMUNITY_GROUP_KEY}`)}</div>
             {communityItems.map((item) => (
               <button
                 key={item.id}
@@ -215,13 +215,13 @@ export const Navigation: React.FC<NavigationProps> = ({
                   onClick={() => { setCurrentPage("profile"); setMobileMenuOpen(false); }}
                   className="block w-full text-left py-2 text-muted-foreground hover:text-foreground"
                 >
-                  {t("nav.profile")}
+                  {t(`nav.${NAV_CHROME_KEYS.profile}`)}
                 </button>
                 <button
                   onClick={() => { onSignOut(); setMobileMenuOpen(false); }}
                   className="block w-full text-left py-2 text-muted-foreground hover:text-destructive"
                 >
-                  {t("nav.signOut")}
+                  {t(`nav.${NAV_CHROME_KEYS.signOut}`)}
                 </button>
               </>
             ) : (
@@ -229,7 +229,7 @@ export const Navigation: React.FC<NavigationProps> = ({
                 onClick={() => { setShowAuthModal(true); setMobileMenuOpen(false); }}
                 className="block w-full text-left py-2 text-muted-foreground hover:text-primary"
               >
-                {t("nav.signIn")}
+                {t(`nav.${NAV_CHROME_KEYS.signIn}`)}
               </button>
             )}
             <LanguageSwitcher variant="mobile" />
