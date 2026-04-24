@@ -579,7 +579,7 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ glossary, authToken, use
                   draftsCount={drafts.length}
                   onJump={(tab) => updateAdminRoute({ tab, view: null, chapter: null, draft: null, term: null, sentence: null })}
                 />
-                <div className="grid grid-cols-2 md:grid-cols-3 gap-3 md:gap-6 mb-8 md:mb-12">
+                <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-6 auto-rows-fr gap-3 mb-8 md:mb-12">
                   <StatCard label="Total Chapter Views" value={analytics.totalViews} />
                   <StatCard label="Registered Readers" value={analytics.totalReaders} />
                   <StatCard label="Email Subscribers" value={analytics.totalSubscribers} />
@@ -1134,9 +1134,13 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ glossary, authToken, use
 };
 
 const StatCard = ({ label, value }: { label: string; value: number }) => (
-  <div className="p-4 md:p-6 bg-card/50 rounded-xl border border-border">
-    <div className="text-2xl md:text-3xl font-display text-foreground">{value.toLocaleString()}</div>
-    <div className="text-muted-foreground text-xs md:text-sm mt-1">{label}</div>
+  <div className="h-full px-3 py-3 bg-card/50 rounded-lg border border-border flex flex-col items-center justify-center text-center">
+    <div className="text-xl md:text-2xl font-display text-foreground leading-none">
+      {value.toLocaleString()}
+    </div>
+    <div className="text-muted-foreground text-[11px] md:text-xs mt-1.5 leading-tight">
+      {label}
+    </div>
   </div>
 );
 
