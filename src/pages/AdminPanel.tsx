@@ -1345,6 +1345,9 @@ interface ChapterTableProps {
   onDelete: (id: string, title: string) => void;
   onDownload: (num: number, title: string) => void;
   onTranslate: (id: string) => void;
+  selectedIds: Set<string>;
+  onToggleSelect: (id: string) => void;
+  onSelectAll: (ids: string[], all: boolean) => void;
 }
 
 const ChapterTable: React.FC<ChapterTableProps> = ({
@@ -1357,6 +1360,9 @@ const ChapterTable: React.FC<ChapterTableProps> = ({
   onDelete,
   onDownload,
   onTranslate,
+  selectedIds,
+  onToggleSelect,
+  onSelectAll,
 }) => {
   // Each header maps a column to its (asc, desc) sort keys. Clicking a header
   // toggles between the two; the active one shows a directional caret.
