@@ -608,7 +608,7 @@ export const ForumPage: React.FC<ForumPageProps> = ({
                     <span className="px-1.5 py-0.5 rounded bg-secondary/50 text-foreground/70">{post.category}</span>
                     <span>·</span>
                     <span className="inline-flex items-center gap-1">
-                      <Icons.MessageCircle className="w-3 h-3" />
+                      <MessageCircle className="w-3 h-3" />
                       {post.replies} {post.replies === 1 ? 'reply' : 'replies'}
                     </span>
                   </div>
