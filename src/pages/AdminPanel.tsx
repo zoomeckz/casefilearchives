@@ -13,7 +13,16 @@ import { ChapterTranslationsManager } from "@/components/ChapterTranslationsMana
 import { toast } from "sonner";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { Input } from "@/components/ui/input";
-import { Menu, X, Search, ArrowUpDown, Globe, CheckCircle2, AlertCircle, Loader2, ExternalLink, History } from "lucide-react";
+import {
+  Menu, X, Search, ArrowUpDown, Globe, CheckCircle2, AlertCircle, Loader2, ExternalLink, History,
+  ChevronLeft, ChevronRight, ChevronDown, MoreHorizontal, Edit3, Trash2, Eye, Download, FileText,
+  Calendar, AlertTriangle, BookOpen, Sparkles, BarChart3, PanelLeftClose, PanelLeftOpen,
+} from "lucide-react";
+import {
+  DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel,
+  DropdownMenuSeparator, DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import { NON_DEFAULT_LANGUAGES } from "@/i18n";
 
 interface AdminPanelProps {
   glossary: Record<string, GlossaryEntry>;
@@ -64,6 +73,37 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ glossary, authToken, use
     title: string;
     content: string;
   } | null>(null);
+
+  // Sidebar collapse state — persisted across page reloads via localStorage so
+  // power users keep the layout they prefer. Mobile uses the off-canvas drawer
+  // controlled by `sidebarOpen` instead.
+  const [sidebarCollapsed, setSidebarCollapsed] = useState<boolean>(() => {
+    if (typeof window === "undefined") return false;
+    return window.localStorage.getItem("admin.sidebar.collapsed") === "1";
+  });
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    window.localStorage.setItem("admin.sidebar.collapsed", sidebarCollapsed ? "1" : "0");
+  }, [sidebarCollapsed]);
+
+  // Translation coverage map: { [chapter_id]: count of non-English translations }.
+  // We fetch chapter_id only and count client-side so we don't need a custom RPC.
+  const [translationCounts, setTranslationCounts] = useState<Record<string, number>>({});
+  const refreshTranslationCounts = useCallback(async () => {
+    const { data } = await dbFetch<Array<{ chapter_id: string }>>("chapter_translations", {
+      select: "chapter_id",
+      token: authToken,
+    });
+    const counts: Record<string, number> = {};
+    (data ?? []).forEach((r) => {
+      counts[r.chapter_id] = (counts[r.chapter_id] ?? 0) + 1;
+    });
+    setTranslationCounts(counts);
+  }, [authToken]);
+  useEffect(() => {
+    refreshTranslationCounts();
+  }, [refreshTranslationCounts]);
+  const totalTranslationLanguages = NON_DEFAULT_LANGUAGES.length;
 
   const fetchGlossaryEntries = useCallback(async () => {
     const { data } = await dbFetch<any[]>('glossary', {
@@ -250,15 +290,40 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ glossary, authToken, use
     }
   };
 
-  const tabs = [
-    { id: "dashboard", label: "Dashboard", icon: Icons.Dashboard },
-    { id: "chapters", label: "Chapters", icon: Icons.Book },
-    { id: "search", label: "Search Content", icon: Search },
-    { id: "analytics", label: "Analytics", icon: Icons.Eye },
-    { id: "glossary", label: "Glossary", icon: Icons.Book },
-    { id: "seo", label: "SEO", icon: Globe },
-    { id: "audit", label: "Edit Audit", icon: History },
+  // Sidebar navigation grouped by job-to-be-done.
+  // - CONTENT: things you write or edit day-to-day.
+  // - INSIGHTS: read-only views into how the site is doing.
+  // - SYSTEM: rare, technical, "set and forget" controls.
+  // The flat `tabs` list is preserved (derived) for the URL-routing effect that
+  // validates the `?tab=` parameter, so no routing logic needs to change.
+  const navGroups: Array<{
+    label: string;
+    items: Array<{ id: string; label: string; icon: React.ComponentType<{ className?: string }> }>;
+  }> = [
+    {
+      label: "Content",
+      items: [
+        { id: "chapters", label: "Chapters", icon: BookOpen },
+        { id: "glossary", label: "Glossary", icon: Sparkles },
+        { id: "search", label: "Search & replace", icon: Search },
+      ],
+    },
+    {
+      label: "Insights",
+      items: [
+        { id: "dashboard", label: "Dashboard", icon: Icons.Dashboard },
+        { id: "analytics", label: "Analytics", icon: BarChart3 },
+      ],
+    },
+    {
+      label: "System",
+      items: [
+        { id: "seo", label: "SEO & feeds", icon: Globe },
+        { id: "audit", label: "Edit audit", icon: History },
+      ],
+    },
   ];
+  const tabs = navGroups.flatMap((g) => g.items);
 
   const refreshDrafts = useCallback(async () => {
     const d = await getAllDrafts(authToken);
@@ -384,54 +449,115 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ glossary, authToken, use
     if (isMobile) setSidebarOpen(false);
   };
 
-  const sortOptions: { value: ChapterSortKey; label: string }[] = [
-    { value: 'number-asc', label: 'Ch. # ↑' },
-    { value: 'number-desc', label: 'Ch. # ↓' },
-    { value: 'views-desc', label: 'Most Viewed' },
-    { value: 'views-asc', label: 'Least Viewed' },
-    { value: 'newest', label: 'Newest' },
-    { value: 'oldest', label: 'Oldest' },
-  ];
+
+  // Width tokens for the sidebar in each state. Kept here so the main content
+  // padding can react via the `md:pl-*` modifier instead of using a flex row,
+  // which avoided a subtle bug where the off-canvas mobile drawer would push
+  // the main column sideways.
+  const sidebarWidthClass = sidebarCollapsed ? "md:w-16" : "md:w-64";
+  const sidebarPadClass = sidebarCollapsed ? "md:pl-16" : "md:pl-64";
+  const showLabels = !sidebarCollapsed;
+
+  const renderNav = (onPick: (id: string) => void, compact: boolean) => (
+    <nav className="space-y-6">
+      {navGroups.map((group) => (
+        <div key={group.label}>
+          {!compact && (
+            <div className="px-3 mb-2 text-[10px] uppercase tracking-[0.18em] text-muted-foreground/70 font-medium">
+              {group.label}
+            </div>
+          )}
+          <div className="space-y-1">
+            {group.items.map((item) => {
+              const isActive = activeTab === item.id;
+              const Icon = item.icon;
+              return (
+                <button
+                  key={item.id}
+                  onClick={() => onPick(item.id)}
+                  title={compact ? item.label : undefined}
+                  className={`w-full flex items-center gap-3 ${compact ? "justify-center px-0" : "px-3"} py-2.5 rounded-lg text-left text-sm transition-colors ${
+                    isActive
+                      ? "bg-primary/15 text-primary border border-primary/30"
+                      : "text-muted-foreground hover:text-foreground hover:bg-secondary/60 border border-transparent"
+                  }`}
+                >
+                  <Icon className="w-4 h-4 shrink-0" />
+                  {!compact && <span className="truncate">{item.label}</span>}
+                </button>
+              );
+            })}
+          </div>
+        </div>
+      ))}
+    </nav>
+  );
 
   return (
-    <div className="min-h-screen flex flex-col md:flex-row">
-      {/* Mobile header */}
+    <div className="min-h-screen bg-background">
+      {/* Mobile top bar — visible only below md. */}
       {isMobile && (
         <div className="flex items-center justify-between p-4 bg-card border-b border-border sticky top-0 z-30">
-          <h2 className="font-display text-lg text-accent">Admin Panel</h2>
-          <button onClick={() => setSidebarOpen(!sidebarOpen)} className="p-2 rounded-lg hover:bg-secondary transition-colors">
-            {sidebarOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
-          </button>
+          <div className="flex items-center gap-2">
+            <button
+              onClick={() => setSidebarOpen(!sidebarOpen)}
+              className="p-2 rounded-lg hover:bg-secondary transition-colors"
+              aria-label="Toggle navigation"
+            >
+              {sidebarOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
+            </button>
+            <h2 className="font-display text-lg text-accent">Admin</h2>
+          </div>
+          <span className="text-xs text-muted-foreground capitalize">{activeTab}</span>
         </div>
       )}
 
-      {/* Sidebar / Mobile drawer */}
-      {(sidebarOpen || !isMobile) && (
+      {/* Mobile off-canvas drawer */}
+      {isMobile && sidebarOpen && (
         <>
-          {isMobile && <div className="fixed inset-0 bg-black/50 z-30" onClick={() => setSidebarOpen(false)} />}
-          <aside className={`${isMobile ? 'fixed top-0 left-0 h-full z-40 w-64 animate-in slide-in-from-left' : 'w-64 sticky top-0 h-screen'} bg-card border-r border-border p-6 overflow-y-auto`}>
-            <h2 className="font-display text-xl text-accent mb-8">{isMobile ? '' : 'Admin Panel'}</h2>
-            <nav className="space-y-2">
-              {tabs.map((tab) => (
-                <button
-                  key={tab.id}
-                  onClick={() => handleTabClick(tab.id)}
-                  className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg text-left transition-colors ${
-                    activeTab === tab.id
-                      ? "bg-primary/20 text-primary"
-                      : "text-muted-foreground hover:text-foreground hover:bg-secondary"
-                  }`}
-                >
-                  <tab.icon className="w-5 h-5" />
-                  {tab.label}
-                </button>
-              ))}
-            </nav>
+          <div className="fixed inset-0 bg-black/50 z-30" onClick={() => setSidebarOpen(false)} />
+          <aside className="fixed top-0 left-0 h-full z-40 w-64 bg-card border-r border-border p-4 overflow-y-auto animate-in slide-in-from-left">
+            <div className="flex items-center justify-between mb-6">
+              <h2 className="font-display text-lg text-accent">Admin Panel</h2>
+              <button
+                onClick={() => setSidebarOpen(false)}
+                className="p-1.5 rounded hover:bg-secondary"
+                aria-label="Close navigation"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+            {renderNav(handleTabClick, false)}
           </aside>
         </>
       )}
 
-      <main className="flex-1 p-4 md:p-8 overflow-y-auto">
+      {/* Desktop fixed sidebar */}
+      {!isMobile && (
+        <aside
+          className={`fixed inset-y-0 left-0 z-30 ${sidebarWidthClass} bg-card border-r border-border p-3 overflow-y-auto transition-all duration-200`}
+        >
+          <div className={`flex items-center ${showLabels ? "justify-between" : "justify-center"} mb-6 px-2`}>
+            {showLabels && (
+              <div>
+                <h2 className="font-display text-base text-accent leading-none">Sedorium</h2>
+                <p className="text-[10px] uppercase tracking-widest text-muted-foreground mt-1">Admin</p>
+              </div>
+            )}
+            <button
+              onClick={() => setSidebarCollapsed((c) => !c)}
+              className="p-1.5 rounded hover:bg-secondary text-muted-foreground"
+              aria-label={sidebarCollapsed ? "Expand sidebar" : "Collapse sidebar"}
+              title={sidebarCollapsed ? "Expand sidebar" : "Collapse sidebar"}
+            >
+              {sidebarCollapsed ? <PanelLeftOpen className="w-4 h-4" /> : <PanelLeftClose className="w-4 h-4" />}
+            </button>
+          </div>
+          {renderNav(handleTabClick, sidebarCollapsed)}
+        </aside>
+      )}
+
+      <main className={`flex-1 p-4 md:p-8 overflow-y-auto transition-all duration-200 ${!isMobile ? sidebarPadClass : ""}`}>
         {loading ? (
           <p className="text-muted-foreground">Loading...</p>
         ) : (
@@ -439,6 +565,14 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ glossary, authToken, use
             {activeTab === "dashboard" && analytics && (
               <div>
                 <h1 className="font-display text-2xl md:text-3xl text-accent mb-6 md:mb-8">Dashboard</h1>
+                <NeedsAttentionPanel
+                  chapters={chapters}
+                  glossaryEntries={glossaryEntries}
+                  translationCounts={translationCounts}
+                  totalLanguages={totalTranslationLanguages}
+                  draftsCount={drafts.length}
+                  onJump={(tab) => updateAdminRoute({ tab, view: null, chapter: null, draft: null, term: null, sentence: null })}
+                />
                 <div className="grid grid-cols-2 md:grid-cols-3 gap-3 md:gap-6 mb-8 md:mb-12">
                   <StatCard label="Total Chapter Views" value={analytics.totalViews} />
                   <StatCard label="Registered Readers" value={analytics.totalReaders} />
@@ -505,18 +639,6 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ glossary, authToken, use
                       className="pl-9 h-9 text-sm"
                     />
                   </div>
-                  <div className="flex items-center gap-1">
-                    <ArrowUpDown className="w-4 h-4 text-muted-foreground shrink-0" />
-                    <select
-                      value={chapterSort}
-                      onChange={(e) => setChapterSort(e.target.value as ChapterSortKey)}
-                      className="h-9 rounded-md border border-input bg-background px-3 text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-ring"
-                    >
-                      {sortOptions.map(opt => (
-                        <option key={opt.value} value={opt.value}>{opt.label}</option>
-                      ))}
-                    </select>
-                  </div>
                 </div>
 
                 {/* Sub-tabs */}
@@ -546,78 +668,33 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ glossary, authToken, use
                         {chapterSearch ? 'No chapters match your search.' : 'No chapters yet. Create your first one!'}
                       </p>
                     ) : (
-                      <div className="space-y-2">
-                        {filteredChapters.map(ch => (
-                          <div key={ch.id} className="flex flex-col sm:flex-row sm:items-center justify-between p-3 md:p-4 bg-card/50 rounded-lg border border-border/50 gap-2 group">
-                            <div className="min-w-0">
-                              <span className="text-foreground font-medium text-sm md:text-base block truncate">Ch. {ch.chapter_number}: {ch.title}</span>
-                              <div className="flex gap-3 mt-1 text-xs text-muted-foreground">
-                                <span>{ch.views} views</span>
-                                <span>{ch.published_at ? new Date(ch.published_at).toLocaleDateString() : 'No date'}</span>
-                                {ch.scheduled_at && (
-                                  <span className={`font-medium ${new Date(ch.scheduled_at) > new Date() ? 'text-accent' : 'text-muted-foreground'}`}>
-                                    📅 {new Date(ch.scheduled_at).toLocaleDateString('sv-SE', { timeZone: 'Europe/Stockholm' })} {new Date(ch.scheduled_at).toLocaleTimeString('sv-SE', { timeZone: 'Europe/Stockholm', hour: '2-digit', minute: '2-digit' })}
-                                  </span>
-                                )}
-                              </div>
-                            </div>
-                            <div className="flex items-center gap-2 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity shrink-0">
-                              <button
-                                onClick={() => downloadSingleChapter(ch.chapter_number, ch.title)}
-                                className="px-3 py-1.5 bg-primary/20 hover:bg-primary/30 text-primary rounded text-xs transition-colors"
-                                title="Download this chapter"
-                              >
-                                Download
-                              </button>
-                              <a
-                                href={`/chapters/${ch.chapter_number}`}
-                                target="_blank"
-                                rel="noopener noreferrer"
-                                className="px-3 py-1.5 bg-accent/20 hover:bg-accent/30 text-accent rounded text-xs transition-colors inline-block"
-                              >
-                                Preview
-                              </a>
-                              <button
-                                onClick={() => updateAdminRoute({ tab: 'chapters', view: 'edit', chapter: ch.id, draft: null, term: null, sentence: null })}
-                                className="px-3 py-1.5 bg-secondary hover:bg-secondary/80 text-foreground rounded text-xs transition-colors"
-                              >
-                                Edit
-                              </button>
-                              <button
-                                onClick={async () => {
-                                  // Chapter rows in the list don't carry `content` to keep the listing query small.
-                                  // Fetch it lazily before opening the translations modal so we can offer "Load English source".
-                                  const { data, error } = await dbFetch<any[]>('chapters', {
-                                    select: 'id,chapter_number,title,content',
-                                    filters: `id=eq.${ch.id}`,
-                                    token: authToken,
-                                  });
-                                  if (error || !data?.[0]) {
-                                    toast.error('Could not load chapter content for translation.');
-                                    return;
-                                  }
-                                  setTranslatingChapter({
-                                    id: data[0].id,
-                                    chapter_number: data[0].chapter_number,
-                                    title: data[0].title,
-                                    content: data[0].content || '',
-                                  });
-                                }}
-                                className="px-3 py-1.5 bg-secondary hover:bg-secondary/80 text-foreground rounded text-xs transition-colors inline-flex items-center gap-1"
-                                title="Manage translations for this chapter"
-                              >
-                                <Globe className="w-3 h-3" /> Translate
-                              </button>
-                              <button
-                                onClick={() => handleDeleteChapter(ch.id, ch.title)}
-                                className="px-3 py-1.5 bg-destructive/20 hover:bg-destructive/30 text-destructive rounded text-xs transition-colors"
-                              >
-                                Delete
-                              </button>
-                            </div>
-                          </div>
-                        ))}
-                      </div>
+                      <ChapterTable
+                        chapters={filteredChapters}
+                        translationCounts={translationCounts}
+                        totalLanguages={totalTranslationLanguages}
+                        chapterSort={chapterSort}
+                        onSortChange={setChapterSort}
+                        onEdit={(id) => updateAdminRoute({ tab: 'chapters', view: 'edit', chapter: id, draft: null, term: null, sentence: null })}
+                        onDelete={handleDeleteChapter}
+                        onDownload={(num, title) => downloadSingleChapter(num, title)}
+                        onTranslate={async (id) => {
+                          const { data, error } = await dbFetch<any[]>('chapters', {
+                            select: 'id,chapter_number,title,content',
+                            filters: `id=eq.${id}`,
+                            token: authToken,
+                          });
+                          if (error || !data?.[0]) {
+                            toast.error('Could not load chapter content for translation.');
+                            return;
+                          }
+                          setTranslatingChapter({
+                            id: data[0].id,
+                            chapter_number: data[0].chapter_number,
+                            title: data[0].title,
+                            content: data[0].content || '',
+                          });
+                        }}
+                      />
                     )}
                   </>
                 )}
@@ -1058,3 +1135,322 @@ const StatCard = ({ label, value }: { label: string; value: number }) => (
 );
 
 export default AdminPanel;
+
+// ===========================================================================
+// ChapterTable — sortable, hover-action table for the published chapters list.
+// Lifted out of AdminPanel to keep the main component readable.
+// ===========================================================================
+
+type ChapterRow = {
+  id: string;
+  title: string;
+  chapter_number: number;
+  views: number;
+  published_at: string | null;
+  scheduled_at: string | null;
+};
+
+type SortKey = 'number-asc' | 'number-desc' | 'views-desc' | 'views-asc' | 'newest' | 'oldest';
+
+interface ChapterTableProps {
+  chapters: ChapterRow[];
+  translationCounts: Record<string, number>;
+  totalLanguages: number;
+  chapterSort: SortKey;
+  onSortChange: (s: SortKey) => void;
+  onEdit: (id: string) => void;
+  onDelete: (id: string, title: string) => void;
+  onDownload: (num: number, title: string) => void;
+  onTranslate: (id: string) => void;
+}
+
+const ChapterTable: React.FC<ChapterTableProps> = ({
+  chapters,
+  translationCounts,
+  totalLanguages,
+  chapterSort,
+  onSortChange,
+  onEdit,
+  onDelete,
+  onDownload,
+  onTranslate,
+}) => {
+  // Each header maps a column to its (asc, desc) sort keys. Clicking a header
+  // toggles between the two; the active one shows a directional caret.
+  type Column = { key: 'number' | 'title' | 'views' | 'date'; label: string; ascKey?: SortKey; descKey?: SortKey; align?: string; hideOnMobile?: boolean };
+  const columns: Column[] = [
+    { key: 'number', label: '#', ascKey: 'number-asc', descKey: 'number-desc' },
+    { key: 'title', label: 'Title' },
+    { key: 'views', label: 'Views', ascKey: 'views-asc', descKey: 'views-desc', align: 'text-right', hideOnMobile: true },
+    { key: 'date', label: 'Published', ascKey: 'oldest', descKey: 'newest', hideOnMobile: true },
+  ];
+
+  const cycle = (col: Column) => {
+    if (!col.ascKey || !col.descKey) return;
+    onSortChange(chapterSort === col.descKey ? col.ascKey : col.descKey);
+  };
+
+  const caretFor = (col: Column) => {
+    if (chapterSort === col.ascKey) return <ChevronDown className="w-3 h-3 rotate-180 inline-block" />;
+    if (chapterSort === col.descKey) return <ChevronDown className="w-3 h-3 inline-block" />;
+    return <ArrowUpDown className="w-3 h-3 inline-block opacity-30" />;
+  };
+
+  return (
+    <div className="rounded-lg border border-border/60 overflow-hidden bg-card/30">
+      <div className="overflow-x-auto">
+        <table className="w-full text-sm">
+          <thead>
+            <tr className="text-left text-[11px] uppercase tracking-wider text-muted-foreground bg-card/60 border-b border-border/60">
+              {columns.map((col) => (
+                <th
+                  key={col.key}
+                  className={`px-3 md:px-4 py-2.5 font-medium ${col.align ?? ''} ${col.hideOnMobile ? 'hidden md:table-cell' : ''}`}
+                >
+                  {col.ascKey ? (
+                    <button
+                      onClick={() => cycle(col)}
+                      className="inline-flex items-center gap-1 hover:text-foreground transition-colors"
+                    >
+                      {col.label} {caretFor(col)}
+                    </button>
+                  ) : (
+                    col.label
+                  )}
+                </th>
+              ))}
+              <th className="px-3 md:px-4 py-2.5 font-medium hidden lg:table-cell">Translations</th>
+              <th className="px-3 md:px-4 py-2.5 font-medium text-right">Actions</th>
+            </tr>
+          </thead>
+          <tbody>
+            {chapters.map((ch) => {
+              const count = translationCounts[ch.id] ?? 0;
+              const isScheduled = ch.scheduled_at && new Date(ch.scheduled_at) > new Date();
+              return (
+                <tr
+                  key={ch.id}
+                  className="border-b border-border/40 last:border-b-0 hover:bg-card/60 group transition-colors"
+                >
+                  <td className="px-3 md:px-4 py-3 text-muted-foreground tabular-nums">{ch.chapter_number}</td>
+                  <td className="px-3 md:px-4 py-3 min-w-0">
+                    <div className="text-foreground font-medium truncate">{ch.title}</div>
+                    <div className="md:hidden text-xs text-muted-foreground mt-0.5">
+                      {ch.views} views · {ch.published_at ? new Date(ch.published_at).toLocaleDateString() : 'No date'}
+                    </div>
+                  </td>
+                  <td className="px-3 md:px-4 py-3 text-right tabular-nums text-muted-foreground hidden md:table-cell">
+                    {ch.views.toLocaleString()}
+                  </td>
+                  <td className="px-3 md:px-4 py-3 hidden md:table-cell">
+                    {isScheduled ? (
+                      <span className="inline-flex items-center gap-1 text-xs text-accent">
+                        <Calendar className="w-3 h-3" />
+                        {new Date(ch.scheduled_at!).toLocaleDateString('sv-SE', { timeZone: 'Europe/Stockholm' })}
+                      </span>
+                    ) : (
+                      <span className="text-xs text-muted-foreground">
+                        {ch.published_at ? new Date(ch.published_at).toLocaleDateString() : '—'}
+                      </span>
+                    )}
+                  </td>
+                  <td className="px-3 md:px-4 py-3 hidden lg:table-cell">
+                    <TranslationBadge count={count} total={totalLanguages} />
+                  </td>
+                  <td className="px-3 md:px-4 py-3 text-right">
+                    <DropdownMenu>
+                      <DropdownMenuTrigger asChild>
+                        <button
+                          className="p-1.5 rounded hover:bg-secondary text-muted-foreground hover:text-foreground transition-colors"
+                          aria-label={`Actions for chapter ${ch.chapter_number}`}
+                        >
+                          <MoreHorizontal className="w-4 h-4" />
+                        </button>
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent align="end" className="w-48">
+                        <DropdownMenuLabel>Ch. {ch.chapter_number}</DropdownMenuLabel>
+                        <DropdownMenuSeparator />
+                        <DropdownMenuItem onClick={() => onEdit(ch.id)}>
+                          <Edit3 className="w-4 h-4 mr-2" /> Edit
+                        </DropdownMenuItem>
+                        <DropdownMenuItem onClick={() => onTranslate(ch.id)}>
+                          <Globe className="w-4 h-4 mr-2" /> Translations
+                          <span className="ml-auto text-xs text-muted-foreground">{count}/{totalLanguages}</span>
+                        </DropdownMenuItem>
+                        <DropdownMenuItem asChild>
+                          <a href={`/chapters/${ch.chapter_number}`} target="_blank" rel="noopener noreferrer">
+                            <Eye className="w-4 h-4 mr-2" /> Preview
+                          </a>
+                        </DropdownMenuItem>
+                        <DropdownMenuItem onClick={() => onDownload(ch.chapter_number, ch.title)}>
+                          <Download className="w-4 h-4 mr-2" /> Download
+                        </DropdownMenuItem>
+                        <DropdownMenuSeparator />
+                        <DropdownMenuItem
+                          onClick={() => onDelete(ch.id, ch.title)}
+                          className="text-destructive focus:text-destructive"
+                        >
+                          <Trash2 className="w-4 h-4 mr-2" /> Delete
+                        </DropdownMenuItem>
+                      </DropdownMenuContent>
+                    </DropdownMenu>
+                  </td>
+                </tr>
+              );
+            })}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  );
+};
+
+const TranslationBadge: React.FC<{ count: number; total: number }> = ({ count, total }) => {
+  const ratio = total === 0 ? 0 : count / total;
+  const tone =
+    ratio === 0 ? "text-muted-foreground border-border" :
+    ratio < 1 ? "text-accent border-accent/40" :
+    "text-primary border-primary/40";
+  return (
+    <span className={`inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full text-xs border bg-background/40 ${tone}`}>
+      <Globe className="w-3 h-3" />
+      {count}/{total}
+    </span>
+  );
+};
+
+// ===========================================================================
+// NeedsAttentionPanel — surfaces actionable work on the dashboard so opening
+// the admin doesn't dump you on a wall of stats. Each item has a one-click
+// jump to the relevant tab.
+// ===========================================================================
+
+interface NeedsAttentionProps {
+  chapters: ChapterRow[];
+  glossaryEntries: Array<{ id: string; term: string; description: string | null }>;
+  translationCounts: Record<string, number>;
+  totalLanguages: number;
+  draftsCount: number;
+  onJump: (tab: string) => void;
+}
+
+const NeedsAttentionPanel: React.FC<NeedsAttentionProps> = ({
+  chapters,
+  glossaryEntries,
+  translationCounts,
+  totalLanguages,
+  draftsCount,
+  onJump,
+}) => {
+  const now = Date.now();
+  const SEVEN_DAYS = 7 * 24 * 60 * 60 * 1000;
+
+  // Chapters scheduled to publish within 7 days — Friday-cadence reminder.
+  const upcoming = chapters.filter(
+    (c) => c.scheduled_at && new Date(c.scheduled_at).getTime() > now && new Date(c.scheduled_at).getTime() - now < SEVEN_DAYS,
+  );
+
+  // Chapters with at least one missing translation. We only surface the count;
+  // clicking jumps to the chapter tab where they can hover the row to translate.
+  const missingTranslations = chapters.filter(
+    (c) => (translationCounts[c.id] ?? 0) < totalLanguages,
+  );
+
+  // Glossary terms without a description (or only whitespace) — common after
+  // bulk-imports.
+  const emptyGlossary = glossaryEntries.filter(
+    (g) => !g.description || g.description.trim().length === 0,
+  );
+
+  const items = [
+    upcoming.length > 0 && {
+      key: "upcoming",
+      icon: Calendar,
+      tone: "accent" as const,
+      title: `${upcoming.length} chapter${upcoming.length === 1 ? "" : "s"} scheduled this week`,
+      detail: upcoming
+        .slice(0, 3)
+        .map((c) => `Ch. ${c.chapter_number}`)
+        .join(", ") + (upcoming.length > 3 ? "…" : ""),
+      action: { label: "Review", tab: "chapters" },
+    },
+    missingTranslations.length > 0 && {
+      key: "translations",
+      icon: Globe,
+      tone: "muted" as const,
+      title: `${missingTranslations.length} chapter${missingTranslations.length === 1 ? "" : "s"} missing translations`,
+      detail: `Across ${totalLanguages} non-English languages.`,
+      action: { label: "Translate", tab: "chapters" },
+    },
+    emptyGlossary.length > 0 && {
+      key: "glossary",
+      icon: FileText,
+      tone: "destructive" as const,
+      title: `${emptyGlossary.length} glossary term${emptyGlossary.length === 1 ? "" : "s"} without descriptions`,
+      detail: emptyGlossary
+        .slice(0, 4)
+        .map((g) => g.term)
+        .join(", ") + (emptyGlossary.length > 4 ? "…" : ""),
+      action: { label: "Fix", tab: "glossary" },
+    },
+    draftsCount > 0 && {
+      key: "drafts",
+      icon: Edit3,
+      tone: "muted" as const,
+      title: `${draftsCount} unpublished draft${draftsCount === 1 ? "" : "s"}`,
+      detail: "Auto-saved while editing. Resume any time.",
+      action: { label: "Open", tab: "chapters" },
+    },
+  ].filter(Boolean) as Array<{
+    key: string;
+    icon: React.ComponentType<{ className?: string }>;
+    tone: "accent" | "muted" | "destructive";
+    title: string;
+    detail: string;
+    action: { label: string; tab: string };
+  }>;
+
+  if (items.length === 0) {
+    return (
+      <div className="mb-6 md:mb-8 p-4 md:p-5 rounded-xl border border-primary/20 bg-primary/5 flex items-center gap-3">
+        <CheckCircle2 className="w-5 h-5 text-primary shrink-0" />
+        <div>
+          <div className="text-sm font-medium text-foreground">All clear</div>
+          <div className="text-xs text-muted-foreground">No scheduled chapters this week, no missing translations or empty glossary entries.</div>
+        </div>
+      </div>
+    );
+  }
+
+  const toneClasses: Record<NonNullable<typeof items[number]>["tone"], string> = {
+    accent: "border-accent/30 bg-accent/5 text-accent",
+    muted: "border-border bg-card/40 text-muted-foreground",
+    destructive: "border-destructive/30 bg-destructive/5 text-destructive",
+  };
+
+  return (
+    <div className="mb-6 md:mb-8">
+      <div className="flex items-center gap-2 mb-3">
+        <AlertTriangle className="w-4 h-4 text-accent" />
+        <h2 className="font-display text-base text-accent">Needs attention</h2>
+      </div>
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+        {items.map((item) => (
+          <div key={item.key} className={`flex items-start gap-3 p-3 md:p-4 rounded-xl border ${toneClasses[item.tone]}`}>
+            <item.icon className="w-4 h-4 mt-0.5 shrink-0" />
+            <div className="flex-1 min-w-0">
+              <div className="text-sm font-medium text-foreground">{item.title}</div>
+              <div className="text-xs text-muted-foreground truncate">{item.detail}</div>
+            </div>
+            <button
+              onClick={() => item.action && onJump(item.action.tab)}
+              className="text-xs px-2.5 py-1 rounded bg-background/60 hover:bg-background border border-border text-foreground shrink-0"
+            >
+              {item.action.label}
+            </button>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+};
