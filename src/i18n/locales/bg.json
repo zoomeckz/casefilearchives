@@ -40,7 +40,12 @@
     "scheduled": "Скоро",
     "newBadge": "Нова",
     "views": "прегледа",
-    "view": "преглед"
+    "view": "преглед",
+    "sortNewest": "Най-нови",
+    "sortOldest": "Най-стари",
+    "sortMostViewed": "Най-гледани",
+    "chapterLabel": "Глава",
+    "releases": "Публикува се"
   },
   "reader": {
     "back": "Към главите",
