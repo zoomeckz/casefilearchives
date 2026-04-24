@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { Chapter } from "@/hooks/useChapters";
 import { dbFetch } from "@/lib/dbFetch";
 import { ProfileFrame } from "@/components/ProfileFrame";
+import { SectionHeader } from "@/components/SectionHeader";
 import { useTranslation } from "react-i18next";
 import { LOCALE_TAGS, type SupportedLanguage } from "@/i18n";
 
@@ -140,9 +141,7 @@ export const HomePage: React.FC<HomePageProps> = ({
         <div className="max-w-5xl mx-auto grid grid-cols-1 lg:grid-cols-2 gap-8 lg:gap-12">
           {/* Latest Chapters */}
           <div>
-            <h2 className="font-display text-sm uppercase tracking-[0.2em] text-muted-foreground mb-6">
-              {t("home.latestChapters")}
-            </h2>
+            <SectionHeader align="left">{t("home.latestChapters")}</SectionHeader>
 
             {chapters.length === 0 ? (
               <p className="text-muted-foreground text-center">No chapters yet.</p>
@@ -191,9 +190,7 @@ export const HomePage: React.FC<HomePageProps> = ({
 
           {/* Latest Forum Posts */}
           <div>
-            <h2 className="font-display text-sm uppercase tracking-[0.2em] text-muted-foreground mb-6 text-center">
-              {t("home.latestDiscussions")}
-            </h2>
+            <SectionHeader align="center">{t("home.latestDiscussions")}</SectionHeader>
 
             {forumPosts.length === 0 ? (
               <p className="text-muted-foreground text-center">No discussions yet.</p>
