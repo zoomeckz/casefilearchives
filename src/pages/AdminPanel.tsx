@@ -842,33 +842,37 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ glossary, authToken, use
                         {chapterSearch ? 'No chapters match your search.' : 'No chapters yet. Create your first one!'}
                       </p>
                     ) : (
-                      <ChapterTable
+                      <>
+                        <ChapterBulkActionsBar
+                          selectedCount={selectedChapters.size}
+                          busy={bulkBusy}
+                          onClear={clearChapterSelection}
+                          onTranslate={() => startTranslationQueue(Array.from(selectedChapters))}
+                          onSeedFromEnglish={bulkSeedFromEnglish}
+                          onDeleteLanguage={bulkDeleteLanguage}
+                        />
+                        <ChapterTable
                         chapters={filteredChapters}
                         translationCounts={translationCounts}
                         totalLanguages={totalTranslationLanguages}
                         chapterSort={chapterSort}
                         onSortChange={setChapterSort}
+                        selectedIds={selectedChapters}
+                        onToggleSelect={toggleChapterSelection}
+                        onSelectAll={(ids, all) => {
+                          setSelectedChapters((prev) => {
+                            const next = new Set(prev);
+                            if (all) ids.forEach((id) => next.add(id));
+                            else ids.forEach((id) => next.delete(id));
+                            return next;
+                          });
+                        }}
                         onEdit={(id) => updateAdminRoute({ tab: 'chapters', view: 'edit', chapter: id, draft: null, term: null, sentence: null })}
                         onDelete={handleDeleteChapter}
                         onDownload={(num, title) => downloadSingleChapter(num, title)}
-                        onTranslate={async (id) => {
-                          const { data, error } = await dbFetch<any[]>('chapters', {
-                            select: 'id,chapter_number,title,content',
-                            filters: `id=eq.${id}`,
-                            token: authToken,
-                          });
-                          if (error || !data?.[0]) {
-                            toast.error('Could not load chapter content for translation.');
-                            return;
-                          }
-                          setTranslatingChapter({
-                            id: data[0].id,
-                            chapter_number: data[0].chapter_number,
-                            title: data[0].title,
-                            content: data[0].content || '',
-                          });
-                        }}
-                      />
+                        onTranslate={openChapterForTranslation}
+                        />
+                      </>
                     )}
                   </>
                 )}
