@@ -1,7 +1,7 @@
 import React, { useState, useMemo, useEffect } from "react";
 import { GlossaryEntry } from "@/lib/data";
 import { CharacterRelationshipMap } from "@/components/CharacterRelationshipMap";
-import { Search, Menu, X, EyeOff, Eye, ChevronRight, ChevronLeft, Users, MapPin, Sparkles, BookOpen, Skull, Loader2, Heart, Link2, Download, Maximize2 } from "lucide-react";
+import { Search, Menu, X, EyeOff, Eye, ChevronRight, ChevronLeft, Users, MapPin, Sparkles, BookOpen, Skull, Loader2, Heart, Link2, Download, Maximize2, Lock } from "lucide-react";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
 import { toast } from "sonner";
 import {
@@ -197,11 +197,11 @@ export const CharactersPage: React.FC<CharactersPageProps> = ({
           {/* Spoiler-progress hint */}
           {isLoggedIn ? (
             <p className="text-stone-600 text-xs mt-3">
-              Showing entries safe through chapter {maxRead}. Later entries are blurred — click to reveal.
+              Showing entries safe through chapter {maxRead}. Later entries are locked — click the lock to reveal.
             </p>
           ) : (
             <p className="text-stone-600 text-xs mt-3">
-              You're browsing as a guest. Entries from chapters {VISIBLE_FOR_GUESTS + 1}+ are blurred to avoid spoilers.
+              You're browsing as a guest. Entries from chapters {VISIBLE_FOR_GUESTS + 1}+ are locked to avoid spoilers.
             </p>
           )}
 
