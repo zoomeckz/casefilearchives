@@ -143,13 +143,15 @@
     line-height: 1.8;
   }
 
-  /* Drop cap — first letter of the first paragraph */
+  /* Drop cap — first letter of the first paragraph.
+     Kept subtle (≈2 lines tall) so it reads as an accent ornament rather than
+     a giant letter that breaks the rhythm of the opening paragraph. */
   .prose-story:not(.no-dropcap) > p:first-of-type::first-letter {
     font-family: 'Cinzel Decorative', serif;
     float: left;
-    font-size: 3.6em;
-    line-height: 0.9;
-    padding: 0.15em 0.12em 0 0;
+    font-size: 2.2em;
+    line-height: 1;
+    padding: 0.05em 0.1em 0 0;
     color: hsl(var(--accent));
     font-weight: 700;
   }
