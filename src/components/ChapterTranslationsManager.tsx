@@ -262,7 +262,7 @@ export const ChapterTranslationsManager: React.FC<ChapterTranslationsManagerProp
                   <FlagIcon lang={lang} size={16} />
                   <span>{LANGUAGE_LABELS[lang]}</span>
                   {has ? (
-                    <Check className="w-3.5 h-3.5 text-emerald-500" aria-label="Translated" />
+                    <Check className="w-3.5 h-3.5 text-primary" aria-label="Translated" />
                   ) : (
                     <span className="w-1.5 h-1.5 rounded-full bg-muted-foreground/40" aria-label="Missing" />
                   )}
@@ -302,8 +302,8 @@ export const ChapterTranslationsManager: React.FC<ChapterTranslationsManagerProp
                 )}
               </div>
 
-              <div className="rounded border border-amber-500/30 bg-amber-500/5 px-3 py-2 text-xs text-amber-200/90">
-                <strong className="text-amber-300">Tip:</strong> keep proper nouns (Sedorium, Beambreak,
+              <div className="rounded border border-accent/30 bg-accent/5 px-3 py-2 text-xs text-accent-foreground/90">
+                <strong className="text-accent">Tip:</strong> keep proper nouns (Sedorium, Beambreak,
                 character & place names) in their English spelling so the glossary popups still trigger on the
                 translated chapter.
               </div>
