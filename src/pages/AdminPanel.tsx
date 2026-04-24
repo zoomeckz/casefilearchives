@@ -75,6 +75,17 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ glossary, authToken, use
     content: string;
   } | null>(null);
 
+  // Bulk-selection state for the Chapters table.
+  //   - `selectedChapters`     : the set of selected chapter ids.
+  //   - `translationQueue`     : ordered list of chapter ids to walk the
+  //     translation editor through. When the editor closes we pop the next
+  //     id and reopen, giving a "Translate all selected" UX without building
+  //     a separate batch screen.
+  //   - `bulkBusy`             : disables the bar while a network bulk op runs.
+  const [selectedChapters, setSelectedChapters] = useState<Set<string>>(new Set());
+  const [translationQueue, setTranslationQueue] = useState<string[]>([]);
+  const [bulkBusy, setBulkBusy] = useState(false);
+
   // Sidebar collapse state — persisted across page reloads via localStorage so
   // power users keep the layout they prefer. Mobile uses the off-canvas drawer
   // controlled by `sidebarOpen` instead.
