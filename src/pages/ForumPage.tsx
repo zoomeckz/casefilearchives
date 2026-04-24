@@ -573,19 +573,35 @@ export const ForumPage: React.FC<ForumPageProps> = ({
           ) : (
             filteredPosts.map((post) => (
               <div key={post.id} onClick={() => navigate(postUrl(post))}
-                className={`group py-5 px-5 cursor-pointer rounded-lg hover:bg-secondary/30 transition-colors ${post.isPinned ? 'border border-accent/20 bg-accent/5' : ''}`}
+                className={`group py-5 px-5 cursor-pointer rounded-lg hover:bg-secondary/30 transition-colors flex gap-4 items-start ${post.isPinned ? 'border border-accent/20 bg-accent/5' : ''}`}
               >
-                <div className="flex items-center gap-2 text-sm text-muted-foreground mb-1">
-                  {post.isPinned && <span className="text-accent">📌</span>}
-                  <span>{post.category}</span>
-                  <span>·</span>
-                  <span>{post.replies} replies</span>
+                <div
+                  className="shrink-0 mt-0.5"
+                  onClick={(e) => { e.stopPropagation(); navigate(`/user/${post.authorId}`); }}
+                >
+                  <ProfileFrame
+                    avatarUrl={post.authorAvatar}
+                    name={post.author}
+                    frame={post.authorFrame}
+                    size={40}
+                  />
                 </div>
-                <h3 className="text-lg text-foreground group-hover:text-primary transition-colors">{post.title}</h3>
-                <p className="text-muted-foreground text-sm mt-1 line-clamp-2" dangerouslySetInnerHTML={{ __html: renderFormatted(post.content) }} />
-                <p className="text-muted-foreground/60 text-xs mt-2">
-                  by <span className="text-primary/80 cursor-pointer hover:underline" onClick={(e) => { e.stopPropagation(); navigate(`/user/${post.authorId}`); }}>{post.author}</span> · {new Date(post.createdAt).toLocaleDateString()}
-                </p>
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center gap-2 text-xs text-muted-foreground mb-1 flex-wrap">
+                    {post.isPinned && <span className="text-accent">📌</span>}
+                    <span className="px-1.5 py-0.5 rounded bg-secondary/50 text-foreground/70">{post.category}</span>
+                    <span>·</span>
+                    <span className="inline-flex items-center gap-1">
+                      <Icons.MessageCircle className="w-3 h-3" />
+                      {post.replies} {post.replies === 1 ? 'reply' : 'replies'}
+                    </span>
+                  </div>
+                  <h3 className="text-lg text-foreground group-hover:text-primary transition-colors truncate">{post.title}</h3>
+                  <p className="text-muted-foreground text-sm mt-1 line-clamp-2" dangerouslySetInnerHTML={{ __html: renderFormatted(post.content) }} />
+                  <p className="text-muted-foreground/60 text-xs mt-2">
+                    by <span className="text-primary/80 cursor-pointer hover:underline" onClick={(e) => { e.stopPropagation(); navigate(`/user/${post.authorId}`); }}>{post.author}</span> · {formatRelativeTime(post.createdAt)}
+                  </p>
+                </div>
               </div>
             ))
           )}
