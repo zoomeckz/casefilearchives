@@ -1036,6 +1036,16 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ glossary, authToken, use
           </>
         )}
       </main>
+      {translatingChapter && (
+        <ChapterTranslationsManager
+          chapterId={translatingChapter.id}
+          chapterNumber={translatingChapter.chapter_number}
+          englishTitle={translatingChapter.title}
+          englishContent={translatingChapter.content}
+          authToken={authToken}
+          onClose={() => setTranslatingChapter(null)}
+        />
+      )}
     </div>
   );
 };
