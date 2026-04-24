@@ -24,6 +24,10 @@ const App = () => {
       smoothWheel: true,
     });
 
+    // Expose so individual pages (e.g. ReaderPage's back-to-top button) can drive
+    // the smooth scroller instead of being intercepted mid-way.
+    (window as any).__lenis = lenis;
+
     let rafId = 0;
     function raf(time: number) {
       // When the tab is hidden, skip stepping Lenis. Otherwise the first
@@ -53,6 +57,7 @@ const App = () => {
       document.removeEventListener("visibilitychange", handleVisibility);
       cancelAnimationFrame(rafId);
       lenis.destroy();
+      delete (window as any).__lenis;
     };
   }, []);
 
