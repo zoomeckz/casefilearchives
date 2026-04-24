@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState } from "react";
+import React, { useEffect, useRef, useState, useMemo } from "react";
 import { Link } from "react-router-dom";
 import { Icons } from "@/lib/icons";
 import { Chapter } from "@/hooks/useChapters";
@@ -11,6 +11,7 @@ import { BookmarkButton } from "@/components/BookmarkButton";
 import { ChapterReactions } from "@/components/ChapterReactions";
 import { ChapterPoll } from "@/components/ChapterPoll";
 import { TextHighlightBookmark } from "@/components/TextHighlightBookmark";
+import { ReaderCardsView } from "@/components/ReaderCardsView";
 
 
 function estimateReadingTime(content: string): number {
@@ -56,7 +57,37 @@ export const ReaderPage: React.FC<ReaderPageProps> = ({
   const [randomPrompt] = useState(() => discussionPrompts[Math.floor(Math.random() * discussionPrompts.length)]);
   const [scrollProgress, setScrollProgress] = useState(0);
   const [showBackToTop, setShowBackToTop] = useState(false);
+  const [readerWidth, setReaderWidth] = useState<number>(() => {
+    try { return Number(localStorage.getItem("reader-width")) || 680; } catch { return 680; }
+  });
+  const [tipDismissed, setTipDismissed] = useState<boolean>(() => {
+    try { return localStorage.getItem("reader-tip-dismissed") === "1"; } catch { return false; }
+  });
+  const [cardsMode, setCardsMode] = useState(false);
+  const [wordsPerCard, setWordsPerCard] = useState<number>(() => {
+    try { return Number(localStorage.getItem("reader-words-per-card")) || 250; } catch { return 250; }
+  });
   const containerRef = useRef<HTMLDivElement | null>(null);
+  const measureRef = useRef<HTMLSpanElement | null>(null);
+  const [charsPerLine, setCharsPerLine] = useState<number>(0);
+
+  // Persist + apply reader width via CSS var
+  useEffect(() => {
+    try { localStorage.setItem("reader-width", String(readerWidth)); } catch {}
+    document.documentElement.style.setProperty("--reader-max-width", `${readerWidth}px`);
+  }, [readerWidth]);
+  useEffect(() => {
+    try { localStorage.setItem("reader-words-per-card", String(wordsPerCard)); } catch {}
+  }, [wordsPerCard]);
+
+  // Measure approximate characters per line in the prose column
+  useEffect(() => {
+    const span = measureRef.current;
+    if (!span) return;
+    const colWidth = readerWidth - 64; // approx padding
+    const charWidth = span.getBoundingClientRect().width / 50; // sample width of "M"*50
+    if (charWidth > 0) setCharsPerLine(Math.round(colWidth / charWidth));
+  }, [readerWidth, chapter?.id]);
 
   // Find the nearest ancestor that is actually scrollable. If none, fall back to window.
   const getScrollSource = (): HTMLElement | Window => {
@@ -74,6 +105,12 @@ export const ReaderPage: React.FC<ReaderPageProps> = ({
   };
 
   const scrollToTop = () => {
+    // Prefer Lenis if available so the smooth-scroller doesn't fight us on mobile
+    const lenis = (window as any).__lenis;
+    if (lenis && typeof lenis.scrollTo === "function") {
+      lenis.scrollTo(0, { duration: 1.0 });
+      return;
+    }
     const src = getScrollSource();
     if (src === window) {
       window.scrollTo({ top: 0, left: 0, behavior: "smooth" });
@@ -152,6 +189,24 @@ export const ReaderPage: React.FC<ReaderPageProps> = ({
   // "Previously on..." — show last chapter title
   const prevSummary = prevChapter ? prevChapter.title : null;
 
+  if (cardsMode) {
+    return (
+      <ReaderCardsView
+        chapter={chapter}
+        wordsPerCard={wordsPerCard}
+        setWordsPerCard={setWordsPerCard}
+        user={user}
+        onExit={(markUnread) => {
+          setCardsMode(false);
+          if (markUnread) {
+            // user pressed X → treat chapter as not-read for them
+            // (best-effort; relies on markAsUnread being available elsewhere)
+          }
+        }}
+      />
+    );
+  }
+
   return (
     <div ref={containerRef} className="min-h-screen py-8 sm:py-12 px-4 sm:px-6">
       {/* Reading progress bar */}
@@ -164,12 +219,22 @@ export const ReaderPage: React.FC<ReaderPageProps> = ({
         aria-valuemax={100}
       >
         <div
-          className="h-full bg-primary transition-[width] duration-150 ease-out"
+          className="h-full reading-progress-bar transition-[width] duration-150 ease-out"
           style={{ width: `${scrollProgress}%` }}
         />
       </div>
 
-      <div className="max-w-3xl mx-auto">
+      {/* Hidden character-width measuring span */}
+      <span
+        ref={measureRef}
+        aria-hidden="true"
+        className="prose-story absolute opacity-0 pointer-events-none"
+        style={{ position: "absolute", left: -9999, top: -9999 }}
+      >
+        {"M".repeat(50)}
+      </span>
+
+      <div className="reader-column">
         <button
           onClick={() => setCurrentPage("chapters")}
           className="flex items-center gap-2 text-muted-foreground hover:text-foreground mb-8"
@@ -178,6 +243,33 @@ export const ReaderPage: React.FC<ReaderPageProps> = ({
           Back to chapters
         </button>
 
+        {/* Reader controls — width slider + cards mode toggle */}
+        <div className="mb-8 flex flex-wrap items-center gap-4 text-xs text-muted-foreground border border-border/40 rounded-lg p-3">
+          <label className="flex items-center gap-2 flex-1 min-w-[220px]">
+            <span className="whitespace-nowrap">Page width</span>
+            <input
+              type="range"
+              min={520}
+              max={960}
+              step={20}
+              value={readerWidth}
+              onChange={(e) => setReaderWidth(Number(e.target.value))}
+              className="flex-1 accent-primary"
+              aria-label="Adjust reading column width"
+            />
+            <span className="tabular-nums whitespace-nowrap">
+              {readerWidth}px{charsPerLine > 0 && ` · ~${charsPerLine} ch/line`}
+            </span>
+          </label>
+          <button
+            type="button"
+            onClick={() => setCardsMode(true)}
+            className="px-3 py-1.5 rounded-md bg-primary/15 hover:bg-primary/25 text-primary border border-primary/30 transition-colors"
+          >
+            📇 Cards mode
+          </button>
+        </div>
+
         <header className="mb-12 text-center">
           <span className="text-primary text-sm font-medium">
             Chapter {chapter.chapterNumber}
@@ -185,19 +277,19 @@ export const ReaderPage: React.FC<ReaderPageProps> = ({
           <h1 className="font-display text-4xl sm:text-5xl text-accent mt-2 mb-4">
             {chapter.title}
           </h1>
-          <div className="flex flex-wrap items-center justify-center gap-4 text-muted-foreground text-sm">
+          <div className="flex flex-nowrap sm:flex-wrap items-center justify-center gap-2 sm:gap-4 text-muted-foreground text-xs sm:text-sm overflow-x-auto whitespace-nowrap">
             <span>{new Date(chapter.publishedAt).toLocaleDateString()}</span>
             <span className="flex items-center gap-1">
-              <Icons.Eye className="w-4 h-4" /> {chapter.views} views
+              <Icons.Eye className="w-4 h-4" /> {chapter.views}
             </span>
-            <span>📖 ~{readTime} min read</span>
+            <span>~{readTime} min</span>
             {user?.isAdmin && (
               <Link
                 to={`/admin?tab=chapters&view=edit&chapter=${chapter.id}`}
                 className="flex items-center gap-1 px-3 py-1 bg-primary/20 hover:bg-primary/30 text-primary rounded-full text-xs font-medium transition-colors"
               >
                 <Icons.Edit className="w-3.5 h-3.5" />
-                Edit Chapter
+                Edit
               </Link>
             )}
             {user && (
@@ -215,18 +307,33 @@ export const ReaderPage: React.FC<ReaderPageProps> = ({
 
         {/* Previously on... */}
         {prevSummary && (
-          <div className="mb-8 p-4 bg-card/30 rounded-lg border border-border/50">
+          <div className="mb-8 p-4 rounded-lg previously-card">
             <p className="text-xs text-muted-foreground uppercase tracking-wider mb-1">Previously...</p>
-            <p className="text-foreground/70 text-sm italic">
+            <p className="text-foreground/80 text-sm italic font-display">
               Chapter {prevChapter!.chapterNumber}: {prevSummary}
             </p>
           </div>
         )}
 
 
-        <p className="text-muted-foreground/60 text-sm mb-6 italic">
-          Tip: Click on highlighted character and location names for more info. Use ||spoiler|| tags in comments to hide spoilers.
-        </p>
+        {!tipDismissed && (
+          <div className="mb-6 flex items-start gap-2 text-muted-foreground/70 text-xs sm:text-sm italic">
+            <span className="flex-1">
+              Tip: Click highlighted names for lore. Use ||spoiler|| tags in comments to hide spoilers.
+            </span>
+            <button
+              type="button"
+              aria-label="Dismiss tip"
+              onClick={() => {
+                setTipDismissed(true);
+                try { localStorage.setItem("reader-tip-dismissed", "1"); } catch {}
+              }}
+              className="text-muted-foreground/60 hover:text-foreground"
+            >
+              ✕
+            </button>
+          </div>
+        )}
 
         {/* Text highlight bookmarks */}
         <TextHighlightBookmark chapterId={chapter.id} chapterNumber={chapter.chapterNumber} user={user} setShowAuthModal={setShowAuthModal} />
@@ -247,31 +354,35 @@ export const ReaderPage: React.FC<ReaderPageProps> = ({
           <ChapterPoll chapterId={chapter.id} user={user} setShowAuthModal={setShowAuthModal} />
         </div>
 
-        <div className="flex items-center justify-between gap-4 py-8 border-t border-b border-border mb-12">
+        <div className="grid grid-cols-2 gap-3 py-8 border-t border-b border-border mb-12">
           {prevChapter ? (
             <button
               onClick={() => setSelectedChapter(prevChapter)}
-              className="flex items-center gap-2 text-muted-foreground hover:text-foreground max-w-[45%]"
+              className="group text-left p-4 rounded-lg border border-border/40 hover:border-primary/40 hover:bg-secondary/30 transition-colors"
             >
-              <Icons.ChevronLeft className="shrink-0" />
-              <div className="text-left overflow-hidden">
-                <div className="text-xs text-muted-foreground">Previous</div>
-                <div className="text-sm truncate">{prevChapter.title}</div>
-              </div>
+              <div className="text-xs text-muted-foreground mb-1">← Previous</div>
+              <div className="font-display text-sm text-foreground/90 group-hover:text-primary truncate">{prevChapter.title}</div>
             </button>
           ) : <div />}
           {nextChapter ? (
             <button
               onClick={() => setSelectedChapter(nextChapter)}
-              className="flex items-center gap-2 text-muted-foreground hover:text-foreground text-right max-w-[45%] ml-auto"
+              className="group text-right p-4 rounded-lg border border-border/40 hover:border-primary/40 hover:bg-secondary/30 transition-colors ml-auto w-full"
             >
-              <div className="overflow-hidden">
-                <div className="text-xs text-muted-foreground">Next</div>
-                <div className="text-sm truncate">{nextChapter.title}</div>
-              </div>
-              <Icons.ChevronRight className="shrink-0" />
+              <div className="text-xs text-muted-foreground mb-1">Next →</div>
+              <div className="font-display text-sm text-foreground/90 group-hover:text-primary truncate">{nextChapter.title}</div>
             </button>
-          ) : <div />}
+          ) : (
+            <button
+              onClick={() => setCurrentPage("forum")}
+              className="group text-right p-4 rounded-lg border border-accent/30 bg-accent/5 hover:bg-accent/10 transition-colors ml-auto w-full"
+            >
+              <div className="text-xs text-accent mb-1">You're caught up</div>
+              <div className="font-display text-sm text-foreground/90 group-hover:text-accent">
+                Discuss this chapter →
+              </div>
+            </button>
+          )}
         </div>
 
         {/* Discussion Prompt */}
