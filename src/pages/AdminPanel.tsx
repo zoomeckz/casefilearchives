@@ -9,6 +9,7 @@ import { GlossaryManager } from "@/components/GlossaryManager";
 import { AnalyticsDashboard } from "@/components/AnalyticsDashboard";
 import { ContentSearch } from "@/components/ContentSearch";
 import { EditAuditPanel } from "@/components/EditAuditPanel";
+import { ChapterTranslationsManager } from "@/components/ChapterTranslationsManager";
 import { toast } from "sonner";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { Input } from "@/components/ui/input";
