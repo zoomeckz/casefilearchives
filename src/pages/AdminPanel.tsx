@@ -9,6 +9,7 @@ import { GlossaryManager } from "@/components/GlossaryManager";
 import { AnalyticsDashboard } from "@/components/AnalyticsDashboard";
 import { ContentSearch } from "@/components/ContentSearch";
 import { EditAuditPanel } from "@/components/EditAuditPanel";
+import { ChapterTranslationsManager } from "@/components/ChapterTranslationsManager";
 import { toast } from "sonner";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { Input } from "@/components/ui/input";
@@ -56,6 +57,13 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ glossary, authToken, use
   const [drafts, setDrafts] = useState<ChapterDraft[]>([]);
   const [chapters, setChapters] = useState<any[]>([]);
   const [glossaryEntries, setGlossaryEntries] = useState<any[]>([]);
+  // Per-chapter translations modal — open when admin clicks "Translate" on a row.
+  const [translatingChapter, setTranslatingChapter] = useState<{
+    id: string;
+    chapter_number: number;
+    title: string;
+    content: string;
+  } | null>(null);
 
   const fetchGlossaryEntries = useCallback(async () => {
     const { data } = await dbFetch<any[]>('glossary', {
@@ -576,6 +584,31 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ glossary, authToken, use
                                 Edit
                               </button>
                               <button
+                                onClick={async () => {
+                                  // Chapter rows in the list don't carry `content` to keep the listing query small.
+                                  // Fetch it lazily before opening the translations modal so we can offer "Load English source".
+                                  const { data, error } = await dbFetch<any[]>('chapters', {
+                                    select: 'id,chapter_number,title,content',
+                                    filters: `id=eq.${ch.id}`,
+                                    token: authToken,
+                                  });
+                                  if (error || !data?.[0]) {
+                                    toast.error('Could not load chapter content for translation.');
+                                    return;
+                                  }
+                                  setTranslatingChapter({
+                                    id: data[0].id,
+                                    chapter_number: data[0].chapter_number,
+                                    title: data[0].title,
+                                    content: data[0].content || '',
+                                  });
+                                }}
+                                className="px-3 py-1.5 bg-secondary hover:bg-secondary/80 text-foreground rounded text-xs transition-colors inline-flex items-center gap-1"
+                                title="Manage translations for this chapter"
+                              >
+                                <Globe className="w-3 h-3" /> Translate
+                              </button>
+                              <button
                                 onClick={() => handleDeleteChapter(ch.id, ch.title)}
                                 className="px-3 py-1.5 bg-destructive/20 hover:bg-destructive/30 text-destructive rounded text-xs transition-colors"
                               >
@@ -1003,6 +1036,16 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ glossary, authToken, use
           </>
         )}
       </main>
+      {translatingChapter && (
+        <ChapterTranslationsManager
+          chapterId={translatingChapter.id}
+          chapterNumber={translatingChapter.chapter_number}
+          englishTitle={translatingChapter.title}
+          englishContent={translatingChapter.content}
+          authToken={authToken}
+          onClose={() => setTranslatingChapter(null)}
+        />
+      )}
     </div>
   );
 };
