@@ -359,20 +359,24 @@ export const ReaderPage: React.FC<ReaderPageProps> = ({
           <ChapterPoll chapterId={chapter.id} user={user} setShowAuthModal={setShowAuthModal} />
         </div>
 
-        <div className="grid grid-cols-2 gap-3 py-8 border-t border-b border-border mb-12">
-          {prevChapter ? (
+        {/* Prev / Next chapter — centered as a pair (no divider lines) so the
+            block reads as a single navigation cluster regardless of whether a
+            previous chapter exists. Each button keeps a fixed width so the
+            "next" card doesn't reflow when "previous" appears or disappears. */}
+        <div className="flex flex-wrap items-stretch justify-center gap-3 py-8 mb-12">
+          {prevChapter && (
             <button
               onClick={() => setSelectedChapter(prevChapter)}
-              className="group text-left p-4 rounded-lg border border-border/40 hover:border-primary/40 hover:bg-secondary/30 transition-colors"
+              className="group text-left p-4 rounded-lg border border-border/40 hover:border-primary/40 hover:bg-secondary/30 transition-colors w-full sm:w-72"
             >
               <div className="text-xs text-muted-foreground mb-1">← {t("reader.previous")}</div>
               <div className="font-display text-sm text-foreground/90 group-hover:text-primary truncate">{prevChapter.title}</div>
             </button>
-          ) : <div />}
+          )}
           {nextChapter ? (
             <button
               onClick={() => setSelectedChapter(nextChapter)}
-              className="group text-right p-4 rounded-lg border border-border/40 hover:border-primary/40 hover:bg-secondary/30 transition-colors ml-auto w-full"
+              className="group text-right p-4 rounded-lg border border-border/40 hover:border-primary/40 hover:bg-secondary/30 transition-colors w-full sm:w-72"
             >
               <div className="text-xs text-muted-foreground mb-1">{t("reader.next")} →</div>
               <div className="font-display text-sm text-foreground/90 group-hover:text-primary truncate">{nextChapter.title}</div>
@@ -380,7 +384,7 @@ export const ReaderPage: React.FC<ReaderPageProps> = ({
           ) : (
             <button
               onClick={() => setCurrentPage("forum")}
-              className="group text-right p-4 rounded-lg border border-accent/30 bg-accent/5 hover:bg-accent/10 transition-colors ml-auto w-full"
+              className="group text-right p-4 rounded-lg border border-accent/30 bg-accent/5 hover:bg-accent/10 transition-colors w-full sm:w-72"
             >
               <div className="text-xs text-accent mb-1">{t("reader.caughtUp")}</div>
               <div className="font-display text-sm text-foreground/90 group-hover:text-accent">
