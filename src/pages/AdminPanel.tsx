@@ -639,18 +639,6 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ glossary, authToken, use
                       className="pl-9 h-9 text-sm"
                     />
                   </div>
-                  <div className="flex items-center gap-1">
-                    <ArrowUpDown className="w-4 h-4 text-muted-foreground shrink-0" />
-                    <select
-                      value={chapterSort}
-                      onChange={(e) => setChapterSort(e.target.value as ChapterSortKey)}
-                      className="h-9 rounded-md border border-input bg-background px-3 text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-ring"
-                    >
-                      {sortOptions.map(opt => (
-                        <option key={opt.value} value={opt.value}>{opt.label}</option>
-                      ))}
-                    </select>
-                  </div>
                 </div>
 
                 {/* Sub-tabs */}
