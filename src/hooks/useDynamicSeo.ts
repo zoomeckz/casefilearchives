@@ -1,5 +1,6 @@
 import { useEffect } from "react";
 import { useLocation } from "react-router-dom";
+import { detectLanguageFromPath } from "@/i18n";
 
 const SUPABASE_URL = "https://iiezbdlmikvgxjlozwlc.supabase.co";
 const SEO_META_URL = `${SUPABASE_URL}/functions/v1/dynamic-seo-meta`;
@@ -57,6 +58,21 @@ function setCanonical(href: string) {
   el.setAttribute("href", href);
 }
 
+/**
+ * Bulgarian translations of the site-wide meta. We translate the human-readable
+ * fields locally because the dynamic-seo-meta edge function only returns English.
+ * This keeps `/bg/` pages indexable in Bulgarian without an extra round-trip.
+ */
+const BG_META = {
+  title: "Седориум — Тъмно фентъзи от Сам Новрузи Ларки | The Five Thrones",
+  description:
+    "Прочети Седориум — безплатно тъмно фентъзи за разбити престоли. Нова глава всеки петък. Кодекс с герои, места и предания.",
+};
+
+function isBg(pathname: string): boolean {
+  return detectLanguageFromPath(pathname) === "bg";
+}
+
 function stripHtml(html: string): string {
   return html.replace(/<[^>]*>/g, " ").replace(/\s+/g, " ").trim();
 }
@@ -69,27 +85,33 @@ function buildExcerpt(content: string, maxChars = 155): string {
   return (lastSpace > 100 ? slice.slice(0, lastSpace) : slice).trimEnd() + "…";
 }
 
-async function applySiteMeta(): Promise<void> {
+async function applySiteMeta(pathname: string): Promise<void> {
   const res = await fetch(SEO_META_URL, { cache: "no-store" });
   if (!res.ok) return;
   const meta: SeoMeta = await res.json();
 
-  document.title = meta.title;
-  setMeta("description", meta.description);
+  const bg = isBg(pathname);
+  const title = bg ? BG_META.title : meta.title;
+  const description = bg ? BG_META.description : meta.description;
+  const canonical = bg ? `${SITE_URL}/bg/` : `${SITE_URL}/`;
+
+  document.title = title;
+  setMeta("description", description);
   setMeta("keywords", meta.keywords.join(", "));
-  setMeta("og:title", meta.title, "property");
-  setMeta("og:description", meta.description, "property");
-  setMeta("og:url", SITE_URL, "property");
-  setMeta("twitter:title", meta.title);
-  setMeta("twitter:description", meta.description);
-  setCanonical(SITE_URL + "/");
+  setMeta("og:title", title, "property");
+  setMeta("og:description", description, "property");
+  setMeta("og:url", canonical, "property");
+  setMeta("og:locale", bg ? "bg_BG" : "en_US", "property");
+  setMeta("twitter:title", title);
+  setMeta("twitter:description", description);
+  setCanonical(canonical);
 
   setJsonLd("book", meta.schemas.book);
   setJsonLd("website", meta.schemas.website);
   setJsonLd("breadcrumb", meta.schemas.breadcrumb);
 }
 
-async function applyChapterMeta(chapterNumber: number): Promise<boolean> {
+async function applyChapterMeta(chapterNumber: number, pathname: string): Promise<boolean> {
   // Fetch the specific chapter from PostgREST directly (public table, RLS allows everyone)
   const url =
     `${SUPABASE_URL}/rest/v1/chapters` +
@@ -111,11 +133,17 @@ async function applyChapterMeta(chapterNumber: number): Promise<boolean> {
   if (!ch) return false;
 
   const excerpt = buildExcerpt(ch.content, 155);
-  const fullTitle = `Chapter ${ch.chapter_number}: ${ch.title} — Sedorium | The Five Thrones`;
-  const description =
-    excerpt ||
-    `Read Chapter ${ch.chapter_number}: ${ch.title} from Sedorium — The Five Thrones, a free dark fantasy web novel by Sam Nowroozi Larki.`;
-  const canonical = `${SITE_URL}/chapters/${ch.chapter_number}`;
+  const bg = isBg(pathname);
+  const fullTitle = bg
+    ? `Глава ${ch.chapter_number}: ${ch.title} — Седориум | The Five Thrones`
+    : `Chapter ${ch.chapter_number}: ${ch.title} — Sedorium | The Five Thrones`;
+  const description = bg
+    ? `Прочети Глава ${ch.chapter_number}: ${ch.title} от Седориум — The Five Thrones, безплатно тъмно фентъзи от Сам Новрузи Ларки.`
+    : excerpt ||
+      `Read Chapter ${ch.chapter_number}: ${ch.title} from Sedorium — The Five Thrones, a free dark fantasy web novel by Sam Nowroozi Larki.`;
+  const canonical = bg
+    ? `${SITE_URL}/bg/chapters/${ch.chapter_number}`
+    : `${SITE_URL}/chapters/${ch.chapter_number}`;
 
   document.title = fullTitle;
   setMeta("description", description);
@@ -123,6 +151,7 @@ async function applyChapterMeta(chapterNumber: number): Promise<boolean> {
   setMeta("og:title", fullTitle, "property");
   setMeta("og:description", description, "property");
   setMeta("og:url", canonical, "property");
+  setMeta("og:locale", bg ? "bg_BG" : "en_US", "property");
   setMeta("twitter:title", fullTitle);
   setMeta("twitter:description", description);
   setCanonical(canonical);
@@ -134,7 +163,7 @@ async function applyChapterMeta(chapterNumber: number): Promise<boolean> {
     headline: `Chapter ${ch.chapter_number}: ${ch.title}`,
     description,
     url: canonical,
-    inLanguage: "en",
+    inLanguage: bg ? "bg" : "en",
     isAccessibleForFree: true,
     isPartOf: {
       "@type": "Book",
@@ -169,15 +198,15 @@ export function useDynamicSeo() {
     let cancelled = false;
     (async () => {
       try {
-        const chapterMatch = location.pathname.match(/^\/chapters\/(\d+)$/);
+        const chapterMatch = location.pathname.match(/^\/(?:bg\/)?chapters\/(\d+)$/);
         if (chapterMatch) {
           const num = parseInt(chapterMatch[1], 10);
-          const ok = await applyChapterMeta(num);
+          const ok = await applyChapterMeta(num, location.pathname);
           if (cancelled) return;
-          if (!ok) await applySiteMeta();
+          if (!ok) await applySiteMeta(location.pathname);
         } else {
           clearChapterArticleSchema();
-          await applySiteMeta();
+          await applySiteMeta(location.pathname);
         }
       } catch (err) {
         console.warn("Dynamic SEO refresh failed:", err);

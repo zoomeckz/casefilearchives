@@ -40,7 +40,12 @@
     "scheduled": "Coming",
     "newBadge": "New",
     "views": "views",
-    "view": "view"
+    "view": "view",
+    "sortNewest": "Newest",
+    "sortOldest": "Oldest",
+    "sortMostViewed": "Most Viewed",
+    "chapterLabel": "Chapter",
+    "releases": "Releases"
   },
   "reader": {
     "back": "Back to chapters",
