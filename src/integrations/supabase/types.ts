@@ -266,6 +266,7 @@ export type Database = {
         Row: {
           chapter_number: number
           content: string
+          cover_image_url: string | null
           created_at: string
           id: string
           published_at: string
@@ -277,6 +278,7 @@ export type Database = {
         Insert: {
           chapter_number: number
           content: string
+          cover_image_url?: string | null
           created_at?: string
           id?: string
           published_at?: string
@@ -288,6 +290,7 @@ export type Database = {
         Update: {
           chapter_number?: number
           content?: string
+          cover_image_url?: string | null
           created_at?: string
           id?: string
           published_at?: string
