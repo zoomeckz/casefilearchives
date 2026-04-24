@@ -1391,6 +1391,23 @@ const ChapterTable: React.FC<ChapterTableProps> = ({
         <table className="w-full text-sm">
           <thead>
             <tr className="text-left text-[11px] uppercase tracking-wider text-muted-foreground bg-card/60 border-b border-border/60">
+              <th className="pl-3 md:pl-4 pr-1 py-2.5 w-8">
+                <input
+                  type="checkbox"
+                  className="h-4 w-4 rounded border-border accent-primary cursor-pointer"
+                  aria-label="Select all chapters"
+                  checked={chapters.length > 0 && chapters.every((c) => selectedIds.has(c.id))}
+                  ref={(el) => {
+                    if (!el) return;
+                    const some = chapters.some((c) => selectedIds.has(c.id));
+                    const all = chapters.every((c) => selectedIds.has(c.id));
+                    el.indeterminate = some && !all;
+                  }}
+                  onChange={(e) =>
+                    onSelectAll(chapters.map((c) => c.id), e.target.checked)
+                  }
+                />
+              </th>
               {columns.map((col) => (
                 <th
                   key={col.key}
@@ -1416,11 +1433,23 @@ const ChapterTable: React.FC<ChapterTableProps> = ({
             {chapters.map((ch) => {
               const count = translationCounts[ch.id] ?? 0;
               const isScheduled = ch.scheduled_at && new Date(ch.scheduled_at) > new Date();
+              const isSelected = selectedIds.has(ch.id);
               return (
                 <tr
                   key={ch.id}
-                  className="border-b border-border/40 last:border-b-0 hover:bg-card/60 group transition-colors"
+                  className={`border-b border-border/40 last:border-b-0 group transition-colors ${
+                    isSelected ? 'bg-primary/5 hover:bg-primary/10' : 'hover:bg-card/60'
+                  }`}
                 >
+                  <td className="pl-3 md:pl-4 pr-1 py-3 w-8">
+                    <input
+                      type="checkbox"
+                      className="h-4 w-4 rounded border-border accent-primary cursor-pointer"
+                      aria-label={`Select chapter ${ch.chapter_number}`}
+                      checked={isSelected}
+                      onChange={() => onToggleSelect(ch.id)}
+                    />
+                  </td>
                   <td className="px-3 md:px-4 py-3 text-muted-foreground tabular-nums">{ch.chapter_number}</td>
                   <td className="px-3 md:px-4 py-3 min-w-0">
                     <div className="text-foreground font-medium truncate">{ch.title}</div>
