@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { Chapter } from "@/hooks/useChapters";
 import { dbFetch } from "@/lib/dbFetch";
 import { ProfileFrame } from "@/components/ProfileFrame";
+import { useTranslation } from "react-i18next";
 
 interface ForumPostPreview {
   id: string;
@@ -39,6 +40,7 @@ export const HomePage: React.FC<HomePageProps> = ({
   setSelectedChapter,
 }) => {
   const navigate = useNavigate();
+  const { t, i18n } = useTranslation();
   const latestChapter = chapters[chapters.length - 1];
   const [forumPosts, setForumPosts] = useState<ForumPostPreview[]>([]);
 
@@ -105,13 +107,13 @@ export const HomePage: React.FC<HomePageProps> = ({
             className="text-foreground/85 max-w-2xl mx-auto leading-snug mb-2 sm:mb-3 italic font-display sm:whitespace-nowrap"
             style={{ fontSize: "clamp(0.85rem, 2.1vw, 1.05rem)" }}
           >
-            A dark fantasy of broken thrones, following the trail of a long-gone lycan.
+            {t("hero.tagline")}
           </p>
           <p
             className="text-muted-foreground text-xs sm:text-sm tracking-[0.25em] uppercase"
             style={{ fontFamily: "'Cinzel', serif" }}
           >
-            New chapter every Friday
+            {t("hero.schedule")}
           </p>
           <div className="mt-8 flex flex-wrap items-center justify-center gap-3">
             <button
@@ -120,13 +122,13 @@ export const HomePage: React.FC<HomePageProps> = ({
               }}
               className="px-7 py-3 bg-primary hover:bg-primary/90 text-primary-foreground rounded-lg font-medium transition-colors shadow-lg"
             >
-              Start Reading →
+              {t("hero.startReading")} →
             </button>
             <button
               onClick={() => setCurrentPage("characters")}
               className="px-7 py-3 bg-transparent hover:bg-accent/10 text-accent border border-accent/40 rounded-lg font-medium transition-colors"
             >
-              Browse the Codex
+              {t("hero.browseCodex")}
             </button>
           </div>
         </div>
@@ -138,7 +140,7 @@ export const HomePage: React.FC<HomePageProps> = ({
           {/* Latest Chapters */}
           <div>
             <h2 className="font-display text-sm uppercase tracking-[0.2em] text-muted-foreground mb-6">
-              Latest Chapters
+              {t("home.latestChapters")}
             </h2>
 
             {chapters.length === 0 ? (
@@ -165,7 +167,7 @@ export const HomePage: React.FC<HomePageProps> = ({
                           </span>
                         </span>
                         <span className="text-muted-foreground text-xs whitespace-nowrap shrink-0">
-                          {readMin} min
+                          {readMin} {t("home.minRead")}
                         </span>
                       </button>
                     </li>
@@ -180,7 +182,7 @@ export const HomePage: React.FC<HomePageProps> = ({
                   onClick={() => setCurrentPage("chapters")}
                   className="text-muted-foreground hover:text-primary text-sm transition-colors"
                 >
-                  View all {chapters.length} chapters →
+                  {t("home.viewAll")} ({chapters.length}) →
                 </button>
               </div>
             )}
@@ -189,7 +191,7 @@ export const HomePage: React.FC<HomePageProps> = ({
           {/* Latest Forum Posts */}
           <div>
             <h2 className="font-display text-sm uppercase tracking-[0.2em] text-muted-foreground mb-6">
-              Latest Discussions
+              {t("home.latestDiscussions")}
             </h2>
 
             {forumPosts.length === 0 ? (
@@ -206,7 +208,7 @@ export const HomePage: React.FC<HomePageProps> = ({
                       {post.isPinned && <span className="text-accent">📌</span>}
                       <span>{post.category}</span>
                       <span>·</span>
-                      <span>{post.replies} replies</span>
+                      <span>{post.replies} {post.replies === 1 ? t("home.reply") : t("home.replies")}</span>
                     </div>
                     <h3 className="font-display text-base text-foreground/80 group-hover:text-primary transition-colors">
                       {post.title}
@@ -216,7 +218,7 @@ export const HomePage: React.FC<HomePageProps> = ({
                       <span className="text-muted-foreground/60 text-xs">{post.author}</span>
                       <span className="text-muted-foreground/40 text-xs">·</span>
                       <span className="text-muted-foreground/60 text-xs">
-                        {new Date(post.createdAt).toLocaleDateString("en-US", { month: "short", day: "numeric" })}
+                        {new Date(post.createdAt).toLocaleDateString(i18n.language === "bg" ? "bg-BG" : "en-US", { month: "short", day: "numeric" })}
                       </span>
                     </div>
                   </div>
@@ -229,7 +231,7 @@ export const HomePage: React.FC<HomePageProps> = ({
                 onClick={() => setCurrentPage("forum")}
                 className="text-muted-foreground hover:text-primary text-sm transition-colors"
               >
-                View all discussions →
+                {t("home.joinForum")} →
               </button>
             </div>
           </div>
