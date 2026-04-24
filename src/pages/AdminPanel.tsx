@@ -1318,3 +1318,139 @@ const TranslationBadge: React.FC<{ count: number; total: number }> = ({ count, t
     </span>
   );
 };
+
+// ===========================================================================
+// NeedsAttentionPanel — surfaces actionable work on the dashboard so opening
+// the admin doesn't dump you on a wall of stats. Each item has a one-click
+// jump to the relevant tab.
+// ===========================================================================
+
+interface NeedsAttentionProps {
+  chapters: ChapterRow[];
+  glossaryEntries: Array<{ id: string; term: string; description: string | null }>;
+  translationCounts: Record<string, number>;
+  totalLanguages: number;
+  draftsCount: number;
+  onJump: (tab: string) => void;
+}
+
+const NeedsAttentionPanel: React.FC<NeedsAttentionProps> = ({
+  chapters,
+  glossaryEntries,
+  translationCounts,
+  totalLanguages,
+  draftsCount,
+  onJump,
+}) => {
+  const now = Date.now();
+  const SEVEN_DAYS = 7 * 24 * 60 * 60 * 1000;
+
+  // Chapters scheduled to publish within 7 days — Friday-cadence reminder.
+  const upcoming = chapters.filter(
+    (c) => c.scheduled_at && new Date(c.scheduled_at).getTime() > now && new Date(c.scheduled_at).getTime() - now < SEVEN_DAYS,
+  );
+
+  // Chapters with at least one missing translation. We only surface the count;
+  // clicking jumps to the chapter tab where they can hover the row to translate.
+  const missingTranslations = chapters.filter(
+    (c) => (translationCounts[c.id] ?? 0) < totalLanguages,
+  );
+
+  // Glossary terms without a description (or only whitespace) — common after
+  // bulk-imports.
+  const emptyGlossary = glossaryEntries.filter(
+    (g) => !g.description || g.description.trim().length === 0,
+  );
+
+  const items = [
+    upcoming.length > 0 && {
+      key: "upcoming",
+      icon: Calendar,
+      tone: "accent" as const,
+      title: `${upcoming.length} chapter${upcoming.length === 1 ? "" : "s"} scheduled this week`,
+      detail: upcoming
+        .slice(0, 3)
+        .map((c) => `Ch. ${c.chapter_number}`)
+        .join(", ") + (upcoming.length > 3 ? "…" : ""),
+      action: { label: "Review", tab: "chapters" },
+    },
+    missingTranslations.length > 0 && {
+      key: "translations",
+      icon: Globe,
+      tone: "muted" as const,
+      title: `${missingTranslations.length} chapter${missingTranslations.length === 1 ? "" : "s"} missing translations`,
+      detail: `Across ${totalLanguages} non-English languages.`,
+      action: { label: "Translate", tab: "chapters" },
+    },
+    emptyGlossary.length > 0 && {
+      key: "glossary",
+      icon: FileText,
+      tone: "destructive" as const,
+      title: `${emptyGlossary.length} glossary term${emptyGlossary.length === 1 ? "" : "s"} without descriptions`,
+      detail: emptyGlossary
+        .slice(0, 4)
+        .map((g) => g.term)
+        .join(", ") + (emptyGlossary.length > 4 ? "…" : ""),
+      action: { label: "Fix", tab: "glossary" },
+    },
+    draftsCount > 0 && {
+      key: "drafts",
+      icon: Edit3,
+      tone: "muted" as const,
+      title: `${draftsCount} unpublished draft${draftsCount === 1 ? "" : "s"}`,
+      detail: "Auto-saved while editing. Resume any time.",
+      action: { label: "Open", tab: "chapters" },
+    },
+  ].filter(Boolean) as Array<{
+    key: string;
+    icon: React.ComponentType<{ className?: string }>;
+    tone: "accent" | "muted" | "destructive";
+    title: string;
+    detail: string;
+    action: { label: string; tab: string };
+  }>;
+
+  if (items.length === 0) {
+    return (
+      <div className="mb-6 md:mb-8 p-4 md:p-5 rounded-xl border border-primary/20 bg-primary/5 flex items-center gap-3">
+        <CheckCircle2 className="w-5 h-5 text-primary shrink-0" />
+        <div>
+          <div className="text-sm font-medium text-foreground">All clear</div>
+          <div className="text-xs text-muted-foreground">No scheduled chapters this week, no missing translations or empty glossary entries.</div>
+        </div>
+      </div>
+    );
+  }
+
+  const toneClasses: Record<NonNullable<typeof items[number]>["tone"], string> = {
+    accent: "border-accent/30 bg-accent/5 text-accent",
+    muted: "border-border bg-card/40 text-muted-foreground",
+    destructive: "border-destructive/30 bg-destructive/5 text-destructive",
+  };
+
+  return (
+    <div className="mb-6 md:mb-8">
+      <div className="flex items-center gap-2 mb-3">
+        <AlertTriangle className="w-4 h-4 text-accent" />
+        <h2 className="font-display text-base text-accent">Needs attention</h2>
+      </div>
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+        {items.map((item) => (
+          <div key={item.key} className={`flex items-start gap-3 p-3 md:p-4 rounded-xl border ${toneClasses[item.tone]}`}>
+            <item.icon className="w-4 h-4 mt-0.5 shrink-0" />
+            <div className="flex-1 min-w-0">
+              <div className="text-sm font-medium text-foreground">{item.title}</div>
+              <div className="text-xs text-muted-foreground truncate">{item.detail}</div>
+            </div>
+            <button
+              onClick={() => item.action && onJump(item.action.tab)}
+              className="text-xs px-2.5 py-1 rounded bg-background/60 hover:bg-background border border-border text-foreground shrink-0"
+            >
+              {item.action.label}
+            </button>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+};
