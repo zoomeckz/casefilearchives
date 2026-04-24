@@ -15,8 +15,21 @@ const SITE_URL = "https://www.thefivethrones.com";
  * no other changes needed in this file.
  *
  * Keep this in sync with `SUPPORTED_LANGUAGES` in `src/i18n/index.ts`.
+ * Listing every supported locale here lets Google index the localised
+ * variants (each URL gets a `<xhtml:link rel="alternate" hreflang="...">`
+ * pointing at every other language plus an `x-default`), which is the
+ * canonical way to tell search engines about translated content.
  */
-const SUPPORTED_LANGUAGES = ["en", "bg"] as const;
+const SUPPORTED_LANGUAGES = [
+  "en",
+  "bg",
+  "es",
+  "hi",
+  "ar",
+  "ja",
+  "ko",
+  "zh",
+] as const;
 type Lang = (typeof SUPPORTED_LANGUAGES)[number];
 const DEFAULT_LANG: Lang = SUPPORTED_LANGUAGES[0];
 const langPath = (path: string, lang: Lang) =>
