@@ -22,7 +22,8 @@ import {
   DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel,
   DropdownMenuSeparator, DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { NON_DEFAULT_LANGUAGES } from "@/i18n";
+import { NON_DEFAULT_LANGUAGES, LANGUAGE_LABELS, type SupportedLanguage } from "@/i18n";
+import { FlagIcon } from "@/components/FlagIcon";
 
 interface AdminPanelProps {
   glossary: Record<string, GlossaryEntry>;
