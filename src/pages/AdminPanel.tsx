@@ -1324,6 +1324,116 @@ export default AdminPanel;
 // Lifted out of AdminPanel to keep the main component readable.
 // ===========================================================================
 
+// ===========================================================================
+// ChapterBulkActionsBar — appears above the chapters table when one or more
+// chapters are selected. Provides:
+//   - "Translate selected" → queues the chapters through the translation
+//     editor; closing one auto-opens the next.
+//   - "Seed from English"  → bulk-creates chapter_translations rows in the
+//     chosen language using the English source as a starting draft (skips
+//     chapters that already have that language).
+//   - "Delete language"    → removes the selected language from every
+//     selected chapter so the reader falls back to English.
+// All actions confirm before running and show a toast with the result count.
+// ===========================================================================
+interface ChapterBulkActionsBarProps {
+  selectedCount: number;
+  busy: boolean;
+  onClear: () => void;
+  onTranslate: () => void;
+  onSeedFromEnglish: (lang: SupportedLanguage) => void;
+  onDeleteLanguage: (lang: SupportedLanguage) => void;
+}
+
+const ChapterBulkActionsBar: React.FC<ChapterBulkActionsBarProps> = ({
+  selectedCount,
+  busy,
+  onClear,
+  onTranslate,
+  onSeedFromEnglish,
+  onDeleteLanguage,
+}) => {
+  if (selectedCount === 0) return null;
+  return (
+    <div className="sticky top-2 z-20 mb-3 flex flex-wrap items-center gap-2 rounded-lg border border-primary/30 bg-primary/10 backdrop-blur px-3 py-2 shadow-sm">
+      <span className="text-sm font-medium text-foreground">
+        {selectedCount} selected
+      </span>
+      <button
+        onClick={onClear}
+        disabled={busy}
+        className="text-xs text-muted-foreground hover:text-foreground underline-offset-2 hover:underline"
+      >
+        Clear
+      </button>
+      <div className="ml-auto flex flex-wrap items-center gap-2">
+        <button
+          onClick={onTranslate}
+          disabled={busy}
+          className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded text-xs bg-primary text-primary-foreground hover:bg-primary/90 disabled:opacity-50"
+          title="Open the translation editor for each selected chapter, one after another"
+        >
+          <Globe className="w-3.5 h-3.5" /> Translate selected
+        </button>
+
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <button
+              disabled={busy}
+              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded text-xs bg-secondary hover:bg-secondary/80 text-foreground disabled:opacity-50"
+            >
+              <Sparkles className="w-3.5 h-3.5" /> Seed from English
+              <ChevronDown className="w-3 h-3 opacity-60" />
+            </button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="end" className="w-56">
+            <DropdownMenuLabel className="text-xs">Create draft in…</DropdownMenuLabel>
+            <DropdownMenuSeparator />
+            {NON_DEFAULT_LANGUAGES.map((lang) => (
+              <DropdownMenuItem key={lang} onClick={() => onSeedFromEnglish(lang)}>
+                <FlagIcon lang={lang} size={14} />
+                <span className="ml-2">{LANGUAGE_LABELS[lang]}</span>
+              </DropdownMenuItem>
+            ))}
+          </DropdownMenuContent>
+        </DropdownMenu>
+
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <button
+              disabled={busy}
+              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded text-xs bg-destructive/15 hover:bg-destructive/25 text-destructive disabled:opacity-50"
+            >
+              <Trash2 className="w-3.5 h-3.5" /> Delete language
+              <ChevronDown className="w-3 h-3 opacity-60" />
+            </button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="end" className="w-56">
+            <DropdownMenuLabel className="text-xs">Remove translation in…</DropdownMenuLabel>
+            <DropdownMenuSeparator />
+            {NON_DEFAULT_LANGUAGES.map((lang) => (
+              <DropdownMenuItem
+                key={lang}
+                onClick={() => onDeleteLanguage(lang)}
+                className="text-destructive focus:text-destructive"
+              >
+                <FlagIcon lang={lang} size={14} />
+                <span className="ml-2">{LANGUAGE_LABELS[lang]}</span>
+              </DropdownMenuItem>
+            ))}
+          </DropdownMenuContent>
+        </DropdownMenu>
+
+        {busy && <Loader2 className="w-4 h-4 animate-spin text-muted-foreground" />}
+      </div>
+    </div>
+  );
+};
+
+// ===========================================================================
+// ChapterTable — sortable, hover-action table for the published chapters list.
+// ===========================================================================
+
 type ChapterRow = {
   id: string;
   title: string;
