@@ -1,4 +1,5 @@
 import React, { useState, useMemo } from "react";
+import { useTranslation } from "react-i18next";
 import { Icons } from "@/lib/icons";
 import { Chapter } from "@/hooks/useChapters";
 import { AuthUser } from "@/hooks/useAuth";
@@ -21,12 +22,6 @@ interface StoriesPageProps {
   toggleBookmark: (chapterId: string) => void;
 }
 
-const sortOptions: { value: SortOption; label: string }[] = [
-  { value: "newest", label: "Newest" },
-  { value: "oldest", label: "Oldest" },
-  { value: "most-viewed", label: "Most Viewed" },
-];
-
 export const StoriesPage: React.FC<StoriesPageProps> = ({
   chapters,
   setSelectedChapter,
@@ -39,7 +34,13 @@ export const StoriesPage: React.FC<StoriesPageProps> = ({
   isBookmarked,
   toggleBookmark,
 }) => {
+  const { t } = useTranslation();
   const [sort, setSort] = useState<SortOption>("newest");
+  const sortOptions: { value: SortOption; label: string }[] = [
+    { value: "newest", label: t("chapters.sortNewest") },
+    { value: "oldest", label: t("chapters.sortOldest") },
+    { value: "most-viewed", label: t("chapters.sortMostViewed") },
+  ];
 
   const sorted = useMemo(() => {
     const copy = [...chapters];
@@ -59,7 +60,7 @@ export const StoriesPage: React.FC<StoriesPageProps> = ({
     <div className="min-h-screen py-8 sm:py-12 px-4 sm:px-6">
       <div className="max-w-2xl mx-auto">
         <h1 className="font-display text-3xl sm:text-4xl text-accent mb-8 text-center">
-          Chapters
+          {t("chapters.title")}
         </h1>
 
         {user && (
@@ -116,7 +117,7 @@ export const StoriesPage: React.FC<StoriesPageProps> = ({
                 <div className="flex-1 min-w-0">
                 <div className="flex items-center gap-3 mb-2 flex-wrap">
                   <span className="text-muted-foreground text-xs uppercase tracking-wider">
-                    Chapter {chapter.chapterNumber} ·{" "}
+                    {t("chapters.chapterLabel")} {chapter.chapterNumber} ·{" "}
                     {new Date(chapter.publishedAt).toLocaleDateString()}
                   </span>
                   {user && chapterIsRead && (
@@ -144,11 +145,11 @@ export const StoriesPage: React.FC<StoriesPageProps> = ({
                 </h3>
                 <div className="flex items-center gap-4 mt-2 text-xs text-muted-foreground">
                   <span className="flex items-center gap-1">
-                    <Icons.Eye className="w-3 h-3" /> {chapter.views} views
+                    <Icons.Eye className="w-3 h-3" /> {chapter.views} {t("chapters.views")}
                   </span>
                   {isAdmin && chapter.scheduledAt && new Date(chapter.scheduledAt) > new Date() && (
                     <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-accent/20 text-accent text-xs font-semibold border border-accent/30">
-                      📅 Releases {new Date(chapter.scheduledAt).toLocaleDateString('sv-SE', { timeZone: 'Europe/Stockholm' })}
+                      📅 {t("chapters.releases")} {new Date(chapter.scheduledAt).toLocaleDateString('sv-SE', { timeZone: 'Europe/Stockholm' })}
                     </span>
                   )}
                 </div>
