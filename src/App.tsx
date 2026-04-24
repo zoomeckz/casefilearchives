@@ -7,6 +7,7 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route, useLocation } from "react-router-dom";
 import Index from "./pages/Index";
 import NotFound from "./pages/NotFound";
+import SectionHeaderStory from "./pages/SectionHeaderStory";
 import { useDynamicSeo } from "./hooks/useDynamicSeo";
 import { useTranslation } from "react-i18next";
 import {
@@ -172,6 +173,10 @@ const App = () => {
               return <Route key={path} path={path} element={<Index />} />;
             }),
           )}
+          {/* Dev-only visual story route for <SectionHeader/>. Not added to
+              APP_ROUTES because it intentionally bypasses navigation, i18n,
+              and the SPA shell — it's a flat preview surface. */}
+          <Route path="/dev/section-header" element={<SectionHeaderStory />} />
           {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
           <Route path="*" element={<NotFound />} />
         </Routes>

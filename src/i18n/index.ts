@@ -40,6 +40,29 @@ export const LANGUAGE_LABELS: Record<SupportedLanguage, string> = {
   zh: "中文",
 };
 
+/**
+ * Country/region flag for each language, rendered as a Unicode regional-
+ * indicator emoji so we don't need to ship image assets or an icon library.
+ * Notes on choices:
+ *   - `en`  → 🇬🇧 (UK English; the project's locale tag is en-US, but a flag
+ *     for "English the language" is conventionally the UK flag in switchers).
+ *   - `ar`  → 🇸🇦 (Saudi Arabia is the most common stand-in for Arabic since
+ *     there is no pan-Arab flag).
+ *   - `zh`  → 🇨🇳 (Simplified Chinese mainland).
+ * If you add a new language to SUPPORTED_LANGUAGES, add a flag here too —
+ * TypeScript will complain otherwise.
+ */
+export const LANGUAGE_FLAGS: Record<SupportedLanguage, string> = {
+  en: "🇬🇧",
+  bg: "🇧🇬",
+  es: "🇪🇸",
+  hi: "🇮🇳",
+  ar: "🇸🇦",
+  ja: "🇯🇵",
+  ko: "🇰🇷",
+  zh: "🇨🇳",
+};
+
 /** Locale tags used by `Intl` / `Date.toLocaleString` — keep one per supported lang. */
 export const LOCALE_TAGS: Record<SupportedLanguage, string> = {
   en: "en-US",
