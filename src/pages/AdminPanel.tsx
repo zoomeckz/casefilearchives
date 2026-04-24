@@ -449,14 +449,6 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ glossary, authToken, use
     if (isMobile) setSidebarOpen(false);
   };
 
-  const sortOptions: { value: ChapterSortKey; label: string }[] = [
-    { value: 'number-asc', label: 'Ch. # ↑' },
-    { value: 'number-desc', label: 'Ch. # ↓' },
-    { value: 'views-desc', label: 'Most Viewed' },
-    { value: 'views-asc', label: 'Least Viewed' },
-    { value: 'newest', label: 'Newest' },
-    { value: 'oldest', label: 'Oldest' },
-  ];
 
   // Width tokens for the sidebar in each state. Kept here so the main content
   // padding can react via the `md:pl-*` modifier instead of using a flex row,
