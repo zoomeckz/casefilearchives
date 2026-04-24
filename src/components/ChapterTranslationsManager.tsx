@@ -49,6 +49,12 @@ interface ChapterTranslationsManagerProps {
   englishContent: string;
   authToken?: string;
   onClose: () => void;
+  /**
+   * Number of *additional* chapters waiting in the bulk-translate queue
+   * after this one. When > 0 the header shows progress so the admin knows
+   * closing this modal will jump them to the next chapter, not stop.
+   */
+  queueRemaining?: number;
 }
 
 interface TranslationRow {
@@ -117,6 +123,7 @@ export const ChapterTranslationsManager: React.FC<ChapterTranslationsManagerProp
   englishContent,
   authToken,
   onClose,
+  queueRemaining = 0,
 }) => {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -406,6 +413,11 @@ export const ChapterTranslationsManager: React.FC<ChapterTranslationsManagerProp
           <div className="min-w-0">
             <h2 className="text-lg md:text-xl font-bold text-foreground truncate">
               Translations · Ch. {chapterNumber}
+              {queueRemaining > 0 && (
+                <span className="ml-2 align-middle text-[11px] uppercase tracking-wider text-primary/80">
+                  {queueRemaining} more queued
+                </span>
+              )}
             </h2>
             <p className="text-xs text-muted-foreground truncate">{englishTitle}</p>
           </div>

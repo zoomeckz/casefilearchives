@@ -22,7 +22,8 @@ import {
   DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel,
   DropdownMenuSeparator, DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { NON_DEFAULT_LANGUAGES } from "@/i18n";
+import { NON_DEFAULT_LANGUAGES, LANGUAGE_LABELS, type SupportedLanguage } from "@/i18n";
+import { FlagIcon } from "@/components/FlagIcon";
 
 interface AdminPanelProps {
   glossary: Record<string, GlossaryEntry>;
@@ -74,6 +75,17 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ glossary, authToken, use
     content: string;
   } | null>(null);
 
+  // Bulk-selection state for the Chapters table.
+  //   - `selectedChapters`     : the set of selected chapter ids.
+  //   - `translationQueue`     : ordered list of chapter ids to walk the
+  //     translation editor through. When the editor closes we pop the next
+  //     id and reopen, giving a "Translate all selected" UX without building
+  //     a separate batch screen.
+  //   - `bulkBusy`             : disables the bar while a network bulk op runs.
+  const [selectedChapters, setSelectedChapters] = useState<Set<string>>(new Set());
+  const [translationQueue, setTranslationQueue] = useState<string[]>([]);
+  const [bulkBusy, setBulkBusy] = useState(false);
+
   // Sidebar collapse state — persisted across page reloads via localStorage so
   // power users keep the layout they prefer. Mobile uses the off-canvas drawer
   // controlled by `sidebarOpen` instead.
@@ -104,6 +116,162 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ glossary, authToken, use
     refreshTranslationCounts();
   }, [refreshTranslationCounts]);
   const totalTranslationLanguages = NON_DEFAULT_LANGUAGES.length;
+
+  // ---- Bulk selection helpers ---------------------------------------------
+  // Toggle one chapter in/out of the selection set. Memoised so the table
+  // doesn't re-render every row on each keystroke elsewhere.
+  const toggleChapterSelection = useCallback((id: string) => {
+    setSelectedChapters((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  }, []);
+  const clearChapterSelection = useCallback(() => setSelectedChapters(new Set()), []);
+
+  // Open the translation editor for the first selected chapter; remaining ids
+  // are queued and consumed automatically as the editor is closed.
+  const openChapterForTranslation = useCallback(
+    async (id: string) => {
+      const { data, error } = await dbFetch<any[]>("chapters", {
+        select: "id,chapter_number,title,content",
+        filters: `id=eq.${id}`,
+        token: authToken,
+      });
+      if (error || !data?.[0]) {
+        toast.error("Could not load chapter content for translation.");
+        return false;
+      }
+      setTranslatingChapter({
+        id: data[0].id,
+        chapter_number: data[0].chapter_number,
+        title: data[0].title,
+        content: data[0].content || "",
+      });
+      return true;
+    },
+    [authToken],
+  );
+  const startTranslationQueue = useCallback(
+    async (ids: string[]) => {
+      if (ids.length === 0) return;
+      const ordered = [...ids];
+      const first = ordered.shift()!;
+      setTranslationQueue(ordered);
+      const ok = await openChapterForTranslation(first);
+      if (!ok) setTranslationQueue([]);
+    },
+    [openChapterForTranslation],
+  );
+  // Called when the translation modal closes. If there are queued chapters
+  // left we transparently advance to the next one; otherwise just close.
+  const handleTranslationModalClose = useCallback(async () => {
+    setTranslatingChapter(null);
+    refreshTranslationCounts();
+    if (translationQueue.length === 0) return;
+    const [nextId, ...rest] = translationQueue;
+    setTranslationQueue(rest);
+    // Small delay so the modal unmount finishes cleanly before the next opens.
+    await new Promise((r) => setTimeout(r, 50));
+    const ok = await openChapterForTranslation(nextId);
+    if (!ok) setTranslationQueue([]);
+  }, [translationQueue, openChapterForTranslation, refreshTranslationCounts]);
+
+  // Bulk "Seed from English": for every selected chapter, insert a
+  // chapter_translations row in `lang` populated with the English title +
+  // content IF none exists yet. Existing rows are left alone — admins should
+  // open the editor to overwrite intentionally.
+  const bulkSeedFromEnglish = useCallback(
+    async (lang: SupportedLanguage) => {
+      const ids = Array.from(selectedChapters);
+      if (ids.length === 0 || !authToken) return;
+      if (!confirm(
+        `Create ${LANGUAGE_LABELS[lang]} translation drafts for ${ids.length} chapter(s) using the English source as a starting point? Chapters that already have a ${LANGUAGE_LABELS[lang]} translation will be skipped.`,
+      )) return;
+      setBulkBusy(true);
+      try {
+        // 1. Find which selected chapters already have this language.
+        const { data: existing } = await dbFetch<Array<{ chapter_id: string }>>(
+          "chapter_translations",
+          {
+            select: "chapter_id",
+            filters: `language_code=eq.${lang}&chapter_id=in.(${ids.join(",")})`,
+            token: authToken,
+          },
+        );
+        const taken = new Set((existing ?? []).map((r) => r.chapter_id));
+        const todo = ids.filter((id) => !taken.has(id));
+        if (todo.length === 0) {
+          toast.message(`All selected chapters already have ${LANGUAGE_LABELS[lang]} translations.`);
+          return;
+        }
+        // 2. Pull the English source for the chapters that still need seeding.
+        const { data: src, error: srcErr } = await dbFetch<Array<{ id: string; title: string; content: string }>>(
+          "chapters",
+          {
+            select: "id,title,content",
+            filters: `id=in.(${todo.join(",")})`,
+            token: authToken,
+          },
+        );
+        if (srcErr || !src) throw new Error(srcErr || "Failed to load source chapters.");
+        // 3. One POST per chapter — tolerable batch sizes here, and we still get
+        //    a per-row error if anything goes wrong instead of a partial commit.
+        let inserted = 0;
+        for (const chap of src) {
+          const { error } = await dbFetch("chapter_translations", {
+            method: "POST",
+            body: {
+              chapter_id: chap.id,
+              language_code: lang,
+              title: chap.title,
+              content: chap.content || "",
+            },
+            token: authToken,
+          });
+          if (!error) inserted++;
+        }
+        toast.success(
+          `Seeded ${inserted}/${todo.length} ${LANGUAGE_LABELS[lang]} draft(s). ${taken.size} skipped (already exist).`,
+        );
+        await refreshTranslationCounts();
+      } catch (err: any) {
+        toast.error(`Bulk seed failed: ${err.message ?? err}`);
+      } finally {
+        setBulkBusy(false);
+      }
+    },
+    [selectedChapters, authToken, refreshTranslationCounts],
+  );
+
+  // Bulk "Delete language": destructive — drops every chapter_translations
+  // row matching the selection + language.
+  const bulkDeleteLanguage = useCallback(
+    async (lang: SupportedLanguage) => {
+      const ids = Array.from(selectedChapters);
+      if (ids.length === 0 || !authToken) return;
+      if (!confirm(
+        `Delete the ${LANGUAGE_LABELS[lang]} translation for ${ids.length} chapter(s)? Readers will fall back to English. This cannot be undone.`,
+      )) return;
+      setBulkBusy(true);
+      try {
+        const { error } = await dbFetch("chapter_translations", {
+          method: "DELETE",
+          filters: `language_code=eq.${lang}&chapter_id=in.(${ids.join(",")})`,
+          token: authToken,
+        });
+        if (error) throw new Error(error);
+        toast.success(`Removed ${LANGUAGE_LABELS[lang]} translations from selected chapters.`);
+        await refreshTranslationCounts();
+      } catch (err: any) {
+        toast.error(`Bulk delete failed: ${err.message ?? err}`);
+      } finally {
+        setBulkBusy(false);
+      }
+    },
+    [selectedChapters, authToken, refreshTranslationCounts],
+  );
 
   const fetchGlossaryEntries = useCallback(async () => {
     const { data } = await dbFetch<any[]>('glossary', {
@@ -674,33 +842,37 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ glossary, authToken, use
                         {chapterSearch ? 'No chapters match your search.' : 'No chapters yet. Create your first one!'}
                       </p>
                     ) : (
-                      <ChapterTable
+                      <>
+                        <ChapterBulkActionsBar
+                          selectedCount={selectedChapters.size}
+                          busy={bulkBusy}
+                          onClear={clearChapterSelection}
+                          onTranslate={() => startTranslationQueue(Array.from(selectedChapters))}
+                          onSeedFromEnglish={bulkSeedFromEnglish}
+                          onDeleteLanguage={bulkDeleteLanguage}
+                        />
+                        <ChapterTable
                         chapters={filteredChapters}
                         translationCounts={translationCounts}
                         totalLanguages={totalTranslationLanguages}
                         chapterSort={chapterSort}
                         onSortChange={setChapterSort}
+                        selectedIds={selectedChapters}
+                        onToggleSelect={toggleChapterSelection}
+                        onSelectAll={(ids, all) => {
+                          setSelectedChapters((prev) => {
+                            const next = new Set(prev);
+                            if (all) ids.forEach((id) => next.add(id));
+                            else ids.forEach((id) => next.delete(id));
+                            return next;
+                          });
+                        }}
                         onEdit={(id) => updateAdminRoute({ tab: 'chapters', view: 'edit', chapter: id, draft: null, term: null, sentence: null })}
                         onDelete={handleDeleteChapter}
                         onDownload={(num, title) => downloadSingleChapter(num, title)}
-                        onTranslate={async (id) => {
-                          const { data, error } = await dbFetch<any[]>('chapters', {
-                            select: 'id,chapter_number,title,content',
-                            filters: `id=eq.${id}`,
-                            token: authToken,
-                          });
-                          if (error || !data?.[0]) {
-                            toast.error('Could not load chapter content for translation.');
-                            return;
-                          }
-                          setTranslatingChapter({
-                            id: data[0].id,
-                            chapter_number: data[0].chapter_number,
-                            title: data[0].title,
-                            content: data[0].content || '',
-                          });
-                        }}
-                      />
+                        onTranslate={openChapterForTranslation}
+                        />
+                      </>
                     )}
                   </>
                 )}
@@ -1126,7 +1298,8 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ glossary, authToken, use
           englishTitle={translatingChapter.title}
           englishContent={translatingChapter.content}
           authToken={authToken}
-          onClose={() => setTranslatingChapter(null)}
+          onClose={handleTranslationModalClose}
+          queueRemaining={translationQueue.length}
         />
       )}
     </div>
@@ -1151,6 +1324,116 @@ export default AdminPanel;
 // Lifted out of AdminPanel to keep the main component readable.
 // ===========================================================================
 
+// ===========================================================================
+// ChapterBulkActionsBar — appears above the chapters table when one or more
+// chapters are selected. Provides:
+//   - "Translate selected" → queues the chapters through the translation
+//     editor; closing one auto-opens the next.
+//   - "Seed from English"  → bulk-creates chapter_translations rows in the
+//     chosen language using the English source as a starting draft (skips
+//     chapters that already have that language).
+//   - "Delete language"    → removes the selected language from every
+//     selected chapter so the reader falls back to English.
+// All actions confirm before running and show a toast with the result count.
+// ===========================================================================
+interface ChapterBulkActionsBarProps {
+  selectedCount: number;
+  busy: boolean;
+  onClear: () => void;
+  onTranslate: () => void;
+  onSeedFromEnglish: (lang: SupportedLanguage) => void;
+  onDeleteLanguage: (lang: SupportedLanguage) => void;
+}
+
+const ChapterBulkActionsBar: React.FC<ChapterBulkActionsBarProps> = ({
+  selectedCount,
+  busy,
+  onClear,
+  onTranslate,
+  onSeedFromEnglish,
+  onDeleteLanguage,
+}) => {
+  if (selectedCount === 0) return null;
+  return (
+    <div className="sticky top-2 z-20 mb-3 flex flex-wrap items-center gap-2 rounded-lg border border-primary/30 bg-primary/10 backdrop-blur px-3 py-2 shadow-sm">
+      <span className="text-sm font-medium text-foreground">
+        {selectedCount} selected
+      </span>
+      <button
+        onClick={onClear}
+        disabled={busy}
+        className="text-xs text-muted-foreground hover:text-foreground underline-offset-2 hover:underline"
+      >
+        Clear
+      </button>
+      <div className="ml-auto flex flex-wrap items-center gap-2">
+        <button
+          onClick={onTranslate}
+          disabled={busy}
+          className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded text-xs bg-primary text-primary-foreground hover:bg-primary/90 disabled:opacity-50"
+          title="Open the translation editor for each selected chapter, one after another"
+        >
+          <Globe className="w-3.5 h-3.5" /> Translate selected
+        </button>
+
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <button
+              disabled={busy}
+              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded text-xs bg-secondary hover:bg-secondary/80 text-foreground disabled:opacity-50"
+            >
+              <Sparkles className="w-3.5 h-3.5" /> Seed from English
+              <ChevronDown className="w-3 h-3 opacity-60" />
+            </button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="end" className="w-56">
+            <DropdownMenuLabel className="text-xs">Create draft in…</DropdownMenuLabel>
+            <DropdownMenuSeparator />
+            {NON_DEFAULT_LANGUAGES.map((lang) => (
+              <DropdownMenuItem key={lang} onClick={() => onSeedFromEnglish(lang)}>
+                <FlagIcon lang={lang} size={14} />
+                <span className="ml-2">{LANGUAGE_LABELS[lang]}</span>
+              </DropdownMenuItem>
+            ))}
+          </DropdownMenuContent>
+        </DropdownMenu>
+
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <button
+              disabled={busy}
+              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded text-xs bg-destructive/15 hover:bg-destructive/25 text-destructive disabled:opacity-50"
+            >
+              <Trash2 className="w-3.5 h-3.5" /> Delete language
+              <ChevronDown className="w-3 h-3 opacity-60" />
+            </button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="end" className="w-56">
+            <DropdownMenuLabel className="text-xs">Remove translation in…</DropdownMenuLabel>
+            <DropdownMenuSeparator />
+            {NON_DEFAULT_LANGUAGES.map((lang) => (
+              <DropdownMenuItem
+                key={lang}
+                onClick={() => onDeleteLanguage(lang)}
+                className="text-destructive focus:text-destructive"
+              >
+                <FlagIcon lang={lang} size={14} />
+                <span className="ml-2">{LANGUAGE_LABELS[lang]}</span>
+              </DropdownMenuItem>
+            ))}
+          </DropdownMenuContent>
+        </DropdownMenu>
+
+        {busy && <Loader2 className="w-4 h-4 animate-spin text-muted-foreground" />}
+      </div>
+    </div>
+  );
+};
+
+// ===========================================================================
+// ChapterTable — sortable, hover-action table for the published chapters list.
+// ===========================================================================
+
 type ChapterRow = {
   id: string;
   title: string;
@@ -1172,6 +1455,9 @@ interface ChapterTableProps {
   onDelete: (id: string, title: string) => void;
   onDownload: (num: number, title: string) => void;
   onTranslate: (id: string) => void;
+  selectedIds: Set<string>;
+  onToggleSelect: (id: string) => void;
+  onSelectAll: (ids: string[], all: boolean) => void;
 }
 
 const ChapterTable: React.FC<ChapterTableProps> = ({
@@ -1184,6 +1470,9 @@ const ChapterTable: React.FC<ChapterTableProps> = ({
   onDelete,
   onDownload,
   onTranslate,
+  selectedIds,
+  onToggleSelect,
+  onSelectAll,
 }) => {
   // Each header maps a column to its (asc, desc) sort keys. Clicking a header
   // toggles between the two; the active one shows a directional caret.
@@ -1212,6 +1501,23 @@ const ChapterTable: React.FC<ChapterTableProps> = ({
         <table className="w-full text-sm">
           <thead>
             <tr className="text-left text-[11px] uppercase tracking-wider text-muted-foreground bg-card/60 border-b border-border/60">
+              <th className="pl-3 md:pl-4 pr-1 py-2.5 w-8">
+                <input
+                  type="checkbox"
+                  className="h-4 w-4 rounded border-border accent-primary cursor-pointer"
+                  aria-label="Select all chapters"
+                  checked={chapters.length > 0 && chapters.every((c) => selectedIds.has(c.id))}
+                  ref={(el) => {
+                    if (!el) return;
+                    const some = chapters.some((c) => selectedIds.has(c.id));
+                    const all = chapters.every((c) => selectedIds.has(c.id));
+                    el.indeterminate = some && !all;
+                  }}
+                  onChange={(e) =>
+                    onSelectAll(chapters.map((c) => c.id), e.target.checked)
+                  }
+                />
+              </th>
               {columns.map((col) => (
                 <th
                   key={col.key}
@@ -1237,11 +1543,23 @@ const ChapterTable: React.FC<ChapterTableProps> = ({
             {chapters.map((ch) => {
               const count = translationCounts[ch.id] ?? 0;
               const isScheduled = ch.scheduled_at && new Date(ch.scheduled_at) > new Date();
+              const isSelected = selectedIds.has(ch.id);
               return (
                 <tr
                   key={ch.id}
-                  className="border-b border-border/40 last:border-b-0 hover:bg-card/60 group transition-colors"
+                  className={`border-b border-border/40 last:border-b-0 group transition-colors ${
+                    isSelected ? 'bg-primary/5 hover:bg-primary/10' : 'hover:bg-card/60'
+                  }`}
                 >
+                  <td className="pl-3 md:pl-4 pr-1 py-3 w-8">
+                    <input
+                      type="checkbox"
+                      className="h-4 w-4 rounded border-border accent-primary cursor-pointer"
+                      aria-label={`Select chapter ${ch.chapter_number}`}
+                      checked={isSelected}
+                      onChange={() => onToggleSelect(ch.id)}
+                    />
+                  </td>
                   <td className="px-3 md:px-4 py-3 text-muted-foreground tabular-nums">{ch.chapter_number}</td>
                   <td className="px-3 md:px-4 py-3 min-w-0">
                     <div className="text-foreground font-medium truncate">{ch.title}</div>
