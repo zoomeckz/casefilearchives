@@ -680,78 +680,33 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ glossary, authToken, use
                         {chapterSearch ? 'No chapters match your search.' : 'No chapters yet. Create your first one!'}
                       </p>
                     ) : (
-                      <div className="space-y-2">
-                        {filteredChapters.map(ch => (
-                          <div key={ch.id} className="flex flex-col sm:flex-row sm:items-center justify-between p-3 md:p-4 bg-card/50 rounded-lg border border-border/50 gap-2 group">
-                            <div className="min-w-0">
-                              <span className="text-foreground font-medium text-sm md:text-base block truncate">Ch. {ch.chapter_number}: {ch.title}</span>
-                              <div className="flex gap-3 mt-1 text-xs text-muted-foreground">
-                                <span>{ch.views} views</span>
-                                <span>{ch.published_at ? new Date(ch.published_at).toLocaleDateString() : 'No date'}</span>
-                                {ch.scheduled_at && (
-                                  <span className={`font-medium ${new Date(ch.scheduled_at) > new Date() ? 'text-accent' : 'text-muted-foreground'}`}>
-                                    📅 {new Date(ch.scheduled_at).toLocaleDateString('sv-SE', { timeZone: 'Europe/Stockholm' })} {new Date(ch.scheduled_at).toLocaleTimeString('sv-SE', { timeZone: 'Europe/Stockholm', hour: '2-digit', minute: '2-digit' })}
-                                  </span>
-                                )}
-                              </div>
-                            </div>
-                            <div className="flex items-center gap-2 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity shrink-0">
-                              <button
-                                onClick={() => downloadSingleChapter(ch.chapter_number, ch.title)}
-                                className="px-3 py-1.5 bg-primary/20 hover:bg-primary/30 text-primary rounded text-xs transition-colors"
-                                title="Download this chapter"
-                              >
-                                Download
-                              </button>
-                              <a
-                                href={`/chapters/${ch.chapter_number}`}
-                                target="_blank"
-                                rel="noopener noreferrer"
-                                className="px-3 py-1.5 bg-accent/20 hover:bg-accent/30 text-accent rounded text-xs transition-colors inline-block"
-                              >
-                                Preview
-                              </a>
-                              <button
-                                onClick={() => updateAdminRoute({ tab: 'chapters', view: 'edit', chapter: ch.id, draft: null, term: null, sentence: null })}
-                                className="px-3 py-1.5 bg-secondary hover:bg-secondary/80 text-foreground rounded text-xs transition-colors"
-                              >
-                                Edit
-                              </button>
-                              <button
-                                onClick={async () => {
-                                  // Chapter rows in the list don't carry `content` to keep the listing query small.
-                                  // Fetch it lazily before opening the translations modal so we can offer "Load English source".
-                                  const { data, error } = await dbFetch<any[]>('chapters', {
-                                    select: 'id,chapter_number,title,content',
-                                    filters: `id=eq.${ch.id}`,
-                                    token: authToken,
-                                  });
-                                  if (error || !data?.[0]) {
-                                    toast.error('Could not load chapter content for translation.');
-                                    return;
-                                  }
-                                  setTranslatingChapter({
-                                    id: data[0].id,
-                                    chapter_number: data[0].chapter_number,
-                                    title: data[0].title,
-                                    content: data[0].content || '',
-                                  });
-                                }}
-                                className="px-3 py-1.5 bg-secondary hover:bg-secondary/80 text-foreground rounded text-xs transition-colors inline-flex items-center gap-1"
-                                title="Manage translations for this chapter"
-                              >
-                                <Globe className="w-3 h-3" /> Translate
-                              </button>
-                              <button
-                                onClick={() => handleDeleteChapter(ch.id, ch.title)}
-                                className="px-3 py-1.5 bg-destructive/20 hover:bg-destructive/30 text-destructive rounded text-xs transition-colors"
-                              >
-                                Delete
-                              </button>
-                            </div>
-                          </div>
-                        ))}
-                      </div>
+                      <ChapterTable
+                        chapters={filteredChapters}
+                        translationCounts={translationCounts}
+                        totalLanguages={totalTranslationLanguages}
+                        chapterSort={chapterSort}
+                        onSortChange={setChapterSort}
+                        onEdit={(id) => updateAdminRoute({ tab: 'chapters', view: 'edit', chapter: id, draft: null, term: null, sentence: null })}
+                        onDelete={handleDeleteChapter}
+                        onDownload={(num, title) => downloadSingleChapter(num, title)}
+                        onTranslate={async (id) => {
+                          const { data, error } = await dbFetch<any[]>('chapters', {
+                            select: 'id,chapter_number,title,content',
+                            filters: `id=eq.${id}`,
+                            token: authToken,
+                          });
+                          if (error || !data?.[0]) {
+                            toast.error('Could not load chapter content for translation.');
+                            return;
+                          }
+                          setTranslatingChapter({
+                            id: data[0].id,
+                            chapter_number: data[0].chapter_number,
+                            title: data[0].title,
+                            content: data[0].content || '',
+                          });
+                        }}
+                      />
                     )}
                   </>
                 )}
