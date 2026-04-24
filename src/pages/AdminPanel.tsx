@@ -565,6 +565,14 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ glossary, authToken, use
             {activeTab === "dashboard" && analytics && (
               <div>
                 <h1 className="font-display text-2xl md:text-3xl text-accent mb-6 md:mb-8">Dashboard</h1>
+                <NeedsAttentionPanel
+                  chapters={chapters}
+                  glossaryEntries={glossaryEntries}
+                  translationCounts={translationCounts}
+                  totalLanguages={totalTranslationLanguages}
+                  draftsCount={drafts.length}
+                  onJump={(tab) => updateAdminRoute({ tab, view: null, chapter: null, draft: null, term: null, sentence: null })}
+                />
                 <div className="grid grid-cols-2 md:grid-cols-3 gap-3 md:gap-6 mb-8 md:mb-12">
                   <StatCard label="Total Chapter Views" value={analytics.totalViews} />
                   <StatCard label="Registered Readers" value={analytics.totalReaders} />
