@@ -353,3 +353,52 @@
   pointer-events: none;
   height: 0;
 }
+
+/* ---------- Reader & atmosphere helpers ---------- */
+
+/* Reading progress bar glow */
+.reading-progress-bar {
+  background: hsl(var(--primary));
+  box-shadow: 0 0 8px hsl(var(--primary) / 0.6), 0 0 14px hsl(var(--accent) / 0.25);
+}
+
+/* Reader column width controlled by the user via CSS var */
+.reader-column {
+  max-width: var(--reader-max-width, 680px);
+  margin-left: auto;
+  margin-right: auto;
+  transition: max-width 120ms ease-out;
+}
+
+/* Parchment-tinted "Previously..." card */
+.previously-card {
+  background: linear-gradient(
+    180deg,
+    hsl(45 30% 10% / 0.5) 0%,
+    hsl(24 10% 6% / 0.6) 100%
+  );
+  border: 1px solid hsl(45 50% 35% / 0.25);
+  border-left: 3px solid hsl(var(--accent) / 0.55);
+}
+
+/* Maroon-tinted destructive surface (used by Cards mode "X" / not-read) */
+.surface-maroon {
+  background: hsl(0 60% 27% / 0.12);
+  border: 1px solid hsl(0 60% 27% / 0.35);
+}
+
+/* Active nav underline */
+.nav-active-underline {
+  position: relative;
+}
+.nav-active-underline::after {
+  content: "";
+  position: absolute;
+  left: 50%;
+  bottom: -6px;
+  transform: translateX(-50%);
+  width: 22px;
+  height: 2px;
+  background: hsl(var(--primary));
+  border-radius: 2px;
+}
