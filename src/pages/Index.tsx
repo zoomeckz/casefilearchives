@@ -131,7 +131,7 @@ const Index = () => {
 
   // Resolve chapter from URL param
   useEffect(() => {
-    const match = location.pathname.match(/^\/chapters\/(\d+)$/);
+    const match = stripLanguagePrefix(location.pathname).match(/^\/chapters\/(\d+)$/);
     if (match && chapters.length > 0) {
       const num = parseInt(match[1]);
       const ch = chapters.find(c => c.chapterNumber === num);
@@ -141,7 +141,8 @@ const Index = () => {
 
   const handleSelectChapter = (chapter: Chapter) => {
     setSelectedChapter(chapter);
-    navigate(`/chapters/${chapter.chapterNumber}`);
+    const lang = detectLanguageFromPath(location.pathname);
+    navigate(withLanguagePrefix(`/chapters/${chapter.chapterNumber}`, lang));
   };
 
   const handleSignOut = async () => {
