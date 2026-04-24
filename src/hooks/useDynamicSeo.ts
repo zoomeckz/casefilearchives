@@ -75,6 +75,36 @@ const SITE_META_BY_LANG: Partial<Record<SupportedLanguage, { title: string; desc
     description:
       "Прочети Седориум — безплатно тъмно фентъзи за разбити престоли. Нова глава всеки петък. Кодекс с герои, места и предания.",
   },
+  es: {
+    title: "Sedorium — Fantasía oscura de Sam Nowroozi Larki | The Five Thrones",
+    description:
+      "Lee Sedorium — fantasía oscura gratuita sobre tronos rotos. Nuevo capítulo cada viernes. Códex de personajes, lugares y leyendas.",
+  },
+  hi: {
+    title: "Sedorium — Sam Nowroozi Larki की डार्क फैंटेसी | The Five Thrones",
+    description:
+      "Sedorium पढ़ें — टूटे सिंहासनों की मुफ़्त डार्क फैंटेसी। हर शुक्रवार नया अध्याय। पात्रों, स्थानों और किंवदंतियों का कोडेक्स।",
+  },
+  ar: {
+    title: "Sedorium — فانتازيا مظلمة بقلم Sam Nowroozi Larki | The Five Thrones",
+    description:
+      "اقرأ Sedorium — فانتازيا مظلمة مجانية عن العروش المحطمة. فصل جديد كل يوم جمعة. موسوعة الشخصيات والأماكن والأساطير.",
+  },
+  ja: {
+    title: "Sedorium — Sam Nowroozi Larki のダークファンタジー | The Five Thrones",
+    description:
+      "Sedorium を読む — 砕かれた玉座を巡る無料のダークファンタジー。毎週金曜に新章公開。登場人物、場所、伝承のコーデックス。",
+  },
+  ko: {
+    title: "Sedorium — Sam Nowroozi Larki의 다크 판타지 | The Five Thrones",
+    description:
+      "Sedorium을 읽어보세요 — 부서진 왕좌를 둘러싼 무료 다크 판타지. 매주 금요일 새 챕터 공개. 인물·장소·전승의 코덱스.",
+  },
+  zh: {
+    title: "Sedorium — Sam Nowroozi Larki 的黑暗奇幻 | The Five Thrones",
+    description:
+      "阅读 Sedorium —— 关于破碎王座的免费黑暗奇幻。每周五更新新章节。人物、地点与传说的索引典藏。",
+  },
 };
 
 /** Per-language chapter-meta builder. Add a builder when localising chapter SEO. */
@@ -88,12 +118,42 @@ const CHAPTER_META_BY_LANG: Partial<
     fullTitle: `Глава ${n}: ${title} — Седориум | The Five Thrones`,
     description: `Прочети Глава ${n}: ${title} от Седориум — The Five Thrones, безплатно тъмно фентъзи от Сам Новрузи Ларки.`,
   }),
+  es: (n, title) => ({
+    fullTitle: `Capítulo ${n}: ${title} — Sedorium | The Five Thrones`,
+    description: `Lee el Capítulo ${n}: ${title} de Sedorium — The Five Thrones, fantasía oscura gratuita de Sam Nowroozi Larki.`,
+  }),
+  hi: (n, title) => ({
+    fullTitle: `अध्याय ${n}: ${title} — Sedorium | The Five Thrones`,
+    description: `Sedorium का अध्याय ${n}: ${title} पढ़ें — Sam Nowroozi Larki की मुफ़्त डार्क फैंटेसी, The Five Thrones।`,
+  }),
+  ar: (n, title) => ({
+    fullTitle: `الفصل ${n}: ${title} — Sedorium | The Five Thrones`,
+    description: `اقرأ الفصل ${n}: ${title} من Sedorium — The Five Thrones، فانتازيا مظلمة مجانية بقلم Sam Nowroozi Larki.`,
+  }),
+  ja: (n, title) => ({
+    fullTitle: `第${n}章：${title} — Sedorium | The Five Thrones`,
+    description: `Sedorium 第${n}章「${title}」を読む — Sam Nowroozi Larki が綴る無料のダークファンタジー、The Five Thrones。`,
+  }),
+  ko: (n, title) => ({
+    fullTitle: `${n}장: ${title} — Sedorium | The Five Thrones`,
+    description: `Sedorium ${n}장 「${title}」 — Sam Nowroozi Larki의 무료 다크 판타지, The Five Thrones를 읽어보세요.`,
+  }),
+  zh: (n, title) => ({
+    fullTitle: `第 ${n} 章：${title} — Sedorium | The Five Thrones`,
+    description: `阅读 Sedorium 第 ${n} 章《${title}》—— Sam Nowroozi Larki 创作的免费黑暗奇幻 The Five Thrones。`,
+  }),
 };
 
 /** OG locale tag (BCP 47 with underscore) per language. Defaults to en_US. */
 const OG_LOCALE_BY_LANG: Record<SupportedLanguage, string> = {
   en: "en_US",
   bg: "bg_BG",
+  es: "es_ES",
+  hi: "hi_IN",
+  ar: "ar_AR",
+  ja: "ja_JP",
+  ko: "ko_KR",
+  zh: "zh_CN",
 };
 
 function stripHtml(html: string): string {
