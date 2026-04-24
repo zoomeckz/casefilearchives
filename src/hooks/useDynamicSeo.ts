@@ -1,6 +1,11 @@
 import { useEffect } from "react";
 import { useLocation } from "react-router-dom";
-import { detectLanguageFromPath } from "@/i18n";
+import {
+  DEFAULT_LANGUAGE,
+  detectLanguageFromPath,
+  withLanguagePrefix,
+  type SupportedLanguage,
+} from "@/i18n";
 
 const SUPABASE_URL = "https://iiezbdlmikvgxjlozwlc.supabase.co";
 const SEO_META_URL = `${SUPABASE_URL}/functions/v1/dynamic-seo-meta`;
@@ -59,19 +64,37 @@ function setCanonical(href: string) {
 }
 
 /**
- * Bulgarian translations of the site-wide meta. We translate the human-readable
- * fields locally because the dynamic-seo-meta edge function only returns English.
- * This keeps `/bg/` pages indexable in Bulgarian without an extra round-trip.
+ * Per-language overrides for site-wide meta. The `dynamic-seo-meta` edge
+ * function returns English; for any other supported language we look up a
+ * translation here. Languages with no entry simply fall back to English (so
+ * adding a new locale never breaks SEO — translations can ship later).
  */
-const BG_META = {
-  title: "Седориум — Тъмно фентъзи от Сам Новрузи Ларки | The Five Thrones",
-  description:
-    "Прочети Седориум — безплатно тъмно фентъзи за разбити престоли. Нова глава всеки петък. Кодекс с герои, места и предания.",
+const SITE_META_BY_LANG: Partial<Record<SupportedLanguage, { title: string; description: string }>> = {
+  bg: {
+    title: "Седориум — Тъмно фентъзи от Сам Новрузи Ларки | The Five Thrones",
+    description:
+      "Прочети Седориум — безплатно тъмно фентъзи за разбити престоли. Нова глава всеки петък. Кодекс с герои, места и предания.",
+  },
 };
 
-function isBg(pathname: string): boolean {
-  return detectLanguageFromPath(pathname) === "bg";
-}
+/** Per-language chapter-meta builder. Add a builder when localising chapter SEO. */
+const CHAPTER_META_BY_LANG: Partial<
+  Record<
+    SupportedLanguage,
+    (n: number, title: string) => { fullTitle: string; description: string }
+  >
+> = {
+  bg: (n, title) => ({
+    fullTitle: `Глава ${n}: ${title} — Седориум | The Five Thrones`,
+    description: `Прочети Глава ${n}: ${title} от Седориум — The Five Thrones, безплатно тъмно фентъзи от Сам Новрузи Ларки.`,
+  }),
+};
+
+/** OG locale tag (BCP 47 with underscore) per language. Defaults to en_US. */
+const OG_LOCALE_BY_LANG: Record<SupportedLanguage, string> = {
+  en: "en_US",
+  bg: "bg_BG",
+};
 
 function stripHtml(html: string): string {
   return html.replace(/<[^>]*>/g, " ").replace(/\s+/g, " ").trim();
@@ -90,10 +113,13 @@ async function applySiteMeta(pathname: string): Promise<void> {
   if (!res.ok) return;
   const meta: SeoMeta = await res.json();
 
-  const bg = isBg(pathname);
-  const title = bg ? BG_META.title : meta.title;
-  const description = bg ? BG_META.description : meta.description;
-  const canonical = bg ? `${SITE_URL}/bg/` : `${SITE_URL}/`;
+  const lang = detectLanguageFromPath(pathname);
+  const override = SITE_META_BY_LANG[lang];
+  const title = override?.title ?? meta.title;
+  const description = override?.description ?? meta.description;
+  // Canonical includes a trailing slash for the home page in every language.
+  const langPrefix = withLanguagePrefix("/", lang);
+  const canonical = `${SITE_URL}${langPrefix === "/" ? "/" : `${langPrefix}/`}`;
 
   document.title = title;
   setMeta("description", description);
@@ -101,7 +127,7 @@ async function applySiteMeta(pathname: string): Promise<void> {
   setMeta("og:title", title, "property");
   setMeta("og:description", description, "property");
   setMeta("og:url", canonical, "property");
-  setMeta("og:locale", bg ? "bg_BG" : "en_US", "property");
+  setMeta("og:locale", OG_LOCALE_BY_LANG[lang] ?? OG_LOCALE_BY_LANG[DEFAULT_LANGUAGE], "property");
   setMeta("twitter:title", title);
   setMeta("twitter:description", description);
   setCanonical(canonical);
@@ -133,17 +159,16 @@ async function applyChapterMeta(chapterNumber: number, pathname: string): Promis
   if (!ch) return false;
 
   const excerpt = buildExcerpt(ch.content, 155);
-  const bg = isBg(pathname);
-  const fullTitle = bg
-    ? `Глава ${ch.chapter_number}: ${ch.title} — Седориум | The Five Thrones`
+  const lang = detectLanguageFromPath(pathname);
+  const builder = CHAPTER_META_BY_LANG[lang];
+  const fullTitle = builder
+    ? builder(ch.chapter_number, ch.title).fullTitle
     : `Chapter ${ch.chapter_number}: ${ch.title} — Sedorium | The Five Thrones`;
-  const description = bg
-    ? `Прочети Глава ${ch.chapter_number}: ${ch.title} от Седориум — The Five Thrones, безплатно тъмно фентъзи от Сам Новрузи Ларки.`
+  const description = builder
+    ? builder(ch.chapter_number, ch.title).description
     : excerpt ||
       `Read Chapter ${ch.chapter_number}: ${ch.title} from Sedorium — The Five Thrones, a free dark fantasy web novel by Sam Nowroozi Larki.`;
-  const canonical = bg
-    ? `${SITE_URL}/bg/chapters/${ch.chapter_number}`
-    : `${SITE_URL}/chapters/${ch.chapter_number}`;
+  const canonical = `${SITE_URL}${withLanguagePrefix(`/chapters/${ch.chapter_number}`, lang)}`;
 
   document.title = fullTitle;
   setMeta("description", description);
@@ -151,7 +176,7 @@ async function applyChapterMeta(chapterNumber: number, pathname: string): Promis
   setMeta("og:title", fullTitle, "property");
   setMeta("og:description", description, "property");
   setMeta("og:url", canonical, "property");
-  setMeta("og:locale", bg ? "bg_BG" : "en_US", "property");
+  setMeta("og:locale", OG_LOCALE_BY_LANG[lang] ?? OG_LOCALE_BY_LANG[DEFAULT_LANGUAGE], "property");
   setMeta("twitter:title", fullTitle);
   setMeta("twitter:description", description);
   setCanonical(canonical);
@@ -163,7 +188,7 @@ async function applyChapterMeta(chapterNumber: number, pathname: string): Promis
     headline: `Chapter ${ch.chapter_number}: ${ch.title}`,
     description,
     url: canonical,
-    inLanguage: bg ? "bg" : "en",
+    inLanguage: lang,
     isAccessibleForFree: true,
     isPartOf: {
       "@type": "Book",
@@ -198,7 +223,11 @@ export function useDynamicSeo() {
     let cancelled = false;
     (async () => {
       try {
-        const chapterMatch = location.pathname.match(/^\/(?:bg\/)?chapters\/(\d+)$/);
+        // Match `/chapters/:n` after stripping any language prefix so this
+        // works for every supported locale automatically.
+        const chapterMatch = location.pathname
+          .replace(/^\/[a-z]{2}(?=\/)/, "")
+          .match(/^\/chapters\/(\d+)$/);
         if (chapterMatch) {
           const num = parseInt(chapterMatch[1], 10);
           const ok = await applyChapterMeta(num, location.pathname);
