@@ -1298,7 +1298,8 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ glossary, authToken, use
           englishTitle={translatingChapter.title}
           englishContent={translatingChapter.content}
           authToken={authToken}
-          onClose={() => setTranslatingChapter(null)}
+          onClose={handleTranslationModalClose}
+          queueRemaining={translationQueue.length}
         />
       )}
     </div>
