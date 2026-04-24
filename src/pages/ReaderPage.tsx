@@ -265,9 +265,13 @@ export const ReaderPage: React.FC<ReaderPageProps> = ({
           <button
             type="button"
             onClick={() => setCardsMode(true)}
-            className="px-3 py-1.5 rounded-md bg-primary/15 hover:bg-primary/25 text-primary border border-primary/30 transition-colors"
+            className="inline-flex items-center gap-2 px-4 py-2 rounded-md bg-accent text-accent-foreground border border-accent shadow-md hover:bg-accent/90 hover:shadow-lg transition-all font-semibold text-sm"
+            title="Read in focused, swipeable cards — great on mobile"
           >
             📇 {t("reader.cardsMode")}
+            <span className="hidden sm:inline text-[10px] uppercase tracking-wider opacity-80 ml-1 px-1.5 py-0.5 rounded bg-accent-foreground/15">
+              New
+            </span>
           </button>
         </div>
 
