@@ -13,7 +13,16 @@ import { ChapterTranslationsManager } from "@/components/ChapterTranslationsMana
 import { toast } from "sonner";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { Input } from "@/components/ui/input";
-import { Menu, X, Search, ArrowUpDown, Globe, CheckCircle2, AlertCircle, Loader2, ExternalLink, History } from "lucide-react";
+import {
+  Menu, X, Search, ArrowUpDown, Globe, CheckCircle2, AlertCircle, Loader2, ExternalLink, History,
+  ChevronLeft, ChevronRight, ChevronDown, MoreHorizontal, Edit3, Trash2, Eye, Download, FileText,
+  Calendar, AlertTriangle, BookOpen, Sparkles, BarChart3, PanelLeftClose, PanelLeftOpen,
+} from "lucide-react";
+import {
+  DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel,
+  DropdownMenuSeparator, DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import { NON_DEFAULT_LANGUAGES } from "@/i18n";
 
 interface AdminPanelProps {
   glossary: Record<string, GlossaryEntry>;
