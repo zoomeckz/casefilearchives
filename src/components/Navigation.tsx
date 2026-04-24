@@ -49,7 +49,14 @@ export const Navigation: React.FC<NavigationProps> = ({
   const communityActive = communityItems.some(c => currentPage === c.id);
 
   return (
-    <nav className="sticky top-0 z-50 bg-stone-950/95 backdrop-blur-sm border-b border-border/50">
+    /*
+     * Force LTR on the navbar even when the document is RTL (Arabic).
+     * Without this, flex children flip order so the language switcher /
+     * notification bell / avatar end up on the LEFT instead of the right,
+     * and the dropdown menus open from the wrong edge. The chrome is
+     * intentionally locale-agnostic — only page CONTENT mirrors for RTL.
+     */
+    <nav dir="ltr" className="sticky top-0 z-50 bg-stone-950/95 backdrop-blur-sm border-b border-border/50">
       <div className="max-w-4xl mx-auto px-4 sm:px-6">
         <div className="flex items-center justify-between h-14">
 
