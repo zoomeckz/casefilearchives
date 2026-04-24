@@ -138,8 +138,36 @@
   }
 
   .prose-story p {
-    @apply mb-6 leading-relaxed text-stone-300;
+    @apply mb-6 text-stone-200;
+    font-size: 1.0625rem;
     line-height: 1.8;
+  }
+
+  /* Drop cap — first letter of the first paragraph */
+  .prose-story > p:first-of-type::first-letter {
+    font-family: 'Cinzel Decorative', serif;
+    float: left;
+    font-size: 3.6em;
+    line-height: 0.9;
+    padding: 0.15em 0.12em 0 0;
+    color: hsl(var(--accent));
+    font-weight: 700;
+  }
+
+  /* Scene break ornaments — render <hr> as a center-aligned glyph */
+  .prose-story hr {
+    border: 0;
+    text-align: center;
+    margin: 2.5em 0;
+    overflow: visible;
+    height: 1em;
+  }
+  .prose-story hr::before {
+    content: "✦";
+    color: hsl(var(--accent) / 0.55);
+    font-size: 1.1em;
+    letter-spacing: 0.6em;
+    padding-left: 0.6em;
   }
 
   .prose-story blockquote {
@@ -149,13 +177,16 @@
   /* Glossary term styles */
   .glossary-term {
     @apply text-sky-300 cursor-pointer transition-all duration-150 inline relative;
-    border-bottom: 1px dotted hsl(199 89% 48% / 0.4);
+    border-bottom: 1px dotted hsl(199 89% 48% / 0.45);
+    padding: 0 0.05em;
+    border-radius: 2px;
   }
 
   .glossary-term:hover {
-    @apply text-sky-400;
-    border-bottom-color: hsl(199 89% 48%);
-    background-color: hsl(199 89% 48% / 0.1);
+    @apply text-amber-200;
+    border-bottom-color: hsl(45 93% 58% / 0.7);
+    background-color: hsl(45 93% 58% / 0.08);
+  }
   }
 
   /* Line clamp utilities */
