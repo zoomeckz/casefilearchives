@@ -104,7 +104,7 @@ export const HomePage: React.FC<HomePageProps> = ({
           <p
             className="text-foreground/85 text-base sm:text-lg max-w-xl mx-auto leading-relaxed mb-3 italic font-display"
           >
-            A dark fantasy of broken thrones following a trail of long-gone lycan.
+            A dark fantasy of broken thrones, following the trail of a long-gone lycan.
           </p>
           <p
             className="text-muted-foreground text-xs sm:text-sm tracking-[0.25em] uppercase"
