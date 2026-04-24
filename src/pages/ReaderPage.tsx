@@ -13,6 +13,9 @@ import { ChapterReactions } from "@/components/ChapterReactions";
 import { ChapterPoll } from "@/components/ChapterPoll";
 import { TextHighlightBookmark } from "@/components/TextHighlightBookmark";
 import { ReaderCardsView } from "@/components/ReaderCardsView";
+import { useChapterTranslation } from "@/hooks/useChapterTranslation";
+import { FlagIcon } from "@/components/FlagIcon";
+import { LANGUAGE_LABELS } from "@/i18n";
 
 
 function estimateReadingTime(content: string): number {
@@ -48,6 +51,10 @@ export const ReaderPage: React.FC<ReaderPageProps> = ({
   toggleBookmark,
 }) => {
   const { t } = useTranslation();
+  // Pull the localized title + body for this chapter (if any translation
+  // row exists) and expose a per-chapter language toggle. See the hook
+  // for fallback rules.
+  const translation = useChapterTranslation(chapter);
   const discussionPrompts = [
     t("reader.prompt1", "What do you think will happen next?"),
     t("reader.prompt2", "Which character stood out most in this chapter?"),
@@ -185,7 +192,7 @@ export const ReaderPage: React.FC<ReaderPageProps> = ({
   const currentIndex = chapters.findIndex((c) => c.id === chapter.id);
   const prevChapter = currentIndex > 0 ? chapters[currentIndex - 1] : null;
   const nextChapter = currentIndex < chapters.length - 1 ? chapters[currentIndex + 1] : null;
-  const readTime = estimateReadingTime(chapter.content);
+  const readTime = estimateReadingTime(translation.content);
 
   // "Previously on..." — show last chapter title
   const prevSummary = prevChapter ? prevChapter.title : null;
@@ -280,8 +287,36 @@ export const ReaderPage: React.FC<ReaderPageProps> = ({
             {t("chapters.chapterLabel")} {chapter.chapterNumber}
           </span>
           <h1 className="font-display text-4xl sm:text-5xl text-accent mt-2 mb-4">
-            {chapter.title}
+            {translation.title}
           </h1>
+          {/* Per-chapter language toggle — only renders flags for languages
+              that actually have a translation row (plus the English source).
+              Hidden entirely when there's nothing to switch to so the header
+              stays clean for chapters that haven't been translated yet. */}
+          {translation.available.length > 1 && (
+            <div className="flex items-center justify-center gap-1.5 mb-4" role="group" aria-label="Reading language">
+              {translation.available.map((lang) => {
+                const isActive = translation.active === lang;
+                return (
+                  <button
+                    key={lang}
+                    type="button"
+                    onClick={() => translation.setActive(lang)}
+                    title={LANGUAGE_LABELS[lang]}
+                    aria-label={LANGUAGE_LABELS[lang]}
+                    aria-pressed={isActive}
+                    className={`inline-flex items-center justify-center w-7 h-7 rounded-full border transition-all ${
+                      isActive
+                        ? "border-primary/60 bg-primary/10 ring-2 ring-primary/30"
+                        : "border-border/40 opacity-60 hover:opacity-100 hover:border-border"
+                    }`}
+                  >
+                    <FlagIcon lang={lang} size={14} />
+                  </button>
+                );
+              })}
+            </div>
+          )}
           <div className="flex flex-nowrap sm:flex-wrap items-center justify-center gap-2 sm:gap-4 text-muted-foreground text-xs sm:text-sm overflow-x-auto whitespace-nowrap">
             <span>{new Date(chapter.publishedAt).toLocaleDateString()}</span>
             <span className="flex items-center gap-1">
@@ -346,7 +381,7 @@ export const ReaderPage: React.FC<ReaderPageProps> = ({
         <article
           className="mb-12 rounded-xl p-6 sm:p-8"
         >
-          <InteractiveContent content={chapter.content} glossary={glossary} />
+          <InteractiveContent content={translation.content} glossary={glossary} />
         </article>
 
         {/* Chapter Reactions */}
