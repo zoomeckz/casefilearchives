@@ -458,45 +458,114 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ glossary, authToken, use
     { value: 'oldest', label: 'Oldest' },
   ];
 
+  // Width tokens for the sidebar in each state. Kept here so the main content
+  // padding can react via the `md:pl-*` modifier instead of using a flex row,
+  // which avoided a subtle bug where the off-canvas mobile drawer would push
+  // the main column sideways.
+  const sidebarWidthClass = sidebarCollapsed ? "md:w-16" : "md:w-64";
+  const sidebarPadClass = sidebarCollapsed ? "md:pl-16" : "md:pl-64";
+  const showLabels = !sidebarCollapsed;
+
+  const renderNav = (onPick: (id: string) => void, compact: boolean) => (
+    <nav className="space-y-6">
+      {navGroups.map((group) => (
+        <div key={group.label}>
+          {!compact && (
+            <div className="px-3 mb-2 text-[10px] uppercase tracking-[0.18em] text-muted-foreground/70 font-medium">
+              {group.label}
+            </div>
+          )}
+          <div className="space-y-1">
+            {group.items.map((item) => {
+              const isActive = activeTab === item.id;
+              const Icon = item.icon;
+              return (
+                <button
+                  key={item.id}
+                  onClick={() => onPick(item.id)}
+                  title={compact ? item.label : undefined}
+                  className={`w-full flex items-center gap-3 ${compact ? "justify-center px-0" : "px-3"} py-2.5 rounded-lg text-left text-sm transition-colors ${
+                    isActive
+                      ? "bg-primary/15 text-primary border border-primary/30"
+                      : "text-muted-foreground hover:text-foreground hover:bg-secondary/60 border border-transparent"
+                  }`}
+                >
+                  <Icon className="w-4 h-4 shrink-0" />
+                  {!compact && <span className="truncate">{item.label}</span>}
+                </button>
+              );
+            })}
+          </div>
+        </div>
+      ))}
+    </nav>
+  );
+
   return (
-    <div className="min-h-screen flex flex-col md:flex-row">
-      {/* Mobile header */}
+    <div className="min-h-screen bg-background">
+      {/* Mobile top bar — visible only below md. */}
       {isMobile && (
         <div className="flex items-center justify-between p-4 bg-card border-b border-border sticky top-0 z-30">
-          <h2 className="font-display text-lg text-accent">Admin Panel</h2>
-          <button onClick={() => setSidebarOpen(!sidebarOpen)} className="p-2 rounded-lg hover:bg-secondary transition-colors">
-            {sidebarOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
-          </button>
+          <div className="flex items-center gap-2">
+            <button
+              onClick={() => setSidebarOpen(!sidebarOpen)}
+              className="p-2 rounded-lg hover:bg-secondary transition-colors"
+              aria-label="Toggle navigation"
+            >
+              {sidebarOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
+            </button>
+            <h2 className="font-display text-lg text-accent">Admin</h2>
+          </div>
+          <span className="text-xs text-muted-foreground capitalize">{activeTab}</span>
         </div>
       )}
 
-      {/* Sidebar / Mobile drawer */}
-      {(sidebarOpen || !isMobile) && (
+      {/* Mobile off-canvas drawer */}
+      {isMobile && sidebarOpen && (
         <>
-          {isMobile && <div className="fixed inset-0 bg-black/50 z-30" onClick={() => setSidebarOpen(false)} />}
-          <aside className={`${isMobile ? 'fixed top-0 left-0 h-full z-40 w-64 animate-in slide-in-from-left' : 'w-64 sticky top-0 h-screen'} bg-card border-r border-border p-6 overflow-y-auto`}>
-            <h2 className="font-display text-xl text-accent mb-8">{isMobile ? '' : 'Admin Panel'}</h2>
-            <nav className="space-y-2">
-              {tabs.map((tab) => (
-                <button
-                  key={tab.id}
-                  onClick={() => handleTabClick(tab.id)}
-                  className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg text-left transition-colors ${
-                    activeTab === tab.id
-                      ? "bg-primary/20 text-primary"
-                      : "text-muted-foreground hover:text-foreground hover:bg-secondary"
-                  }`}
-                >
-                  <tab.icon className="w-5 h-5" />
-                  {tab.label}
-                </button>
-              ))}
-            </nav>
+          <div className="fixed inset-0 bg-black/50 z-30" onClick={() => setSidebarOpen(false)} />
+          <aside className="fixed top-0 left-0 h-full z-40 w-64 bg-card border-r border-border p-4 overflow-y-auto animate-in slide-in-from-left">
+            <div className="flex items-center justify-between mb-6">
+              <h2 className="font-display text-lg text-accent">Admin Panel</h2>
+              <button
+                onClick={() => setSidebarOpen(false)}
+                className="p-1.5 rounded hover:bg-secondary"
+                aria-label="Close navigation"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+            {renderNav(handleTabClick, false)}
           </aside>
         </>
       )}
 
-      <main className="flex-1 p-4 md:p-8 overflow-y-auto">
+      {/* Desktop fixed sidebar */}
+      {!isMobile && (
+        <aside
+          className={`fixed inset-y-0 left-0 z-30 ${sidebarWidthClass} bg-card border-r border-border p-3 overflow-y-auto transition-all duration-200`}
+        >
+          <div className={`flex items-center ${showLabels ? "justify-between" : "justify-center"} mb-6 px-2`}>
+            {showLabels && (
+              <div>
+                <h2 className="font-display text-base text-accent leading-none">Sedorium</h2>
+                <p className="text-[10px] uppercase tracking-widest text-muted-foreground mt-1">Admin</p>
+              </div>
+            )}
+            <button
+              onClick={() => setSidebarCollapsed((c) => !c)}
+              className="p-1.5 rounded hover:bg-secondary text-muted-foreground"
+              aria-label={sidebarCollapsed ? "Expand sidebar" : "Collapse sidebar"}
+              title={sidebarCollapsed ? "Expand sidebar" : "Collapse sidebar"}
+            >
+              {sidebarCollapsed ? <PanelLeftOpen className="w-4 h-4" /> : <PanelLeftClose className="w-4 h-4" />}
+            </button>
+          </div>
+          {renderNav(handleTabClick, sidebarCollapsed)}
+        </aside>
+      )}
+
+      <main className={`flex-1 p-4 md:p-8 overflow-y-auto transition-all duration-200 ${!isMobile ? sidebarPadClass : ""}`}>
         {loading ? (
           <p className="text-muted-foreground">Loading...</p>
         ) : (
