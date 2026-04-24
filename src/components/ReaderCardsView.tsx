@@ -132,25 +132,90 @@ export const ReaderCardsView: React.FC<Props> = ({ chapter, wordsPerCard, setWor
   const notRead = () => markDone(index, false);
 
   // Keyboard navigation: ← / → step between cards. We deliberately ignore the
-  // event when the user is typing in an input, textarea, contenteditable, or
-  // when they're holding a modifier (so browser shortcuts like ⌘+← still work).
+  // event in any of these cases so we never hijack legitimate browser/UI
+  // behaviour:
+  //   - any modifier is held (Shift/Ctrl/Meta/Alt) — preserves shortcuts like
+  //     Cmd+←/→ for browser history, Shift+← for selection extension, etc.
+  //   - focus is in an editable surface (input/textarea/contenteditable/select)
+  //   - focus is on another interactive element (button, link, slider, tab,
+  //     menuitem, listbox option…) — those rely on arrow keys themselves
+  //     (e.g. range slider value, segmented buttons, menu navigation).
   // Re-binds whenever `cards.length` changes so the boundary checks (disabled
   // at 0 / last index) always reflect the current chapter's card count.
   useEffect(() => {
+    // Tags that own arrow-key behaviour on their own — leave them alone.
+    const INTERACTIVE_TAGS = new Set([
+      "INPUT",
+      "TEXTAREA",
+      "SELECT",
+      "BUTTON",
+      "A",
+      "AUDIO",
+      "VIDEO",
+      "SUMMARY",
+      "DETAILS",
+      "OPTION",
+    ]);
+    // ARIA roles that imply arrow-key navigation inside the widget.
+    const INTERACTIVE_ROLES = new Set([
+      "button",
+      "link",
+      "slider",
+      "spinbutton",
+      "menu",
+      "menuitem",
+      "menuitemcheckbox",
+      "menuitemradio",
+      "listbox",
+      "option",
+      "tab",
+      "tablist",
+      "radio",
+      "radiogroup",
+      "combobox",
+      "switch",
+      "treeitem",
+    ]);
+
     const onKey = (e: KeyboardEvent) => {
-      if (e.defaultPrevented || e.metaKey || e.ctrlKey || e.altKey) return;
+      if (e.key !== "ArrowRight" && e.key !== "ArrowLeft") return;
+      if (e.defaultPrevented) return;
+      // Any modifier suppresses our handler — Shift is included so users can
+      // still use Shift+Arrow to extend a text selection inside the card.
+      if (e.metaKey || e.ctrlKey || e.altKey || e.shiftKey) return;
+
       const target = e.target as HTMLElement | null;
-      const tag = target?.tagName;
-      const isEditable =
-        target?.isContentEditable ||
-        tag === "INPUT" ||
-        tag === "TEXTAREA" ||
-        tag === "SELECT";
-      if (isEditable) return;
+      if (!target) return;
+
+      // Editable surface — typing in a field should always win.
+      if (
+        target.isContentEditable ||
+        INTERACTIVE_TAGS.has(target.tagName)
+      ) {
+        return;
+      }
+
+      // Walk up looking for any interactive ancestor (covers shadcn/radix
+      // widgets that wrap the focusable in a div with `role="..."`, plus
+      // anything with an explicit tabindex like custom carousels).
+      let el: HTMLElement | null = target;
+      while (el && el !== document.body) {
+        const role = el.getAttribute("role");
+        if (role && INTERACTIVE_ROLES.has(role)) return;
+        if (el.tabIndex >= 0 && el !== document.body && el !== document.documentElement) {
+          // A focusable, non-default element nearby — let it handle its own keys.
+          // We only bail when the focused element itself is interactive, so we
+          // check exact-match instead of climbing further (avoids matching every
+          // `tabindex="-1"` wrapper Radix sprinkles around the page).
+          if (el === target) return;
+        }
+        el = el.parentElement;
+      }
+
       if (e.key === "ArrowRight") {
         e.preventDefault();
         next();
-      } else if (e.key === "ArrowLeft") {
+      } else {
         e.preventDefault();
         prev();
       }
