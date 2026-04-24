@@ -74,6 +74,37 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ glossary, authToken, use
     content: string;
   } | null>(null);
 
+  // Sidebar collapse state — persisted across page reloads via localStorage so
+  // power users keep the layout they prefer. Mobile uses the off-canvas drawer
+  // controlled by `sidebarOpen` instead.
+  const [sidebarCollapsed, setSidebarCollapsed] = useState<boolean>(() => {
+    if (typeof window === "undefined") return false;
+    return window.localStorage.getItem("admin.sidebar.collapsed") === "1";
+  });
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    window.localStorage.setItem("admin.sidebar.collapsed", sidebarCollapsed ? "1" : "0");
+  }, [sidebarCollapsed]);
+
+  // Translation coverage map: { [chapter_id]: count of non-English translations }.
+  // We fetch chapter_id only and count client-side so we don't need a custom RPC.
+  const [translationCounts, setTranslationCounts] = useState<Record<string, number>>({});
+  const refreshTranslationCounts = useCallback(async () => {
+    const { data } = await dbFetch<Array<{ chapter_id: string }>>("chapter_translations", {
+      select: "chapter_id",
+      token: authToken,
+    });
+    const counts: Record<string, number> = {};
+    (data ?? []).forEach((r) => {
+      counts[r.chapter_id] = (counts[r.chapter_id] ?? 0) + 1;
+    });
+    setTranslationCounts(counts);
+  }, [authToken]);
+  useEffect(() => {
+    refreshTranslationCounts();
+  }, [refreshTranslationCounts]);
+  const totalTranslationLanguages = NON_DEFAULT_LANGUAGES.length;
+
   const fetchGlossaryEntries = useCallback(async () => {
     const { data } = await dbFetch<any[]>('glossary', {
       select: 'id,term,description,type,image_url,aliases',
