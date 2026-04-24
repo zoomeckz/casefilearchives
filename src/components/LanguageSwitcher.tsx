@@ -9,6 +9,7 @@ import {
   withLanguagePrefix,
   type SupportedLanguage,
 } from "@/i18n";
+import { NAV_CHROME_KEYS } from "@/i18n/navKeys";
 import { FlagIcon } from "@/components/FlagIcon";
 
 interface Props {
@@ -43,7 +44,7 @@ export const LanguageSwitcher: React.FC<Props> = ({ variant = "desktop" }) => {
     return (
       <div className="border-t border-border/40 mt-2 pt-3">
         <p className="text-xs text-muted-foreground/60 uppercase tracking-wider mb-1">
-          {t("nav.language")}
+          {t(`nav.${NAV_CHROME_KEYS.language}`)}
         </p>
         {SUPPORTED_LANGUAGES.map((lang) => (
           <button
@@ -74,7 +75,7 @@ export const LanguageSwitcher: React.FC<Props> = ({ variant = "desktop" }) => {
     <div ref={containerRef} className="relative">
       <button
         onClick={() => setOpen((o) => !o)}
-        aria-label={t("nav.language")}
+        aria-label={t(`nav.${NAV_CHROME_KEYS.language}`)}
         aria-haspopup="listbox"
         aria-expanded={open}
         className="text-muted-foreground hover:text-foreground transition-colors p-1 rounded-md flex items-center gap-1.5"
