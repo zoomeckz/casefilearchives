@@ -131,6 +131,81 @@ export const ReaderCardsView: React.FC<Props> = ({ chapter, wordsPerCard, setWor
   const prev = () => setIndex(i => Math.max(0, i - 1));
   const notRead = () => markDone(index, false);
 
+  // Keyboard navigation: ← / → step between cards. We deliberately ignore the
+  // event when the user is typing in an input, textarea, contenteditable, or
+  // when they're holding a modifier (so browser shortcuts like ⌘+← still work).
+  // Re-binds whenever `cards.length` changes so the boundary checks (disabled
+  // at 0 / last index) always reflect the current chapter's card count.
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      if (e.defaultPrevented || e.metaKey || e.ctrlKey || e.altKey) return;
+      const target = e.target as HTMLElement | null;
+      const tag = target?.tagName;
+      const isEditable =
+        target?.isContentEditable ||
+        tag === "INPUT" ||
+        tag === "TEXTAREA" ||
+        tag === "SELECT";
+      if (isEditable) return;
+      if (e.key === "ArrowRight") {
+        e.preventDefault();
+        next();
+      } else if (e.key === "ArrowLeft") {
+        e.preventDefault();
+        prev();
+      }
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+    // `next`/`prev` close over `index` and `cards.length` via setIndex's
+    // functional form, so we only need to refresh on card-count changes.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [cards.length]);
+
+  // Single source of truth for the prev / not-read / save / next button row.
+  // Rendered both above and below the card so readers don't have to scroll
+  // back up to advance after finishing a long card. Keeping it factored as a
+  // local component (vs. duplicated JSX) means future label or styling
+  // tweaks only need to be made once.
+  const ControlsBar: React.FC<{ position: "top" | "bottom" }> = ({ position }) => (
+    <div
+      className={`flex items-center justify-between gap-3 ${
+        position === "top" ? "mb-4" : "mt-4"
+      }`}
+    >
+      <button
+        onClick={prev}
+        disabled={index === 0}
+        className="px-4 py-2 rounded-md border border-border/50 text-sm text-foreground/80 hover:bg-secondary/40 disabled:opacity-40 transition-colors"
+      >
+        ← {t("reader.previous")}
+      </button>
+      <div className="flex items-center gap-2">
+        <button
+          onClick={notRead}
+          className="px-3 py-2 rounded-md surface-maroon text-foreground/80 text-xs hover:text-foreground transition-colors"
+          title={t("reader.notRead")}
+        >
+          {t("reader.notRead")}
+        </button>
+        <button
+          onClick={() => markDone(index, true)}
+          className="px-3 py-2 rounded-md bg-emerald-500/15 hover:bg-emerald-500/25 text-emerald-300 border border-emerald-500/30 text-xs transition-colors"
+          title={t("reader.save")}
+        >
+          ✓ {t("reader.save")}
+        </button>
+      </div>
+      <button
+        onClick={next}
+        disabled={index >= cards.length - 1}
+        className="px-4 py-2 rounded-md bg-primary text-primary-foreground text-sm hover:bg-primary/90 disabled:opacity-40 transition-colors"
+      >
+        {t("reader.next")} →
+      </button>
+    </div>
+  );
+
   return (
     <div className="min-h-screen py-8 px-4 sm:px-6 flex flex-col">
       <div className="max-w-2xl mx-auto w-full flex-1 flex flex-col">
@@ -182,38 +257,7 @@ export const ReaderCardsView: React.FC<Props> = ({ chapter, wordsPerCard, setWor
         </div>
 
         {/* Controls — pinned ABOVE the card so they don't shift as content grows. */}
-        <div className="flex items-center justify-between gap-3 mb-4">
-          <button
-            onClick={prev}
-            disabled={index === 0}
-            className="px-4 py-2 rounded-md border border-border/50 text-sm text-foreground/80 hover:bg-secondary/40 disabled:opacity-40 transition-colors"
-          >
-            ← {t("reader.previous")}
-          </button>
-          <div className="flex items-center gap-2">
-            <button
-              onClick={notRead}
-              className="px-3 py-2 rounded-md surface-maroon text-foreground/80 text-xs hover:text-foreground transition-colors"
-              title={t("reader.notRead")}
-            >
-              {t("reader.notRead")}
-            </button>
-            <button
-              onClick={() => markDone(index, true)}
-              className="px-3 py-2 rounded-md bg-emerald-500/15 hover:bg-emerald-500/25 text-emerald-300 border border-emerald-500/30 text-xs transition-colors"
-              title={t("reader.save")}
-            >
-              ✓ {t("reader.save")}
-            </button>
-          </div>
-          <button
-            onClick={next}
-            disabled={index >= cards.length - 1}
-            className="px-4 py-2 rounded-md bg-primary text-primary-foreground text-sm hover:bg-primary/90 disabled:opacity-40 transition-colors"
-          >
-            {t("reader.next")} →
-          </button>
-        </div>
+        <ControlsBar position="top" />
 
         {/* Card — uses the same prose-story rules as the main reader so paragraph
             spacing, line-height, and font size all match. The drop-cap is
@@ -223,8 +267,13 @@ export const ReaderCardsView: React.FC<Props> = ({ chapter, wordsPerCard, setWor
           dangerouslySetInnerHTML={{ __html: cards[index] || "<p>—</p>" }}
         />
 
+        {/* Same controls repeated under the card so users finishing a long
+            passage can advance without scrolling back up. */}
+        <ControlsBar position="bottom" />
+
         <p className="text-center text-xs text-muted-foreground pb-6">
           {t("reader.card")} {index + 1} {t("reader.of")} {cards.length} · {doneSet.size} {t("reader.markedDone")}
+          <span className="hidden sm:inline"> · ← / → {t("reader.kbHint", "to navigate")}</span>
         </p>
       </div>
     </div>
