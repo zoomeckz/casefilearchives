@@ -1,4 +1,5 @@
 import React, { useEffect, useMemo, useState } from "react";
+import { useTranslation } from "react-i18next";
 import { Chapter } from "@/hooks/useChapters";
 import type { AuthUser } from "@/hooks/useAuth";
 
@@ -92,6 +93,7 @@ function splitIntoCards(html: string, targetWords: number): string[] {
 }
 
 export const ReaderCardsView: React.FC<Props> = ({ chapter, wordsPerCard, setWordsPerCard, user, onExit }) => {
+  const { t } = useTranslation();
   const cards = useMemo(() => splitIntoCards(chapter.content, wordsPerCard), [chapter.content, wordsPerCard]);
   const storageKey = `cards-progress:${user?.id || "anon"}:${chapter.id}`;
   const doneKey = `cards-done:${user?.id || "anon"}:${chapter.id}`;
@@ -135,28 +137,30 @@ export const ReaderCardsView: React.FC<Props> = ({ chapter, wordsPerCard, setWor
         {/* Header */}
         <div className="flex items-center justify-between gap-3 mb-4">
           <div>
-            <p className="text-xs text-muted-foreground uppercase tracking-wider">Cards Mode · Chapter {chapter.chapterNumber}</p>
+            <p className="text-xs text-muted-foreground uppercase tracking-wider">
+              {t("reader.cardsMode")} · {t("chapters.chapterLabel")} {chapter.chapterNumber}
+            </p>
             <h1 className="font-display text-2xl text-accent">{chapter.title}</h1>
           </div>
           <button
             onClick={() => onExit(true)}
-            aria-label="Exit Cards mode and mark as not read"
+            aria-label={t("reader.exitCards")}
             className="px-3 py-1.5 rounded-md surface-maroon text-foreground/80 hover:text-foreground text-sm"
           >
-            ✕ Exit
+            ✕ {t("reader.exitCards")}
           </button>
         </div>
 
         {/* Words-per-card slider — kept compact in the header bar so its position
             never shifts as the card grows. */}
         <label className="flex items-center gap-2 mb-3 text-xs text-muted-foreground border border-border/40 rounded-lg px-3 py-2">
-          <span className="whitespace-nowrap">Words per card</span>
+          <span className="whitespace-nowrap">{t("reader.wordsPerCard")}</span>
           <input
             type="range" min={100} max={800} step={20}
             value={wordsPerCard}
             onChange={e => setWordsPerCard(Number(e.target.value))}
             className="flex-1 accent-primary"
-            aria-label="Adjust words per card"
+            aria-label={t("reader.wordsPerCard")}
           />
           <span className="tabular-nums whitespace-nowrap">{wordsPerCard}</span>
         </label>
@@ -167,7 +171,7 @@ export const ReaderCardsView: React.FC<Props> = ({ chapter, wordsPerCard, setWor
             <button
               key={i}
               onClick={() => setIndex(i)}
-              aria-label={`Go to card ${i + 1}`}
+              aria-label={`${t("reader.card")} ${i + 1}`}
               className={`h-2 rounded-full transition-all ${
                 i === index ? "w-6 bg-primary"
                 : doneSet.has(i) ? "w-2 bg-emerald-500"
@@ -184,22 +188,22 @@ export const ReaderCardsView: React.FC<Props> = ({ chapter, wordsPerCard, setWor
             disabled={index === 0}
             className="px-4 py-2 rounded-md border border-border/50 text-sm text-foreground/80 hover:bg-secondary/40 disabled:opacity-40 transition-colors"
           >
-            ← Previous
+            ← {t("reader.previous")}
           </button>
           <div className="flex items-center gap-2">
             <button
               onClick={notRead}
               className="px-3 py-2 rounded-md surface-maroon text-foreground/80 text-xs hover:text-foreground transition-colors"
-              title="Mark this card as not read"
+              title={t("reader.notRead")}
             >
-              Not read
+              {t("reader.notRead")}
             </button>
             <button
               onClick={() => markDone(index, true)}
               className="px-3 py-2 rounded-md bg-emerald-500/15 hover:bg-emerald-500/25 text-emerald-300 border border-emerald-500/30 text-xs transition-colors"
-              title="Save (mark this card as done)"
+              title={t("reader.save")}
             >
-              ✓ Save
+              ✓ {t("reader.save")}
             </button>
           </div>
           <button
@@ -207,7 +211,7 @@ export const ReaderCardsView: React.FC<Props> = ({ chapter, wordsPerCard, setWor
             disabled={index >= cards.length - 1}
             className="px-4 py-2 rounded-md bg-primary text-primary-foreground text-sm hover:bg-primary/90 disabled:opacity-40 transition-colors"
           >
-            Next →
+            {t("reader.next")} →
           </button>
         </div>
 
@@ -220,7 +224,7 @@ export const ReaderCardsView: React.FC<Props> = ({ chapter, wordsPerCard, setWor
         />
 
         <p className="text-center text-xs text-muted-foreground pb-6">
-          Card {index + 1} of {cards.length} · {doneSet.size} marked done
+          {t("reader.card")} {index + 1} {t("reader.of")} {cards.length} · {doneSet.size} {t("reader.markedDone")}
         </p>
       </div>
     </div>

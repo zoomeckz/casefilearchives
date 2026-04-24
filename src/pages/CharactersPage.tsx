@@ -405,6 +405,7 @@ const SidebarContent: React.FC<SidebarProps> = ({
   onToggleFavorite,
   favoriteEntries,
 }) => {
+  const { t } = useTranslation();
   const PAGE_SIZE = 30;
   const [page, setPage] = useState(1);
 
@@ -479,7 +480,7 @@ const SidebarContent: React.FC<SidebarProps> = ({
                     ) : (
                       <span className="inline-flex items-center gap-1.5 truncate text-stone-500 italic">
                         <Lock className="w-3 h-3 shrink-0" aria-hidden="true" />
-                        <span className="pr-0.5">Locked</span>
+                        <span className="pr-0.5">{t("codex.locked")}</span>
                       </span>
                     )}
                     <span className="text-[10px] text-stone-500 shrink-0 capitalize">{e.type}</span>
@@ -577,7 +578,7 @@ const SidebarContent: React.FC<SidebarProps> = ({
                   ) : (
                     <span className="inline-flex items-center gap-1.5 truncate text-stone-500 italic">
                       <Lock className="w-3 h-3 shrink-0" aria-hidden="true" />
-                      <span className="pr-0.5">Locked</span>
+                      <span className="pr-0.5">{t("codex.locked")}</span>
                     </span>
                   )}
                 </button>
