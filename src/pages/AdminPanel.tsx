@@ -117,6 +117,162 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ glossary, authToken, use
   }, [refreshTranslationCounts]);
   const totalTranslationLanguages = NON_DEFAULT_LANGUAGES.length;
 
+  // ---- Bulk selection helpers ---------------------------------------------
+  // Toggle one chapter in/out of the selection set. Memoised so the table
+  // doesn't re-render every row on each keystroke elsewhere.
+  const toggleChapterSelection = useCallback((id: string) => {
+    setSelectedChapters((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  }, []);
+  const clearChapterSelection = useCallback(() => setSelectedChapters(new Set()), []);
+
+  // Open the translation editor for the first selected chapter; remaining ids
+  // are queued and consumed automatically as the editor is closed.
+  const openChapterForTranslation = useCallback(
+    async (id: string) => {
+      const { data, error } = await dbFetch<any[]>("chapters", {
+        select: "id,chapter_number,title,content",
+        filters: `id=eq.${id}`,
+        token: authToken,
+      });
+      if (error || !data?.[0]) {
+        toast.error("Could not load chapter content for translation.");
+        return false;
+      }
+      setTranslatingChapter({
+        id: data[0].id,
+        chapter_number: data[0].chapter_number,
+        title: data[0].title,
+        content: data[0].content || "",
+      });
+      return true;
+    },
+    [authToken],
+  );
+  const startTranslationQueue = useCallback(
+    async (ids: string[]) => {
+      if (ids.length === 0) return;
+      const ordered = [...ids];
+      const first = ordered.shift()!;
+      setTranslationQueue(ordered);
+      const ok = await openChapterForTranslation(first);
+      if (!ok) setTranslationQueue([]);
+    },
+    [openChapterForTranslation],
+  );
+  // Called when the translation modal closes. If there are queued chapters
+  // left we transparently advance to the next one; otherwise just close.
+  const handleTranslationModalClose = useCallback(async () => {
+    setTranslatingChapter(null);
+    refreshTranslationCounts();
+    if (translationQueue.length === 0) return;
+    const [nextId, ...rest] = translationQueue;
+    setTranslationQueue(rest);
+    // Small delay so the modal unmount finishes cleanly before the next opens.
+    await new Promise((r) => setTimeout(r, 50));
+    const ok = await openChapterForTranslation(nextId);
+    if (!ok) setTranslationQueue([]);
+  }, [translationQueue, openChapterForTranslation, refreshTranslationCounts]);
+
+  // Bulk "Seed from English": for every selected chapter, insert a
+  // chapter_translations row in `lang` populated with the English title +
+  // content IF none exists yet. Existing rows are left alone — admins should
+  // open the editor to overwrite intentionally.
+  const bulkSeedFromEnglish = useCallback(
+    async (lang: SupportedLanguage) => {
+      const ids = Array.from(selectedChapters);
+      if (ids.length === 0 || !authToken) return;
+      if (!confirm(
+        `Create ${LANGUAGE_LABELS[lang]} translation drafts for ${ids.length} chapter(s) using the English source as a starting point? Chapters that already have a ${LANGUAGE_LABELS[lang]} translation will be skipped.`,
+      )) return;
+      setBulkBusy(true);
+      try {
+        // 1. Find which selected chapters already have this language.
+        const { data: existing } = await dbFetch<Array<{ chapter_id: string }>>(
+          "chapter_translations",
+          {
+            select: "chapter_id",
+            filters: `language_code=eq.${lang}&chapter_id=in.(${ids.join(",")})`,
+            token: authToken,
+          },
+        );
+        const taken = new Set((existing ?? []).map((r) => r.chapter_id));
+        const todo = ids.filter((id) => !taken.has(id));
+        if (todo.length === 0) {
+          toast.message(`All selected chapters already have ${LANGUAGE_LABELS[lang]} translations.`);
+          return;
+        }
+        // 2. Pull the English source for the chapters that still need seeding.
+        const { data: src, error: srcErr } = await dbFetch<Array<{ id: string; title: string; content: string }>>(
+          "chapters",
+          {
+            select: "id,title,content",
+            filters: `id=in.(${todo.join(",")})`,
+            token: authToken,
+          },
+        );
+        if (srcErr || !src) throw new Error(srcErr || "Failed to load source chapters.");
+        // 3. One POST per chapter — tolerable batch sizes here, and we still get
+        //    a per-row error if anything goes wrong instead of a partial commit.
+        let inserted = 0;
+        for (const chap of src) {
+          const { error } = await dbFetch("chapter_translations", {
+            method: "POST",
+            body: {
+              chapter_id: chap.id,
+              language_code: lang,
+              title: chap.title,
+              content: chap.content || "",
+            },
+            token: authToken,
+          });
+          if (!error) inserted++;
+        }
+        toast.success(
+          `Seeded ${inserted}/${todo.length} ${LANGUAGE_LABELS[lang]} draft(s). ${taken.size} skipped (already exist).`,
+        );
+        await refreshTranslationCounts();
+      } catch (err: any) {
+        toast.error(`Bulk seed failed: ${err.message ?? err}`);
+      } finally {
+        setBulkBusy(false);
+      }
+    },
+    [selectedChapters, authToken, refreshTranslationCounts],
+  );
+
+  // Bulk "Delete language": destructive — drops every chapter_translations
+  // row matching the selection + language.
+  const bulkDeleteLanguage = useCallback(
+    async (lang: SupportedLanguage) => {
+      const ids = Array.from(selectedChapters);
+      if (ids.length === 0 || !authToken) return;
+      if (!confirm(
+        `Delete the ${LANGUAGE_LABELS[lang]} translation for ${ids.length} chapter(s)? Readers will fall back to English. This cannot be undone.`,
+      )) return;
+      setBulkBusy(true);
+      try {
+        const { error } = await dbFetch("chapter_translations", {
+          method: "DELETE",
+          filters: `language_code=eq.${lang}&chapter_id=in.(${ids.join(",")})`,
+          token: authToken,
+        });
+        if (error) throw new Error(error);
+        toast.success(`Removed ${LANGUAGE_LABELS[lang]} translations from selected chapters.`);
+        await refreshTranslationCounts();
+      } catch (err: any) {
+        toast.error(`Bulk delete failed: ${err.message ?? err}`);
+      } finally {
+        setBulkBusy(false);
+      }
+    },
+    [selectedChapters, authToken, refreshTranslationCounts],
+  );
+
   const fetchGlossaryEntries = useCallback(async () => {
     const { data } = await dbFetch<any[]>('glossary', {
       select: 'id,term,description,type,image_url,aliases',
