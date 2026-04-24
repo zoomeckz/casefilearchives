@@ -1,4 +1,5 @@
 import React, { useEffect, useRef, useState, useMemo } from "react";
+import { useTranslation } from "react-i18next";
 import { Link } from "react-router-dom";
 import { Icons } from "@/lib/icons";
 import { Chapter } from "@/hooks/useChapters";
@@ -18,14 +19,6 @@ function estimateReadingTime(content: string): number {
   const words = content.replace(/<[^>]*>/g, "").split(/\s+/).length;
   return Math.max(1, Math.ceil(words / 220));
 }
-
-const discussionPrompts = [
-  "What do you think will happen next?",
-  "Which character stood out most in this chapter?",
-  "Did anything surprise you?",
-  "What's your theory about the ending?",
-  "How did this chapter change your view of the story?",
-];
 
 interface ReaderPageProps {
   chapter: Chapter | null;
@@ -54,6 +47,14 @@ export const ReaderPage: React.FC<ReaderPageProps> = ({
   isBookmarked,
   toggleBookmark,
 }) => {
+  const { t } = useTranslation();
+  const discussionPrompts = [
+    t("reader.prompt1", "What do you think will happen next?"),
+    t("reader.prompt2", "Which character stood out most in this chapter?"),
+    t("reader.prompt3", "Did anything surprise you?"),
+    t("reader.prompt4", "What's your theory about the ending?"),
+    t("reader.prompt5", "How did this chapter change your view of the story?"),
+  ];
   const [randomPrompt] = useState(() => discussionPrompts[Math.floor(Math.random() * discussionPrompts.length)]);
   const [scrollProgress, setScrollProgress] = useState(0);
   const [showBackToTop, setShowBackToTop] = useState(false);
@@ -240,13 +241,13 @@ export const ReaderPage: React.FC<ReaderPageProps> = ({
           className="flex items-center gap-2 text-muted-foreground hover:text-foreground mb-8"
         >
           <Icons.ChevronLeft />
-          Back to chapters
+          {t("reader.back")}
         </button>
 
         {/* Reader controls — width slider + cards mode toggle */}
         <div className="mb-8 flex flex-wrap items-center gap-4 text-xs text-muted-foreground border border-border/40 rounded-lg p-3">
           <label className="flex items-center gap-2 flex-1 min-w-[220px]">
-            <span className="whitespace-nowrap">Page width</span>
+            <span className="whitespace-nowrap">{t("reader.pageWidth")}</span>
             <input
               type="range"
               min={520}
@@ -266,13 +267,13 @@ export const ReaderPage: React.FC<ReaderPageProps> = ({
             onClick={() => setCardsMode(true)}
             className="px-3 py-1.5 rounded-md bg-primary/15 hover:bg-primary/25 text-primary border border-primary/30 transition-colors"
           >
-            📇 Cards mode
+            📇 {t("reader.cardsMode")}
           </button>
         </div>
 
         <header className="mb-12 text-center">
           <span className="text-primary text-sm font-medium">
-            Chapter {chapter.chapterNumber}
+            {t("chapters.chapterLabel")} {chapter.chapterNumber}
           </span>
           <h1 className="font-display text-4xl sm:text-5xl text-accent mt-2 mb-4">
             {chapter.title}
@@ -289,7 +290,7 @@ export const ReaderPage: React.FC<ReaderPageProps> = ({
                 className="flex items-center gap-1 px-3 py-1 bg-primary/20 hover:bg-primary/30 text-primary rounded-full text-xs font-medium transition-colors"
               >
                 <Icons.Edit className="w-3.5 h-3.5" />
-                Edit
+                {t("reader.edit")}
               </Link>
             )}
             {user && (
@@ -308,9 +309,9 @@ export const ReaderPage: React.FC<ReaderPageProps> = ({
         {/* Previously on... */}
         {prevSummary && (
           <div className="mb-8 p-4 rounded-lg previously-card">
-            <p className="text-xs text-muted-foreground uppercase tracking-wider mb-1">Previously...</p>
+            <p className="text-xs text-muted-foreground uppercase tracking-wider mb-1">{t("reader.previously")}</p>
             <p className="text-foreground/80 text-sm italic font-display">
-              Chapter {prevChapter!.chapterNumber}: {prevSummary}
+              {t("chapters.chapterLabel")} {prevChapter!.chapterNumber}: {prevSummary}
             </p>
           </div>
         )}
@@ -319,7 +320,7 @@ export const ReaderPage: React.FC<ReaderPageProps> = ({
         {!tipDismissed && (
           <div className="mb-6 flex items-start gap-2 text-muted-foreground/70 text-xs sm:text-sm italic">
             <span className="flex-1">
-              Tip: Click highlighted names for lore. Use ||spoiler|| tags in comments to hide spoilers.
+              {t("reader.tip")}
             </span>
             <button
               type="button"
@@ -360,7 +361,7 @@ export const ReaderPage: React.FC<ReaderPageProps> = ({
               onClick={() => setSelectedChapter(prevChapter)}
               className="group text-left p-4 rounded-lg border border-border/40 hover:border-primary/40 hover:bg-secondary/30 transition-colors"
             >
-              <div className="text-xs text-muted-foreground mb-1">← Previous</div>
+              <div className="text-xs text-muted-foreground mb-1">← {t("reader.previous")}</div>
               <div className="font-display text-sm text-foreground/90 group-hover:text-primary truncate">{prevChapter.title}</div>
             </button>
           ) : <div />}
@@ -369,7 +370,7 @@ export const ReaderPage: React.FC<ReaderPageProps> = ({
               onClick={() => setSelectedChapter(nextChapter)}
               className="group text-right p-4 rounded-lg border border-border/40 hover:border-primary/40 hover:bg-secondary/30 transition-colors ml-auto w-full"
             >
-              <div className="text-xs text-muted-foreground mb-1">Next →</div>
+              <div className="text-xs text-muted-foreground mb-1">{t("reader.next")} →</div>
               <div className="font-display text-sm text-foreground/90 group-hover:text-primary truncate">{nextChapter.title}</div>
             </button>
           ) : (
@@ -377,9 +378,9 @@ export const ReaderPage: React.FC<ReaderPageProps> = ({
               onClick={() => setCurrentPage("forum")}
               className="group text-right p-4 rounded-lg border border-accent/30 bg-accent/5 hover:bg-accent/10 transition-colors ml-auto w-full"
             >
-              <div className="text-xs text-accent mb-1">You're caught up</div>
+              <div className="text-xs text-accent mb-1">{t("reader.caughtUp")}</div>
               <div className="font-display text-sm text-foreground/90 group-hover:text-accent">
-                Discuss this chapter →
+                {t("reader.discussChapter")} →
               </div>
             </button>
           )}
@@ -387,7 +388,7 @@ export const ReaderPage: React.FC<ReaderPageProps> = ({
 
         {/* Discussion Prompt */}
         <div className="mb-8 p-4 bg-primary/5 rounded-lg border border-primary/20 text-center">
-          <p className="text-primary text-sm font-medium">💬 Discussion Prompt</p>
+          <p className="text-primary text-sm font-medium">💬 {t("reader.discussionPrompt")}</p>
           <p className="text-foreground/80 mt-1">{randomPrompt}</p>
         </div>
 
@@ -406,7 +407,7 @@ export const ReaderPage: React.FC<ReaderPageProps> = ({
             >
               <Icons.ChevronLeft className="shrink-0" />
               <div className="text-left overflow-hidden">
-                <div className="text-xs text-muted-foreground">Previous</div>
+                <div className="text-xs text-muted-foreground">{t("reader.previous")}</div>
                 <div className="text-sm truncate">{prevChapter.title}</div>
               </div>
             </button>
@@ -417,7 +418,7 @@ export const ReaderPage: React.FC<ReaderPageProps> = ({
               className="flex items-center gap-2 text-muted-foreground hover:text-foreground text-right max-w-[45%] ml-auto"
             >
               <div className="overflow-hidden">
-                <div className="text-xs text-muted-foreground">Next</div>
+                <div className="text-xs text-muted-foreground">{t("reader.next")}</div>
                 <div className="text-sm truncate">{nextChapter.title}</div>
               </div>
               <Icons.ChevronRight className="shrink-0" />
