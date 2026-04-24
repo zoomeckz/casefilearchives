@@ -91,7 +91,7 @@ export const HomePage: React.FC<HomePageProps> = ({
         <div className="absolute inset-0 bg-gradient-to-b from-stone-900/50 via-stone-950/80 to-stone-950" />
         <div className="relative max-w-2xl mx-auto z-10">
           <h1
-            className="text-4xl sm:text-5xl md:text-7xl text-accent mb-6 tracking-[0.2em]"
+            className="text-4xl sm:text-5xl md:text-7xl text-accent mb-4 sm:mb-5 tracking-[0.2em]"
             style={{
               fontFamily: "'Cinzel Decorative', serif",
               WebkitTextStroke: '4px black',
@@ -102,7 +102,8 @@ export const HomePage: React.FC<HomePageProps> = ({
             SEDORIUM
           </h1>
           <p
-            className="text-foreground/85 text-sm sm:text-base max-w-2xl mx-auto leading-relaxed mb-3 italic font-display whitespace-nowrap overflow-hidden text-ellipsis"
+            className="text-foreground/85 max-w-2xl mx-auto leading-snug mb-2 sm:mb-3 italic font-display sm:whitespace-nowrap"
+            style={{ fontSize: "clamp(0.85rem, 2.1vw, 1.05rem)" }}
           >
             A dark fantasy of broken thrones, following the trail of a long-gone lycan.
           </p>
