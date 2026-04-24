@@ -1,4 +1,5 @@
 import React, { useState, useMemo, useEffect } from "react";
+import { useTranslation } from "react-i18next";
 import { GlossaryEntry } from "@/lib/data";
 import { CharacterRelationshipMap } from "@/components/CharacterRelationshipMap";
 import { Search, Menu, X, EyeOff, Eye, ChevronRight, ChevronLeft, Users, MapPin, Sparkles, BookOpen, Skull, Loader2, Heart, Link2, Download, Maximize2, Lock } from "lucide-react";
@@ -42,6 +43,7 @@ export const CharactersPage: React.FC<CharactersPageProps> = ({
   readChapterIds,
   isLoggedIn = false,
 }) => {
+  const { t } = useTranslation();
   const [activeCategory, setActiveCategory] = useState<EntryType>("character");
   const [selectedName, setSelectedName] = useState<string | null>(null);
   const [search, setSearch] = useState("");
@@ -180,28 +182,28 @@ export const CharactersPage: React.FC<CharactersPageProps> = ({
         <div className="max-w-7xl mx-auto">
           <div className="flex items-start justify-between gap-3">
             <div>
-              <h1 className="font-display text-3xl sm:text-4xl text-amber-100">Codex</h1>
+              <h1 className="font-display text-3xl sm:text-4xl text-amber-100">{t("codex.title")}</h1>
               <p className="text-stone-500 text-sm mt-1">
-                Characters, places, creatures, and lore of Sedorium
+                {t("codex.subtitle")}
               </p>
             </div>
             <button
               onClick={() => setDrawerOpen(true)}
               className="md:hidden inline-flex items-center gap-2 px-3 py-2 rounded-lg bg-stone-900 border border-stone-800 text-stone-200 text-sm"
-              aria-label="Browse codex"
+              aria-label={t("codex.browse")}
             >
-              <Menu className="w-4 h-4" /> Browse
+              <Menu className="w-4 h-4" /> {t("codex.browse")}
             </button>
           </div>
 
           {/* Spoiler-progress hint */}
           {isLoggedIn ? (
             <p className="text-stone-600 text-xs mt-3">
-              Showing entries safe through chapter {maxRead}. Later entries are locked — click the lock to reveal.
+              {t("codex.spoilerHintLoggedIn", { chapter: maxRead })}
             </p>
           ) : (
             <p className="text-stone-600 text-xs mt-3">
-              You're browsing as a guest. Entries from chapters {VISIBLE_FOR_GUESTS + 1}+ are locked to avoid spoilers.
+              {t("codex.spoilerHintGuest", { from: VISIBLE_FOR_GUESTS + 1 })}
             </p>
           )}
 
@@ -210,7 +212,7 @@ export const CharactersPage: React.FC<CharactersPageProps> = ({
             className="mt-3 inline-flex items-center gap-2 text-xs text-amber-400/80 hover:text-amber-300"
           >
             <ChevronRight className={`w-3 h-3 transition-transform ${showRelationshipMap ? "rotate-90" : ""}`} />
-            {showRelationshipMap ? "Hide" : "Show"} character relationship map
+            {showRelationshipMap ? t("codex.hideAll") : t("codex.showRelationships")}
           </button>
 
           {showRelationshipMap && (
@@ -224,16 +226,16 @@ export const CharactersPage: React.FC<CharactersPageProps> = ({
             <button
               onClick={() => setRevealedSpoilers(new Set(allEntries.map((e) => e.name)))}
               className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-[11px] uppercase tracking-wider bg-stone-900 border border-stone-800 text-stone-300 hover:text-amber-200 hover:border-amber-500/40 transition-colors"
-              aria-label="Reveal all codex entries"
+              aria-label={t("codex.revealAll")}
             >
-              <Eye className="w-3 h-3" /> Reveal all
+              <Eye className="w-3 h-3" /> {t("codex.revealAll")}
             </button>
             <button
               onClick={() => setRevealedSpoilers(new Set())}
               className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-[11px] uppercase tracking-wider bg-stone-900 border border-stone-800 text-stone-300 hover:text-amber-200 hover:border-amber-500/40 transition-colors"
-              aria-label="Hide all codex entries"
+              aria-label={t("codex.hideAll")}
             >
-              <EyeOff className="w-3 h-3" /> Hide all
+              <EyeOff className="w-3 h-3" /> {t("codex.hideAll")}
             </button>
             <button
               onClick={() => setFavoritesOnly((v) => !v)}
@@ -243,10 +245,10 @@ export const CharactersPage: React.FC<CharactersPageProps> = ({
                   : "bg-stone-900 border-stone-800 text-stone-300 hover:text-rose-200 hover:border-rose-400/40"
               }`}
               aria-pressed={favoritesOnly}
-              aria-label="Show only favorites"
+              aria-label={t("codex.favorites")}
             >
               <Heart className={`w-3 h-3 ${favoritesOnly ? "fill-rose-400 text-rose-300" : ""}`} />
-              Favorites {favorites.size > 0 && <span className="opacity-70">({favorites.size})</span>}
+              {t("codex.favorites")} {favorites.size > 0 && <span className="opacity-70">({favorites.size})</span>}
             </button>
           </div>
         </div>
