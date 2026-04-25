@@ -618,10 +618,9 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ glossary, authToken, use
   };
 
 
-  // Width tokens for the sidebar in each state. Kept here so the main content
-  // padding can react via the `md:pl-*` modifier instead of using a flex row,
-  // which avoided a subtle bug where the off-canvas mobile drawer would push
-  // the main column sideways.
+  // Width tokens for the sidebar in each state. The main content uses a matching
+  // left margin, not left padding, so its own page padding still creates visible
+  // breathing room between the fixed sidebar and the dashboard content.
   //
   // IMPORTANT: we drive desktop-vs-mobile layout with Tailwind responsive
   // classes (`hidden md:block`, `md:pl-*`) rather than the JS `isMobile`
@@ -630,7 +629,7 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ glossary, authToken, use
   // desktop fixed sidebar to flash — and on real mobile to stay rendered
   // until hydration — pushing the main column off-screen.
   const sidebarWidthClass = sidebarCollapsed ? "md:w-16" : "md:w-64";
-  const sidebarPadClass = sidebarCollapsed ? "md:pl-16" : "md:pl-64";
+  const sidebarOffsetClass = sidebarCollapsed ? "md:ml-16" : "md:ml-64";
   const showLabels = !sidebarCollapsed;
 
   const renderNav = (onPick: (id: string) => void, compact: boolean) => (
@@ -731,7 +730,7 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ glossary, authToken, use
           {renderNav(handleTabClick, sidebarCollapsed)}
       </aside>
 
-      <main className={`flex-1 p-4 md:p-8 overflow-y-auto transition-all duration-200 ${sidebarPadClass}`}>
+      <main className={`flex-1 p-4 md:p-8 overflow-y-auto transition-all duration-200 ${sidebarOffsetClass}`}>
         {loading ? (
           <p className="text-muted-foreground">Loading...</p>
         ) : (
