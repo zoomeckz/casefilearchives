@@ -50,6 +50,20 @@ function getNextAvailableFriday(takenDates: string[], after?: Date): string {
   return `${candidate.toISOString().slice(0, 10)}T10:00`;
 }
 
+/**
+ * Returns the Friday following the latest already-scheduled Friday.
+ * If nothing is scheduled yet, falls back to the next Friday from today.
+ */
+function getFridayAfterLatestScheduled(takenDates: string[]): string {
+  if (!takenDates.length) return getNextAvailableFriday(takenDates);
+
+  const latestIso = [...takenDates].sort().pop()!;
+  // Anchor at noon UTC on the latest scheduled Friday to avoid TZ drift,
+  // then jump to the following Friday and skip any other taken slots.
+  const latestDate = new Date(`${latestIso}T12:00:00Z`);
+  return getNextAvailableFriday(takenDates, latestDate);
+}
+
 // ── DB-backed draft helpers ──
 
 export async function getAllDrafts(token?: string): Promise<ChapterDraft[]> {
@@ -380,7 +394,7 @@ export const ChapterEditor: React.FC<ChapterEditorProps> = ({ authToken, userId,
           <div className="flex items-center gap-2">
             {!scheduledAt ? (
               <button
-                onClick={() => setScheduledAt(getNextAvailableFriday(takenFridays))}
+                onClick={() => setScheduledAt(getFridayAfterLatestScheduled(takenFridays))}
                 className="px-4 py-3 bg-accent/20 hover:bg-accent/30 text-accent rounded-lg text-sm font-medium transition-colors"
               >
                 Schedule for next Friday
