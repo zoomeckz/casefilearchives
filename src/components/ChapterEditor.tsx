@@ -394,7 +394,7 @@ export const ChapterEditor: React.FC<ChapterEditorProps> = ({ authToken, userId,
           <div className="flex items-center gap-2">
             {!scheduledAt ? (
               <button
-                onClick={() => setScheduledAt(getNextAvailableFriday(takenFridays))}
+                onClick={() => setScheduledAt(getFridayAfterLatestScheduled(takenFridays))}
                 className="px-4 py-3 bg-accent/20 hover:bg-accent/30 text-accent rounded-lg text-sm font-medium transition-colors"
               >
                 Schedule for next Friday
