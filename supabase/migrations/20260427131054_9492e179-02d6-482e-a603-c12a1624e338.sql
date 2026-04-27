@@ -1,0 +1,52 @@
+UPDATE chapters SET content = replace(content, '"Are you eating more than you used to."', '"Are you eating more than you used to?"') WHERE chapter_number = 51;
+UPDATE chapters SET content = replace(content, '"How is the morning."', '"How is the morning?"') WHERE chapter_number = 51;
+UPDATE chapters SET content = replace(content, '"Do you feel different."', '"Do you feel different?"') WHERE chapter_number = 51;
+UPDATE chapters SET content = replace(content, '"Why is Phaidros smug about Aresia."', '"Why is Phaidros smug about Aresia?"') WHERE chapter_number = 51;
+UPDATE chapters SET content = replace(content, '"How was today."', '"How was today?"') WHERE chapter_number = 51;
+UPDATE chapters SET content = replace(content, '"Are you angry."', '"Are you angry?"') WHERE chapter_number = 51;
+UPDATE chapters SET content = replace(content, '"What do you want to do with them."', '"What do you want to do with them?"') WHERE chapter_number = 51;
+UPDATE chapters SET content = replace(content, '"How are you."', '"How are you?"') WHERE chapter_number = 51;
+UPDATE chapters SET content = replace(content, '"Have you told Kallia."', '"Have you told Kallia?"') WHERE chapter_number = 51;
+UPDATE chapters SET content = replace(content, '"What are you going to teach the child."', '"What are you going to teach the child?"') WHERE chapter_number = 51;
+UPDATE chapters SET content = replace(content, '"What do you mean."', '"What do you mean?"') WHERE chapter_number = 51;
+UPDATE chapters SET content = replace(content, '"How does the entire encampment know I am wrestling Phaidros."', '"How does the entire encampment know I am wrestling Phaidros?"') WHERE chapter_number = 51;
+UPDATE chapters SET content = replace(content, '"How is the body."', '"How is the body?"') WHERE chapter_number = 51;
+UPDATE chapters SET content = replace(content, '"What did you have for breakfast."', '"What did you have for breakfast?"') WHERE chapter_number = 51;
+UPDATE chapters SET content = replace(content, '"Are you going to be all right."', '"Are you going to be all right?"') WHERE chapter_number = 51;
+UPDATE chapters SET content = replace(content, '"What happened."', '"What happened?"') WHERE chapter_number = 52;
+UPDATE chapters SET content = replace(content, '"What."', '"What?"') WHERE chapter_number = 52;
+UPDATE chapters SET content = replace(content, '"Should I have not cleared it."', '"Should I have not cleared it?"') WHERE chapter_number = 52;
+UPDATE chapters SET content = replace(content, '"What does it mean."', '"What does it mean?"') WHERE chapter_number = 52;
+UPDATE chapters SET content = replace(content, '"What do they know."', '"What do they know?"') WHERE chapter_number = 52;
+UPDATE chapters SET content = replace(content, '"How much bigger."', '"How much bigger?"') WHERE chapter_number = 52;
+UPDATE chapters SET content = replace(content, '"What am I going to do with you."', '"What am I going to do with you?"') WHERE chapter_number = 52;
+UPDATE chapters SET content = replace(content, '"What kind."', '"What kind?"') WHERE chapter_number = 52;
+UPDATE chapters SET content = replace(content, '"Should I pull the trace out too."', '"Should I pull the trace out too?"') WHERE chapter_number = 52;
+UPDATE chapters SET content = replace(content, '"What does the trace do."', '"What does the trace do?"') WHERE chapter_number = 52;
+UPDATE chapters SET content = replace(content, '"Are you ready."', '"Are you ready?"') WHERE chapter_number = 53;
+UPDATE chapters SET content = replace(content, '"When did you know."', '"When did you know?"') WHERE chapter_number = 53;
+UPDATE chapters SET content = replace(content, '"What else."', '"What else?"') WHERE chapter_number = 53;
+UPDATE chapters SET content = replace(content, '"Did you see the line."', '"Did you see the line?"') WHERE chapter_number = 54;
+UPDATE chapters SET content = replace(content, '"Have you reached for anything with your druid-sense."', '"Have you reached for anything with your druid-sense?"') WHERE chapter_number = 54;
+UPDATE chapters SET content = replace(content, '"How big is it."', '"How big is it?"') WHERE chapter_number = 54;
+UPDATE chapters SET content = replace(content, '"Can you kill that."', '"Can you kill that?"') WHERE chapter_number = 54;
+UPDATE chapters SET content = replace(content, '"How do you know there are more."', '"How do you know there are more?"') WHERE chapter_number = 54;
+UPDATE chapters SET content = replace(content, '"Do you have one."', '"Do you have one?"') WHERE chapter_number = 54;
+UPDATE chapters SET content = replace(content, '"What is the decision."', '"What is the decision?"') WHERE chapter_number = 54;
+UPDATE chapters SET content = replace(content, '"What did the scout-shape feel like."', '"What did the scout-shape feel like?"') WHERE chapter_number = 54;
+UPDATE chapters SET content = replace(content, '"When."', '"When?"') WHERE chapter_number = 54;
+UPDATE chapters SET content = replace(content, '"What are you going to do if they show themselves."', '"What are you going to do if they show themselves?"') WHERE chapter_number = 55;
+UPDATE chapters SET content = replace(content, '"Who told you to be prepared."', '"Who told you to be prepared?"') WHERE chapter_number = 55;
+UPDATE chapters SET content = replace(content, '"What have you named us."', '"What have you named us?"') WHERE chapter_number = 55;
+UPDATE chapters SET content = replace(content, '"What do you want with us."', '"What do you want with us?"') WHERE chapter_number = 55;
+UPDATE chapters SET content = replace(content, '"How many previous travellers have there been."', '"How many previous travellers have there been?"') WHERE chapter_number = 55;
+UPDATE chapters SET content = replace(content, '"How many skeletons are here."', '"How many skeletons are here?"') WHERE chapter_number = 55;
+UPDATE chapters SET content = replace(content, '"How do you eat."', '"How do you eat?"') WHERE chapter_number = 55;
+UPDATE chapters SET content = replace(content, '"How did you tell her we were coming."', '"How did you tell her we were coming?"') WHERE chapter_number = 55;
+UPDATE chapters SET content = replace(content, '"How many of them do you think you can kill tonight."', '"How many of them do you think you can kill tonight?"') WHERE chapter_number = 55;
+UPDATE chapters SET content = replace(content, '"Why has she not come above ground now. The rotbirds are here anyway."', '"Why has she not come above ground now? The rotbirds are here anyway."') WHERE chapter_number = 55;
+
+INSERT INTO glossary (term, type, description, first_chapter, aliases) VALUES
+('Rotbird', 'creature', 'A predatory aerial species responsible for emptying the Quiet Region of large fauna. Rotbirds hunt in coordinated flocks, are large enough to lift a whale four hundred miles inland, and operate by collective decision-making. Their meat is technically edible but unpalatable, with wrong taste, wrong texture, and an off-putting fat layer. They are the principal threat keeping the burrow-dwelling species hidden underground.', 54, ARRAY['rotbirds']),
+('The First', 'character', 'An emissary of the queen of the burrow-dwelling species in the Quiet Region. Polite, cautious, and patient, she is the first of her kind to make formal contact with travellers, having been sent above ground at her queen''s direction to escort Sam and Ayel to the nest. She is also an essence-weaver — a trait she discloses on the record during first contact. Her people number in the tens of thousands of skeletons across the region; the queen has not taken a full meal in five years.', 55, ARRAY['First']),
+('Demitra', 'character', 'Theron''s cousin at the eastern border, named in his agenda of family obligations to attend to before returning west. One of several relatives Sam has asked him to check on as part of his recovery and reintegration after the Hollowing.', 51, ARRAY['{}']);
