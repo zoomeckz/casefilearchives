@@ -1,0 +1,5 @@
+UPDATE public.glossary
+SET 
+  image_url = 'https://iiezbdlmikvgxjlozwlc.supabase.co/storage/v1/object/public/images/glossary/Leshko_Sedorium.png',
+  description = 'A spokesperson for the Ra''den settlement of freed Conduits. Tall and lean with weather-worn olive skin, sharp angular features, and silver-white hair pulled back in a loose tie with strands falling across his face. His eyes are pale and watchful. He wears a long, tattered dark coat over a worn vest, leather harnesses crossing his chest, and laced boots — the practical attire of someone who has lived hard on the move. He explicitly states he is not a leader, reflecting the Ra''den''s rejection of hierarchy and servitude. He is transparent, pragmatic, and carries the quiet authority of a man who has chosen collaboration over command.'
+WHERE term = 'Leshko';
