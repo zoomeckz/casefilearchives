@@ -267,7 +267,17 @@ export const CharactersPage: React.FC<CharactersPageProps> = ({
               // Drive the aside's scroll manually and stop the event from
               // bubbling to Lenis so native scrolling always wins here.
               const el = e.currentTarget as HTMLElement;
-              el.scrollTop += e.deltaY;
+              const delta = e.deltaY;
+              const atTop = el.scrollTop <= 0;
+              const atBottom =
+                el.scrollTop + el.clientHeight >= el.scrollHeight - 1;
+              // If there is no remaining scroll space in the wheel direction,
+              // let the event propagate so Lenis can scroll the page instead
+              // of trapping the user inside the aside.
+              if ((delta < 0 && atTop) || (delta > 0 && atBottom)) {
+                return;
+              }
+              el.scrollTop += delta;
               e.stopPropagation();
             }}
             className="hidden md:block w-72 lg:w-80 shrink-0 border-r border-stone-800/50 sticky top-0 h-[calc(100vh-0px)] overflow-y-auto py-6 pr-4 overscroll-contain"
