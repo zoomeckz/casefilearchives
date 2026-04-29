@@ -259,6 +259,17 @@ export const CharactersPage: React.FC<CharactersPageProps> = ({
           {/* Sidebar — desktop */}
           <aside
             data-lenis-prevent
+            onWheelCapture={(e) => {
+              // Lenis intermittently hijacks wheel events on this nested
+              // sticky scroller — especially when its scroll position is at
+              // the top or bottom edge — leaving the user "stuck" (e.g. can
+              // scroll down but not back up after reaching the bottom).
+              // Drive the aside's scroll manually and stop the event from
+              // bubbling to Lenis so native scrolling always wins here.
+              const el = e.currentTarget as HTMLElement;
+              el.scrollTop += e.deltaY;
+              e.stopPropagation();
+            }}
             className="hidden md:block w-72 lg:w-80 shrink-0 border-r border-stone-800/50 sticky top-0 h-[calc(100vh-0px)] overflow-y-auto py-6 pr-4 overscroll-contain"
           >
             <SidebarContent
