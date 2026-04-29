@@ -9,6 +9,9 @@ import Placeholder from '@tiptap/extension-placeholder';
 import Highlight from '@tiptap/extension-highlight';
 import { Icons } from '@/lib/icons';
 import { plainTextToRichHtml, sanitizeRichPasteHtml, shouldNormalizeRichPaste } from '@/lib/contentFormatting';
+import { supabase } from '@/integrations/supabase/client';
+import { encodeWebpAuto, ENCODE_TARGETS, formatKB } from '@/lib/webpEncoder';
+import { toast } from 'sonner';
 
 interface RichTextEditorProps {
   content: string;
@@ -44,8 +47,45 @@ const ToolbarButton: React.FC<{
 const Toolbar: React.FC<{ editor: any; onMarkGlossary?: () => void }> = ({ editor, onMarkGlossary }) => {
   if (!editor) return null;
 
-  const addImage = () => {
-    const url = window.prompt('Enter image URL:');
+  const fileInputRef = React.useRef<HTMLInputElement>(null);
+  const [uploading, setUploading] = React.useState(false);
+
+  const triggerImagePicker = () => fileInputRef.current?.click();
+
+  const handleImagePick = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (fileInputRef.current) fileInputRef.current.value = '';
+    if (!file) return;
+
+    setUploading(true);
+    try {
+      // Convert to WebP, auto-targeting the inline body band (150–400 KB).
+      const result = await encodeWebpAuto(file, ENCODE_TARGETS.inline);
+      const filename = `${crypto.randomUUID()}.webp`;
+      const path = `chapters/inline/${filename}`;
+
+      const { error } = await supabase.storage
+        .from('images')
+        .upload(path, result.blob, { contentType: 'image/webp', upsert: false });
+      if (error) throw error;
+
+      const { data } = supabase.storage.from('images').getPublicUrl(path);
+      editor.chain().focus().setImage({ src: data.publicUrl }).run();
+
+      if (result.outOfBand) {
+        toast.warning(`Inserted at ${formatKB(result.bytes)} — outside the 150–400 KB target.`);
+      } else {
+        toast.success(`Inserted (${formatKB(result.bytes)} WebP)`);
+      }
+    } catch (err: any) {
+      toast.error(err?.message || 'Image upload failed');
+    } finally {
+      setUploading(false);
+    }
+  };
+
+  const promptImageUrl = () => {
+    const url = window.prompt('Or paste image URL:');
     if (url) {
       editor.chain().focus().setImage({ src: url }).run();
     }
@@ -137,9 +177,23 @@ const Toolbar: React.FC<{ editor: any; onMarkGlossary?: () => void }> = ({ edito
           <span className="text-sm text-destructive">✕🔗</span>
         </ToolbarButton>
       )}
-      <ToolbarButton onClick={addImage} title="Add Image">
-        <span className="text-sm">🖼</span>
+      <ToolbarButton
+        onClick={triggerImagePicker}
+        disabled={uploading}
+        title="Upload image (auto-converts to WebP, 150–400 KB target)"
+      >
+        <span className="text-sm">{uploading ? '⏳' : '🖼'}</span>
       </ToolbarButton>
+      <ToolbarButton onClick={promptImageUrl} title="Insert image by URL">
+        <span className="text-xs">URL</span>
+      </ToolbarButton>
+      <input
+        ref={fileInputRef}
+        type="file"
+        accept="image/*"
+        className="hidden"
+        onChange={handleImagePick}
+      />
 
       <div className="w-px h-6 bg-border mx-1" />
 

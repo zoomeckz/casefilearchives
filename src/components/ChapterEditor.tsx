@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { Icons } from '@/lib/icons';
 import { RichTextEditor } from '@/components/RichTextEditor';
+import { ImageUploadField } from '@/components/ImageUploadField';
 import { dbFetch } from '@/lib/dbFetch';
 import { GlossaryEntry } from '@/lib/data';
 import { swedishToUTC, utcToSwedishDateTimeLocal } from '@/lib/timezone';
@@ -133,6 +134,7 @@ export const ChapterEditor: React.FC<ChapterEditorProps> = ({ authToken, userId,
   const [content, setContent] = useState('');
   const [chapterNumber, setChapterNumber] = useState(1);
   const [scheduledAt, setScheduledAt] = useState<string>('');
+  const [coverImageUrl, setCoverImageUrl] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
   const [publishing, setPublishing] = useState(false);
   const [showPreview, setShowPreview] = useState(false);
@@ -167,7 +169,7 @@ export const ChapterEditor: React.FC<ChapterEditorProps> = ({ authToken, userId,
     if (editChapterId) {
       const loadChapter = async () => {
         const { data } = await dbFetch<any[]>('chapters', {
-          select: 'title,content,chapter_number,scheduled_at',
+          select: 'title,content,chapter_number,scheduled_at,cover_image_url',
           filters: `id=eq.${editChapterId}`,
           token: authToken,
         });
@@ -175,6 +177,7 @@ export const ChapterEditor: React.FC<ChapterEditorProps> = ({ authToken, userId,
           setTitle(data[0].title);
           setContent(data[0].content);
           setChapterNumber(data[0].chapter_number);
+          setCoverImageUrl(data[0].cover_image_url || null);
           if (data[0].scheduled_at) {
             setScheduledAt(normalizeScheduledAt(utcToSwedishDateTimeLocal(data[0].scheduled_at)));
           }
@@ -290,6 +293,7 @@ export const ChapterEditor: React.FC<ChapterEditorProps> = ({ authToken, userId,
           content: normalizedContent,
           chapter_number: chapterNumber,
           scheduled_at: normalizedScheduledAt ? swedishToUTC(normalizedScheduledAt) : null,
+          cover_image_url: coverImageUrl,
         };
         const { error } = await dbFetch('chapters', {
           method: 'PATCH',
@@ -305,6 +309,7 @@ export const ChapterEditor: React.FC<ChapterEditorProps> = ({ authToken, userId,
           content: normalizedContent,
           chapter_number: chapterNumber,
           scheduled_at: normalizedScheduledAt ? swedishToUTC(normalizedScheduledAt) : null,
+          cover_image_url: coverImageUrl,
         };
         const { error } = await dbFetch('chapters', {
           method: 'POST',
@@ -429,6 +434,17 @@ export const ChapterEditor: React.FC<ChapterEditorProps> = ({ authToken, userId,
             <span className="text-xs text-destructive mt-1 block">⚠ Another chapter is already scheduled for this date!</span>
           )}
         </div>
+      </div>
+
+      {/* Cover image (optional) */}
+      <div className="mb-6 p-4 rounded-lg border border-border/60 bg-card/30">
+        <ImageUploadField
+          kind="cover"
+          pathPrefix="chapters/cover"
+          label="Cover image (optional · 4:5 portrait, ~800×1000)"
+          value={coverImageUrl}
+          onChange={setCoverImageUrl}
+        />
       </div>
 
       {/* Glossary terms indicator */}
