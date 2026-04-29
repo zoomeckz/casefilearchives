@@ -436,6 +436,17 @@ export const ChapterEditor: React.FC<ChapterEditorProps> = ({ authToken, userId,
         </div>
       </div>
 
+      {/* Cover image (optional) */}
+      <div className="mb-6 p-4 rounded-lg border border-border/60 bg-card/30">
+        <ImageUploadField
+          kind="cover"
+          pathPrefix="chapters/cover"
+          label="Cover image (optional · 4:5 portrait, ~800×1000)"
+          value={coverImageUrl}
+          onChange={setCoverImageUrl}
+        />
+      </div>
+
       {/* Glossary terms indicator */}
       <div className="flex items-center gap-2 mb-3">
         <span className="text-xs text-muted-foreground">
