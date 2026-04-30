@@ -129,12 +129,31 @@ export const ReaderPage: React.FC<ReaderPageProps> = ({
 
   useEffect(() => {
     if (chapter) {
-      // Scroll to top whenever a new chapter opens (fixes mobile mid-page landing)
-      window.scrollTo({ top: 0, left: 0, behavior: "auto" });
-      document.documentElement.scrollTop = 0;
-      document.body.scrollTop = 0;
+      // Scroll to top whenever a new chapter opens (fixes mobile mid-page landing).
+      // Lenis hijacks scroll, so we must tell it to jump too — otherwise it
+      // restores its own internal scroll position on the next frame and the
+      // reader lands a tad below the top.
+      const jumpTop = () => {
+        const lenis = (window as any).__lenis;
+        if (lenis && typeof lenis.scrollTo === "function") {
+          lenis.scrollTo(0, { immediate: true, force: true });
+        }
+        window.scrollTo({ top: 0, left: 0, behavior: "auto" });
+        document.documentElement.scrollTop = 0;
+        document.body.scrollTop = 0;
+      };
+      jumpTop();
+      // Run again after layout settles (images/fonts can shift content,
+      // and Lenis sometimes re-syncs on the next frame).
+      requestAnimationFrame(jumpTop);
+      const t1 = window.setTimeout(jumpTop, 50);
+      const t2 = window.setTimeout(jumpTop, 200);
       incrementViews(chapter.id);
       if (user) markAsRead(chapter.id);
+      return () => {
+        window.clearTimeout(t1);
+        window.clearTimeout(t2);
+      };
     }
   }, [chapter?.id, user?.id]);
 
