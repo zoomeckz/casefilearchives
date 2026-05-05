@@ -2,6 +2,7 @@ import React, { useRef, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { CoverCropModal } from "@/components/CoverCropModal";
+import { useAuth } from "@/hooks/useAuth";
 import {
   encodeWebpAuto,
   encodeWebpFixed,
@@ -40,6 +41,7 @@ export const ImageUploadField: React.FC<ImageUploadFieldProps> = ({
   onChange,
   label,
 }) => {
+  const { session } = useAuth();
   const fileRef = useRef<HTMLInputElement>(null);
   const [busy, setBusy] = useState(false);
   const [showAdvanced, setShowAdvanced] = useState(false);
@@ -56,10 +58,23 @@ export const ImageUploadField: React.FC<ImageUploadFieldProps> = ({
     const filename = `${crypto.randomUUID()}.${ext}`;
     const path = `${pathPrefix.replace(/\/+$/, "")}/${filename}`;
 
-    const { error } = await supabase.storage
-      .from("images")
-      .upload(path, blob, { contentType: "image/webp", upsert: false });
-    if (error) throw error;
+    const url = import.meta.env.VITE_SUPABASE_URL;
+    const key = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY;
+    const token = session?.access_token || key;
+    const res = await fetch(`${url}/storage/v1/object/images/${path}`, {
+      method: "POST",
+      headers: {
+        apikey: key,
+        Authorization: `Bearer ${token}`,
+        "Content-Type": "image/webp",
+        "x-upsert": "false",
+      },
+      body: blob,
+    });
+    if (!res.ok) {
+      const msg = await res.text().catch(() => "");
+      throw new Error(msg || `Upload failed (${res.status})`);
+    }
 
     const { data } = supabase.storage.from("images").getPublicUrl(path);
     return data.publicUrl;
