@@ -34,6 +34,20 @@ export const CoverCropModal: React.FC<CoverCropModalProps> = ({
   const frameW = aspect >= 1 ? 360 : 280;
   const frameH = Math.round(frameW / aspect);
 
+  // Zoom around the frame center so the focal point stays put.
+  const zoomTo = (next: number) => {
+    setScale((prev) => {
+      const clamped = Math.max(0.05, Math.min(8, next));
+      const cx = frameW / 2;
+      const cy = frameH / 2;
+      setOffset((o) => ({
+        x: cx - ((cx - o.x) * clamped) / prev,
+        y: cy - ((cy - o.y) * clamped) / prev,
+      }));
+      return clamped;
+    });
+  };
+
   useEffect(() => {
     const img = new Image();
     img.onload = () => {
@@ -141,8 +155,8 @@ export const CoverCropModal: React.FC<CoverCropModalProps> = ({
           onTouchEnd={() => setDragging(false)}
           onWheel={(e) => {
             e.preventDefault();
-            const next = Math.max(0.05, scale + (e.deltaY > 0 ? -0.05 : 0.05));
-            setScale(next);
+            const factor = e.deltaY > 0 ? 0.95 : 1.05;
+            zoomTo(scale * factor);
           }}
         >
           <canvas ref={canvasRef} width={frameW} height={frameH} />
@@ -155,7 +169,7 @@ export const CoverCropModal: React.FC<CoverCropModalProps> = ({
             max="4"
             step="0.01"
             value={scale}
-            onChange={(e) => setScale(parseFloat(e.target.value))}
+            onChange={(e) => zoomTo(parseFloat(e.target.value))}
             className="flex-1 accent-primary"
           />
         </div>
