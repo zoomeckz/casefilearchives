@@ -27,7 +27,7 @@ export interface EncodeTarget {
 
 export const ENCODE_TARGETS: Record<ImageKind, EncodeTarget> = {
   // 4:5 portrait card, displayed at ~64×80 px → 800×1000 source covers 3× retina.
-  cover: { maxEdge: 1000, minKB: 80, maxKB: 150 },
+  cover: { maxEdge: 1000, minKB: 40, maxKB: 400 },
   // Reader column caps at 680 CSS px → 1360 px is the 2× retina target.
   inline: { maxEdge: 1360, minKB: 150, maxKB: 400 },
 };
