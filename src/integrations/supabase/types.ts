@@ -262,6 +262,27 @@ export type Database = {
           },
         ]
       }
+      chapter_view_ips: {
+        Row: {
+          chapter_id: string
+          created_at: string
+          id: string
+          ip_hash: string
+        }
+        Insert: {
+          chapter_id: string
+          created_at?: string
+          id?: string
+          ip_hash: string
+        }
+        Update: {
+          chapter_id?: string
+          created_at?: string
+          id?: string
+          ip_hash?: string
+        }
+        Relationships: []
+      }
       chapters: {
         Row: {
           chapter_number: number
