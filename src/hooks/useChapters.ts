@@ -159,19 +159,19 @@ export function useChapters(isAdmin = false) {
       const url = import.meta.env.VITE_SUPABASE_URL;
       const key = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY;
 
-      await fetch(`${url}/rest/v1/rpc/increment_chapter_views`, {
+      await fetch(`${url}/functions/v1/track-chapter-view`, {
         method: 'POST',
         headers: {
           'apikey': key,
           'Authorization': `Bearer ${key}`,
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({ chapter_id: chapterId }),
+        body: JSON.stringify({ chapterId }),
       });
 
       setChapters((prev) =>
         prev.map((c) =>
-          c.id === chapterId ? { ...c, views: c.views + 1 } : c
+          c.id === chapterId ? { ...c, views: c.views } : c
         )
       );
     },
