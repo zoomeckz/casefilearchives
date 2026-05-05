@@ -281,8 +281,8 @@ export const ChapterEditor: React.FC<ChapterEditorProps> = ({ authToken, userId,
       toast.error('Please write some content');
       return;
     }
-    if (scheduledAt && takenFridays.includes(scheduledAt.slice(0, 10))) {
-      toast.error('Another chapter is already scheduled for this Friday. Use "Next →" to pick a different one.');
+    if (scheduledAt && takenSlots.includes(scheduledAt.slice(0, 10))) {
+      toast.error('Another chapter is already scheduled for this date. Use "Next →" to pick a different slot.');
       return;
     }
 
@@ -403,14 +403,14 @@ export const ChapterEditor: React.FC<ChapterEditorProps> = ({ authToken, userId,
           />
         </div>
         <div>
-          <label className="block text-sm text-muted-foreground mb-1">Schedule (Fridays 10:00 🇸🇪)</label>
+          <label className="block text-sm text-muted-foreground mb-1">Schedule (every 3 days, 10:00 🇸🇪)</label>
           <div className="flex items-center gap-2">
             {!scheduledAt ? (
               <button
-                onClick={() => setScheduledAt(getFridayAfterLatestScheduled(takenFridays))}
+                onClick={() => setScheduledAt(getSlotAfterLatestScheduled(takenSlots))}
                 className="px-4 py-3 bg-accent/20 hover:bg-accent/30 text-accent rounded-lg text-sm font-medium transition-colors"
               >
-                Schedule for next Friday
+                Schedule for next slot
               </button>
             ) : (
               <>
@@ -420,11 +420,11 @@ export const ChapterEditor: React.FC<ChapterEditorProps> = ({ authToken, userId,
                 <button
                   onClick={() => {
                     const currentDate = new Date(scheduledAt.slice(0, 10) + 'T12:00:00');
-                    const next = getNextAvailableFriday(takenFridays, currentDate);
+                    const next = getNextAvailableSlot(takenSlots, currentDate);
                     setScheduledAt(next);
                   }}
                   className="px-3 py-2 bg-secondary hover:bg-secondary/80 text-foreground rounded-lg text-xs transition-colors"
-                  title="Skip to next available Friday"
+                  title="Skip to next available slot"
                 >
                   Next →
                 </button>
@@ -438,7 +438,7 @@ export const ChapterEditor: React.FC<ChapterEditorProps> = ({ authToken, userId,
               </>
             )}
           </div>
-          {scheduledAt && takenFridays.includes(scheduledAt.slice(0, 10)) && (
+          {scheduledAt && takenSlots.includes(scheduledAt.slice(0, 10)) && (
             <span className="text-xs text-destructive mt-1 block">⚠ Another chapter is already scheduled for this date!</span>
           )}
         </div>
