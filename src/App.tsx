@@ -5,6 +5,7 @@ import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route, useLocation } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
 import Index from "./pages/Index";
 import NotFound from "./pages/NotFound";
 import SectionHeaderStory from "./pages/SectionHeaderStory";
@@ -16,6 +17,8 @@ import {
   NON_DEFAULT_LANGUAGES,
   withLanguagePrefix,
   stripLanguagePrefix,
+  DEFAULT_LANGUAGE,
+  type SupportedLanguage,
 } from "./i18n";
 
 const queryClient = new QueryClient();
@@ -33,7 +36,43 @@ const DynamicSeo = () => {
  */
 const LanguageSync = () => {
   const location = useLocation();
+  const navigate = useNavigate();
   const { i18n } = useTranslation();
+
+  // On first paint, if the user has no language prefix in the URL and hasn't
+  // explicitly chosen a language before, infer one from the browser/OS locale
+  // (navigator.languages → first supported match) and redirect to its prefixed
+  // route. We mark the redirect in sessionStorage so subsequent navigations
+  // (and manual switches back to English via the language switcher) aren't
+  // hijacked.
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    if (sessionStorage.getItem("lang-autodetected") === "1") return;
+    sessionStorage.setItem("lang-autodetected", "1");
+
+    const urlLang = detectLanguageFromPath(location.pathname);
+    if (urlLang !== DEFAULT_LANGUAGE) return; // user already on a localized URL
+
+    const candidates = (navigator.languages && navigator.languages.length
+      ? navigator.languages
+      : [navigator.language || ""]
+    )
+      .map((tag) => tag.toLowerCase().split("-")[0])
+      .filter(Boolean);
+
+    const match = candidates.find((c) =>
+      (SUPPORTED_LANGUAGES as readonly string[]).includes(c),
+    ) as SupportedLanguage | undefined;
+
+    if (match && match !== DEFAULT_LANGUAGE) {
+      navigate(
+        withLanguagePrefix(location.pathname, match) +
+          location.search +
+          location.hash,
+        { replace: true },
+      );
+    }
+  }, [location.pathname, location.search, location.hash, navigate]);
 
   useEffect(() => {
     const lang = detectLanguageFromPath(location.pathname);
