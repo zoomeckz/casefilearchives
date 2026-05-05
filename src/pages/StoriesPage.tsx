@@ -7,8 +7,8 @@ import { ReadingProgressBadge } from "@/components/ReadingProgressBadge";
 import { ReadingStats } from "@/components/ReadingStats";
 import { BookmarkButton } from "@/components/BookmarkButton";
 import { dbFetch } from "@/lib/dbFetch";
+import { FlagIcon } from "@/components/FlagIcon";
 import {
-  LANGUAGE_FLAGS,
   LANGUAGE_LABELS,
   SUPPORTED_LANGUAGES,
   type SupportedLanguage,
@@ -160,13 +160,12 @@ export const StoriesPage: React.FC<StoriesPageProps> = ({
                   {(translationsByChapter[chapter.id] || []).length > 0 && (
                     <span className="inline-flex items-center gap-1" aria-label="Available translations">
                       {translationsByChapter[chapter.id].map((lang) => (
-                        <span
+                        <FlagIcon
                           key={lang}
+                          lang={lang}
+                          size={16}
                           title={LANGUAGE_LABELS[lang]}
-                          className="text-sm leading-none"
-                        >
-                          {LANGUAGE_FLAGS[lang]}
-                        </span>
+                        />
                       ))}
                     </span>
                   )}
