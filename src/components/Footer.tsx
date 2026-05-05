@@ -51,7 +51,7 @@ export const Footer: React.FC<FooterProps> = ({ setCurrentPage }) => {
         body: JSON.stringify({ email: trimmed, new_chapters: true }),
       });
       if (!res.ok) throw new Error("subscribe failed");
-      toast.success("You're subscribed — see you Friday.");
+      toast.success("You're subscribed — new chapter every 3 days.");
       setEmail("");
     } catch {
       toast.error("Couldn't subscribe right now. Try again in a moment.");
@@ -85,7 +85,7 @@ export const Footer: React.FC<FooterProps> = ({ setCurrentPage }) => {
           {/* Author bio */}
           <p className="max-w-md text-foreground/70 text-sm leading-relaxed mb-6 italic">
             Indie dark-fantasy author drawing from anime, music, and a quiet obsession
-            with broken thrones. New chapter every Friday.
+            with broken thrones. New chapter every 3 days.
           </p>
 
           {/* Subscribe form */}
