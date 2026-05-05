@@ -1670,11 +1670,16 @@ const NeedsAttentionPanel: React.FC<NeedsAttentionProps> = ({
   onJump,
 }) => {
   const now = Date.now();
-  const SEVEN_DAYS = 7 * 24 * 60 * 60 * 1000;
-
-  // Chapters scheduled to publish within 7 days — Friday-cadence reminder.
+  // Chapters publish on a 3-day cadence (anchored Wed 2026-05-06, 10:00
+  // Stockholm). Surface anything dropping inside the next two cadence
+  // slots (~6 days) so the admin sees the upcoming release without the
+  // legacy Friday-only weekly framing.
+  const CADENCE_WINDOW_MS = 6 * 24 * 60 * 60 * 1000;
   const upcoming = chapters.filter(
-    (c) => c.scheduled_at && new Date(c.scheduled_at).getTime() > now && new Date(c.scheduled_at).getTime() - now < SEVEN_DAYS,
+    (c) =>
+      c.scheduled_at &&
+      new Date(c.scheduled_at).getTime() > now &&
+      new Date(c.scheduled_at).getTime() - now < CADENCE_WINDOW_MS,
   );
 
   // Chapters with at least one missing translation. We only surface the count;
@@ -1694,7 +1699,7 @@ const NeedsAttentionPanel: React.FC<NeedsAttentionProps> = ({
       key: "upcoming",
       icon: Calendar,
       tone: "accent" as const,
-      title: `${upcoming.length} chapter${upcoming.length === 1 ? "" : "s"} scheduled this week`,
+      title: `${upcoming.length} chapter${upcoming.length === 1 ? "" : "s"} on the 3-day cadence`,
       detail: upcoming
         .slice(0, 3)
         .map((c) => `Ch. ${c.chapter_number}`)
