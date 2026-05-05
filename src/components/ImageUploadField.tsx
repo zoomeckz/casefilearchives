@@ -1,6 +1,7 @@
 import React, { useRef, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
+import { CoverCropModal } from "@/components/CoverCropModal";
 import {
   encodeWebpAuto,
   encodeWebpFixed,
@@ -45,6 +46,7 @@ export const ImageUploadField: React.FC<ImageUploadFieldProps> = ({
   const [manualQuality, setManualQuality] = useState(0.8);
   const [pendingFile, setPendingFile] = useState<File | null>(null);
   const [lastReport, setLastReport] = useState<string>("");
+  const [cropFile, setCropFile] = useState<File | null>(null);
 
   const target = ENCODE_TARGETS[kind];
   const targetLabel = `${target.minKB}–${target.maxKB} KB · max ${target.maxEdge}px`;
@@ -98,7 +100,14 @@ export const ImageUploadField: React.FC<ImageUploadFieldProps> = ({
 
   function onPick(e: React.ChangeEvent<HTMLInputElement>) {
     const f = e.target.files?.[0];
-    if (f) handleFile(f, false);
+    if (f) {
+      if (kind === "cover") {
+        // Always allow upload — let admin crop to the displayed 4:5 aspect.
+        setCropFile(f);
+      } else {
+        handleFile(f, false);
+      }
+    }
     // Reset so picking the same file again still triggers change
     if (fileRef.current) fileRef.current.value = "";
   }
@@ -218,6 +227,20 @@ export const ImageUploadField: React.FC<ImageUploadFieldProps> = ({
         className="hidden"
         onChange={onPick}
       />
+
+      {cropFile && (
+        <CoverCropModal
+          imageFile={cropFile}
+          aspect={4 / 5}
+          outputMaxEdge={target.maxEdge}
+          onClose={() => setCropFile(null)}
+          onCrop={(blob) => {
+            const cropped = new File([blob], `cover-${Date.now()}.jpg`, { type: "image/jpeg" });
+            setCropFile(null);
+            handleFile(cropped, false);
+          }}
+        />
+      )}
     </div>
   );
 };
