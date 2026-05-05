@@ -20,3 +20,6 @@ verify_jwt = false
 
 [functions.indexnow-ping]
 verify_jwt = false
+
+[functions.track-chapter-view]
+verify_jwt = false
