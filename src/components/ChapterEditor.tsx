@@ -34,35 +34,43 @@ function normalizeScheduledAt(value: string): string {
   return /^\d{4}-\d{2}-\d{2}$/.test(datePart) ? `${datePart}T10:00` : value;
 }
 
-function getNextFriday(after: Date = new Date()): Date {
-  const d = new Date(after);
-  d.setDate(d.getDate() + ((5 - d.getDay() + 7) % 7 || 7));
-  return d;
+// Cadence anchor: every 3 days starting Wednesday May 6, 2026 (Swedish).
+const CADENCE_ANCHOR_ISO = '2026-05-06';
+const CADENCE_DAYS = 3;
+
+function addDaysIso(iso: string, days: number): string {
+  const d = new Date(`${iso}T12:00:00Z`);
+  d.setUTCDate(d.getUTCDate() + days);
+  return d.toISOString().slice(0, 10);
 }
 
-function getNextAvailableFriday(takenDates: string[], after?: Date): string {
+function nextCadenceSlotAfter(after?: Date): string {
+  const anchor = new Date(`${CADENCE_ANCHOR_ISO}T12:00:00Z`);
+  const target = after ? new Date(after) : new Date();
+  const diffDays = Math.floor((target.getTime() - anchor.getTime()) / 86400000);
+  // Find smallest k such that anchor + k*CADENCE_DAYS > target (in days)
+  const k = Math.max(0, Math.floor(diffDays / CADENCE_DAYS) + 1);
+  return addDaysIso(CADENCE_ANCHOR_ISO, k * CADENCE_DAYS);
+}
+
+function getNextAvailableSlot(takenDates: string[], after?: Date): string {
   const taken = new Set(takenDates);
-  let candidate = getNextFriday(after);
-  for (let i = 0; i < 200; i++) {
-    const iso = candidate.toISOString().slice(0, 10);
-    if (!taken.has(iso)) return `${iso}T10:00`;
-    candidate = getNextFriday(candidate);
+  let candidateIso = nextCadenceSlotAfter(after);
+  for (let i = 0; i < 400; i++) {
+    if (!taken.has(candidateIso)) return `${candidateIso}T10:00`;
+    candidateIso = addDaysIso(candidateIso, CADENCE_DAYS);
   }
-  return `${candidate.toISOString().slice(0, 10)}T10:00`;
+  return `${candidateIso}T10:00`;
 }
 
 /**
- * Returns the Friday following the latest already-scheduled Friday.
- * If nothing is scheduled yet, falls back to the next Friday from today.
+ * Returns the next cadence slot following the latest already-scheduled chapter.
  */
-function getFridayAfterLatestScheduled(takenDates: string[]): string {
-  if (!takenDates.length) return getNextAvailableFriday(takenDates);
-
+function getSlotAfterLatestScheduled(takenDates: string[]): string {
+  if (!takenDates.length) return getNextAvailableSlot(takenDates);
   const latestIso = [...takenDates].sort().pop()!;
-  // Anchor at noon UTC on the latest scheduled Friday to avoid TZ drift,
-  // then jump to the following Friday and skip any other taken slots.
   const latestDate = new Date(`${latestIso}T12:00:00Z`);
-  return getNextAvailableFriday(takenDates, latestDate);
+  return getNextAvailableSlot(takenDates, latestDate);
 }
 
 // ── DB-backed draft helpers ──
@@ -142,9 +150,9 @@ export const ChapterEditor: React.FC<ChapterEditorProps> = ({ authToken, userId,
   const [loadingChapter, setLoadingChapter] = useState(!!editChapterId);
   const autoSaveTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [glossaryMarked, setGlossaryMarked] = useState(false);
-  const [takenFridays, setTakenFridays] = useState<string[]>([]);
+  const [takenSlots, setTakenSlots] = useState<string[]>([]);
 
-  // Load all scheduled Fridays to prevent double-booking
+  // Load all scheduled slots to prevent double-booking
   useEffect(() => {
     const loadTaken = async () => {
       const { data } = await dbFetch<any[]>('chapters', {
@@ -159,7 +167,7 @@ export const ChapterEditor: React.FC<ChapterEditorProps> = ({ authToken, userId,
           return sw.slice(0, 10);
         })
         .filter(Boolean);
-      setTakenFridays(dates);
+      setTakenSlots(dates);
     };
     loadTaken();
   }, [authToken, editChapterId]);
@@ -273,8 +281,8 @@ export const ChapterEditor: React.FC<ChapterEditorProps> = ({ authToken, userId,
       toast.error('Please write some content');
       return;
     }
-    if (scheduledAt && takenFridays.includes(scheduledAt.slice(0, 10))) {
-      toast.error('Another chapter is already scheduled for this Friday. Use "Next →" to pick a different one.');
+    if (scheduledAt && takenSlots.includes(scheduledAt.slice(0, 10))) {
+      toast.error('Another chapter is already scheduled for this date. Use "Next →" to pick a different slot.');
       return;
     }
 
@@ -395,14 +403,14 @@ export const ChapterEditor: React.FC<ChapterEditorProps> = ({ authToken, userId,
           />
         </div>
         <div>
-          <label className="block text-sm text-muted-foreground mb-1">Schedule (Fridays 10:00 🇸🇪)</label>
+          <label className="block text-sm text-muted-foreground mb-1">Schedule (every 3 days, 10:00 🇸🇪)</label>
           <div className="flex items-center gap-2">
             {!scheduledAt ? (
               <button
-                onClick={() => setScheduledAt(getFridayAfterLatestScheduled(takenFridays))}
+                onClick={() => setScheduledAt(getSlotAfterLatestScheduled(takenSlots))}
                 className="px-4 py-3 bg-accent/20 hover:bg-accent/30 text-accent rounded-lg text-sm font-medium transition-colors"
               >
-                Schedule for next Friday
+                Schedule for next slot
               </button>
             ) : (
               <>
@@ -412,11 +420,11 @@ export const ChapterEditor: React.FC<ChapterEditorProps> = ({ authToken, userId,
                 <button
                   onClick={() => {
                     const currentDate = new Date(scheduledAt.slice(0, 10) + 'T12:00:00');
-                    const next = getNextAvailableFriday(takenFridays, currentDate);
+                    const next = getNextAvailableSlot(takenSlots, currentDate);
                     setScheduledAt(next);
                   }}
                   className="px-3 py-2 bg-secondary hover:bg-secondary/80 text-foreground rounded-lg text-xs transition-colors"
-                  title="Skip to next available Friday"
+                  title="Skip to next available slot"
                 >
                   Next →
                 </button>
@@ -430,7 +438,7 @@ export const ChapterEditor: React.FC<ChapterEditorProps> = ({ authToken, userId,
               </>
             )}
           </div>
-          {scheduledAt && takenFridays.includes(scheduledAt.slice(0, 10)) && (
+          {scheduledAt && takenSlots.includes(scheduledAt.slice(0, 10)) && (
             <span className="text-xs text-destructive mt-1 block">⚠ Another chapter is already scheduled for this date!</span>
           )}
         </div>
