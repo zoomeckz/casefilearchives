@@ -104,6 +104,7 @@ export const HomePage: React.FC<HomePageProps> = ({
             }}
           >
             SEDORIUM
+            <span className="sr-only"> — a dark fantasy web novel series</span>
           </h1>
           <p
             className="text-foreground/85 max-w-2xl mx-auto leading-snug mb-2 sm:mb-3 italic font-display sm:whitespace-nowrap"
