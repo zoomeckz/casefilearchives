@@ -42,7 +42,7 @@ Deno.serve(async (req) => {
           title: "Sedorium — The Five Thrones",
           author: "Sam Nowroozi Larki",
           description: "A free dark fantasy web novel — epic worldbuilding with druids, shapeshifters, ancient kingdoms, political intrigue, and mythical creatures. Read all 28 chapters free online.",
-          url: "https://sedorium.lovable.app",
+          url: "https://www.thefivethrones.com",
           keywords: ["dark fantasy", "web novel", "free fantasy book", "druids", "shapeshifters", "epic fantasy", "serial fiction", "fantasy worldbuilding", "indie author", "Sam Nowroozi Larki", "read free online"],
           totalChapters: chapters?.length ?? 0,
           chapters: (chapters ?? []).map((ch) => ({
@@ -169,11 +169,11 @@ Deno.serve(async (req) => {
   <meta name="keywords" content="dark fantasy web novel, free fantasy book online, read fantasy free, epic fantasy series, druids shapeshifters, fantasy worldbuilding, indie fantasy author, serial fiction, web fiction 2026, Sam Nowroozi Larki, Sedorium, Beambreak, Oathbreaker, druid transformation, lycan, fantasy kingdoms, DND style novel, anime inspired fantasy, best free web novels, online fantasy story" />
   <meta name="author" content="Sam Nowroozi Larki" />
   <meta name="robots" content="index, follow, max-snippet:-1, max-image-preview:large" />
-  <link rel="canonical" href="https://sedorium.lovable.app" />
+  <link rel="canonical" href="https://www.thefivethrones.com" />
   <meta property="og:title" content="Sedorium — Free Dark Fantasy Web Novel | ${chapters?.length ?? 0} Chapters" />
   <meta property="og:description" content="Read Sedorium free — an epic dark fantasy saga of druids, shapeshifters, and ancient kingdoms. ${chapters?.length ?? 0} chapters by Sam Nowroozi Larki." />
   <meta property="og:type" content="book" />
-  <meta property="og:url" content="https://sedorium.lovable.app" />
+  <meta property="og:url" content="https://www.thefivethrones.com" />
   <style>
     body { max-width: 800px; margin: 0 auto; padding: 40px 20px; font-family: Georgia, serif; line-height: 1.8; color: #333; background: #fafafa; }
     h1 { text-align: center; font-size: 2.5em; letter-spacing: 0.1em; }
@@ -194,8 +194,8 @@ Deno.serve(async (req) => {
   <header>
     <h1 itemprop="name">SEDORIUM</h1>
     <p style="text-align:center;" itemprop="description">A Dark Fantasy Web Novel by <strong itemprop="author">Sam Nowroozi Larki</strong> — Epic saga of druids, shapeshifters, oathbreakers, and ancient kingdoms</p>
-    <p style="text-align:center;">${chapters?.length ?? 0} Chapters — Free to Read at <a href="https://sedorium.lovable.app" itemprop="url">sedorium.lovable.app</a></p>
-    <p style="text-align:center;color:#888;font-size:0.85em;">Complete story content, community theories, fan art, and lore encyclopedia. <a href="https://sedorium.lovable.app">Visit the interactive site →</a></p>
+    <p style="text-align:center;">${chapters?.length ?? 0} Chapters — Free to Read at <a href="https://www.thefivethrones.com" itemprop="url">www.thefivethrones.com</a></p>
+    <p style="text-align:center;color:#888;font-size:0.85em;">Complete story content, community theories, fan art, and lore encyclopedia. <a href="https://www.thefivethrones.com">Visit the interactive site →</a></p>
     <nav class="nav">
       <a href="#chapters">Chapters</a>
       <a href="#glossary">Glossary</a>
@@ -232,7 +232,7 @@ Deno.serve(async (req) => {
 
   <footer style="text-align:center;margin-top:4em;color:#aaa;font-size:0.85em;">
     <p>© ${new Date().getFullYear()} Sam Nowroozi Larki. All rights reserved.</p>
-    <p>Read at <a href="https://sedorium.lovable.app">sedorium.lovable.app</a> | <a href="?format=json">JSON API →</a></p>
+    <p>Read at <a href="https://www.thefivethrones.com">www.thefivethrones.com</a> | <a href="?format=json">JSON API →</a></p>
   </footer>
 </body>
 </html>`;

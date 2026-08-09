@@ -6,7 +6,7 @@ const corsHeaders = {
     "authorization, x-client-info, apikey, content-type",
 };
 
-const SITE_URL = "https://sedorium.lovable.app";
+const SITE_URL = "https://www.thefivethrones.com";
 const AUTHOR = "Sam Nowroozi Larki";
 const TITLE_BASE = "Sedorium — The Five Thrones";
 

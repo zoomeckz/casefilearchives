@@ -9,7 +9,7 @@ import {
 
 const SUPABASE_URL = "https://iiezbdlmikvgxjlozwlc.supabase.co";
 const SEO_META_URL = `${SUPABASE_URL}/functions/v1/dynamic-seo-meta`;
-const SITE_URL = "https://sedorium.lovable.app";
+const SITE_URL = "https://www.thefivethrones.com";
 
 interface SeoMeta {
   title: string;
