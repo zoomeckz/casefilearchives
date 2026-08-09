@@ -9,7 +9,7 @@ import {
 
 const SUPABASE_URL = "https://iiezbdlmikvgxjlozwlc.supabase.co";
 const SEO_META_URL = `${SUPABASE_URL}/functions/v1/dynamic-seo-meta`;
-const SITE_URL = "https://sedorium.lovable.app";
+const SITE_URL = "https://www.thefivethrones.com";
 
 interface SeoMeta {
   title: string;
@@ -160,6 +160,62 @@ function stripHtml(html: string): string {
   return html.replace(/<[^>]*>/g, " ").replace(/\s+/g, " ").trim();
 }
 
+/**
+ * Per-route English metadata. Keyed by the path with any language prefix
+ * stripped. Without these, every non-chapter route inherited the home page's
+ * title, description and canonical — which made them look like duplicates to
+ * search engines.
+ */
+const ROUTE_META: Record<string, { title: string; description: string }> = {
+  "/chapters": {
+    title: "All Chapters — Sedorium | The Five Thrones",
+    description:
+      "Browse every chapter of Sedorium, a free dark fantasy web novel. New chapter every 3 days — start from Chapter 1 and read online for free.",
+  },
+  "/characters": {
+    title: "Codex: Characters, Places & Lore — Sedorium",
+    description:
+      "The Sedorium codex: characters, kingdoms, creatures and lore of The Five Thrones, with portraits and first appearances for every entry.",
+  },
+  "/about": {
+    title: "About Sedorium & Sam Nowroozi Larki",
+    description:
+      "About Sedorium — The Five Thrones, a free dark fantasy web novel, and its author Sam Nowroozi Larki. Release schedule, inspirations and how to read.",
+  },
+  "/forum": {
+    title: "Reader Forum & Discussion — Sedorium",
+    description:
+      "Discuss chapters, characters and theories with other Sedorium readers. Share fan art, ask questions and follow the story as it unfolds.",
+  },
+  "/manga": {
+    title: "Manga Panels — Sedorium | The Five Thrones",
+    description:
+      "Illustrated manga panels from Sedorium — high-contrast ink artwork bringing scenes from the dark fantasy web novel to life.",
+  },
+  "/world": {
+    title: "World Map of Sedorium — The Five Thrones",
+    description:
+      "Explore the world of Sedorium: the five nations, Beambreak, Arnis and the lands between, mapped for readers of The Five Thrones.",
+  },
+  "/leaderboard": {
+    title: "Reader Leaderboard — Sedorium",
+    description:
+      "See the most dedicated Sedorium readers — reading streaks, chapters completed and community ranks across The Five Thrones.",
+  },
+  "/rewards": {
+    title: "Reader Rewards & Achievements — Sedorium",
+    description:
+      "Earn achievements, titles and profile frames for reading Sedorium. Track your progress through The Five Thrones.",
+  },
+};
+
+/** Strips a leading language prefix so `/es/about` resolves to `/about`. */
+function basePath(pathname: string): string {
+  const stripped = pathname.replace(/^\/[a-z]{2}(?=\/|$)/, "");
+  const trimmed = stripped.replace(/\/+$/, "");
+  return trimmed === "" ? "/" : trimmed;
+}
+
 function buildExcerpt(content: string, maxChars = 155): string {
   const text = stripHtml(content);
   if (text.length <= maxChars) return text;
@@ -175,16 +231,20 @@ async function applySiteMeta(pathname: string): Promise<void> {
 
   const lang = detectLanguageFromPath(pathname);
   const override = SITE_META_BY_LANG[lang];
-  const title = override?.title ?? meta.title;
-  const description = override?.description ?? meta.description;
+  const route = basePath(pathname);
+  const routeMeta = route === "/" ? undefined : ROUTE_META[route];
+  const title = routeMeta?.title ?? override?.title ?? meta.title;
+  const description = routeMeta?.description ?? override?.description ?? meta.description;
   // Home-page canonical: default language ends with `/`, non-default languages
   // use the bare prefix (`/bg`) — matching the static fallback in index.html
   // and the sitemap, so Google sees one consistent URL per locale.
-  const canonical = `${SITE_URL}${withLanguagePrefix("/", lang)}`;
+  // Every other route self-references its own URL instead of the home page.
+  const canonical = `${SITE_URL}${withLanguagePrefix(route, lang)}`;
 
   document.title = title;
   setMeta("description", description);
   setMeta("keywords", meta.keywords.join(", "));
+  setMeta("og:type", route === "/" ? "website" : "article", "property");
   setMeta("og:title", title, "property");
   setMeta("og:description", description, "property");
   setMeta("og:url", canonical, "property");

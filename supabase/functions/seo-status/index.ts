@@ -6,7 +6,7 @@ const corsHeaders = {
     "authorization, x-client-info, apikey, content-type",
 };
 
-const SITE_URL = "https://sedorium.lovable.app";
+const SITE_URL = "https://www.thefivethrones.com";
 const SEO_META_URL = `${Deno.env.get("SUPABASE_URL")}/functions/v1/dynamic-seo-meta`;
 const SITEMAP_URL = `${Deno.env.get("SUPABASE_URL")}/functions/v1/dynamic-sitemap`;
 
