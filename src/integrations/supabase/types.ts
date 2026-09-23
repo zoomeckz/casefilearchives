@@ -290,6 +290,7 @@ export type Database = {
           cover_image_url: string | null
           created_at: string
           id: string
+          is_archived: boolean
           published_at: string
           scheduled_at: string | null
           title: string
@@ -302,6 +303,7 @@ export type Database = {
           cover_image_url?: string | null
           created_at?: string
           id?: string
+          is_archived?: boolean
           published_at?: string
           scheduled_at?: string | null
           title: string
@@ -314,6 +316,7 @@ export type Database = {
           cover_image_url?: string | null
           created_at?: string
           id?: string
+          is_archived?: boolean
           published_at?: string
           scheduled_at?: string | null
           title?: string
@@ -446,6 +449,7 @@ export type Database = {
           content: string
           created_at: string
           id: string
+          is_archived: boolean
           is_pinned: boolean | null
           title: string
           updated_at: string
@@ -456,6 +460,7 @@ export type Database = {
           content: string
           created_at?: string
           id?: string
+          is_archived?: boolean
           is_pinned?: boolean | null
           title: string
           updated_at?: string
@@ -466,6 +471,7 @@ export type Database = {
           content?: string
           created_at?: string
           id?: string
+          is_archived?: boolean
           is_pinned?: boolean | null
           title?: string
           updated_at?: string

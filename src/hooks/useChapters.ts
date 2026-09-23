@@ -10,6 +10,7 @@ export interface Chapter {
   scheduledAt: string | null;
   /** Cover art URL — currently always null until artwork is generated. */
   coverImageUrl: string | null;
+  isArchived: boolean;
 }
 
 function mapChapter(c: any): Chapter {
@@ -22,6 +23,7 @@ function mapChapter(c: any): Chapter {
     views: c.views,
     scheduledAt: c.scheduled_at || null,
     coverImageUrl: c.cover_image_url || null,
+    isArchived: c.is_archived === true,
   };
 }
 
@@ -187,7 +189,7 @@ export function useChapters(isAdmin = false) {
   }, [fetchChapters]);
 
   const publishedChapters = useMemo(
-    () => chapters.filter((chapter) => isChapterPublished(chapter, nowMs)),
+    () => chapters.filter((chapter) => !chapter.isArchived && isChapterPublished(chapter, nowMs)),
     [chapters, nowMs]
   );
 

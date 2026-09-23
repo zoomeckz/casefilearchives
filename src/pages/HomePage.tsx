@@ -1,34 +1,7 @@
-import React, { useState, useEffect } from "react";
-import { useNavigate } from "react-router-dom";
+import React from "react";
 import { Chapter } from "@/hooks/useChapters";
-import { dbFetch } from "@/lib/dbFetch";
-import { ProfileFrame } from "@/components/ProfileFrame";
 import { SectionHeader } from "@/components/SectionHeader";
 import { useTranslation } from "react-i18next";
-import { LOCALE_TAGS, type SupportedLanguage } from "@/i18n";
-
-interface ForumPostPreview {
-  id: string;
-  title: string;
-  category: string;
-  author: string;
-  authorId: string;
-  authorAvatar: string | null;
-  authorFrame: string | null;
-  replies: number;
-  createdAt: string;
-  isPinned: boolean;
-}
-
-function slugify(title: string): string {
-  return title
-    .toLowerCase()
-    .replace(/[^\w\s-]/g, '')
-    .trim()
-    .replace(/\s+/g, '-')
-    .replace(/-+/g, '-')
-    .slice(0, 60);
-}
 
 interface HomePageProps {
   chapters: Chapter[];
@@ -41,52 +14,7 @@ export const HomePage: React.FC<HomePageProps> = ({
   setCurrentPage,
   setSelectedChapter,
 }) => {
-  const navigate = useNavigate();
-  const { t, i18n } = useTranslation();
-  const latestChapter = chapters[chapters.length - 1];
-  const [forumPosts, setForumPosts] = useState<ForumPostPreview[]>([]);
-
-  useEffect(() => {
-    const fetchPosts = async () => {
-      const { data: allPosts } = await dbFetch<any[]>('forum_posts', {
-        select: 'id,title,category,created_at,user_id,is_pinned',
-        order: 'created_at.desc',
-      });
-      const postsData = allPosts?.slice(0, 5) || null;
-      if (!postsData) return;
-
-      const userIds = [...new Set(postsData.map(p => p.user_id))];
-      const profilePromises = userIds.map(uid =>
-        dbFetch<any[]>('profiles', { select: 'user_id,name,avatar_url,selected_frame', filters: `user_id=eq.${uid}` })
-      );
-      const profileResults = await Promise.all(profilePromises);
-      const profileMap: Record<string, { name: string; avatar: string | null; frame: string | null }> = {};
-      profileResults.forEach(r => {
-        if (r.data && r.data[0]) {
-          profileMap[r.data[0].user_id] = { name: r.data[0].name, avatar: r.data[0].avatar_url, frame: r.data[0].selected_frame };
-        }
-      });
-
-      const replyCountPromises = postsData.map(post =>
-        dbFetch('forum_replies', { filters: `post_id=eq.${post.id}`, head: true })
-      );
-      const replyCounts = await Promise.all(replyCountPromises);
-
-      setForumPosts(postsData.map((post, i) => ({
-        id: post.id,
-        title: post.title,
-        category: post.category,
-        author: profileMap[post.user_id]?.name || 'Anonymous',
-        authorId: post.user_id,
-        authorAvatar: profileMap[post.user_id]?.avatar || null,
-        authorFrame: profileMap[post.user_id]?.frame || null,
-        replies: replyCounts[i].count || 0,
-        createdAt: post.created_at,
-        isPinned: post.is_pinned || false,
-      })));
-    };
-    fetchPosts();
-  }, []);
+  const { t } = useTranslation();
 
   return (
     <div className="min-h-screen">
@@ -95,9 +23,8 @@ export const HomePage: React.FC<HomePageProps> = ({
         <div className="absolute inset-0 bg-gradient-to-b from-stone-900/50 via-stone-950/80 to-stone-950" />
         <div className="relative max-w-2xl mx-auto z-10">
           <h1
-            className="text-4xl sm:text-5xl md:text-7xl text-accent mb-4 sm:mb-5 tracking-[0.2em]"
+            className="brand-title text-4xl sm:text-5xl md:text-7xl text-accent mb-4 sm:mb-5 tracking-[0.2em]"
             style={{
-              fontFamily: "'Cinzel Decorative', serif",
               WebkitTextStroke: '4px black',
               paintOrder: 'stroke fill',
               textShadow: '0 0 10px rgba(0,0,0,0.8), 0 0 20px rgba(0,0,0,0.5)',
@@ -112,34 +39,22 @@ export const HomePage: React.FC<HomePageProps> = ({
           >
             {t("hero.tagline")}
           </p>
-          <p
-            className="text-muted-foreground text-xs sm:text-sm tracking-[0.25em] uppercase"
-            style={{ fontFamily: "'Cinzel', serif" }}
-          >
-            {t("hero.schedule")}
-          </p>
           <div className="mt-8 flex flex-wrap items-center justify-center gap-3">
-            <button
-              onClick={() => {
-                if (chapters[0]) setSelectedChapter(chapters[0]);
-              }}
-              className="px-7 py-3 bg-primary hover:bg-primary/90 text-primary-foreground rounded-lg font-medium transition-colors shadow-lg"
-            >
-              {t("hero.startReading")} →
-            </button>
-            <button
-              onClick={() => setCurrentPage("characters")}
-              className="px-7 py-3 bg-transparent hover:bg-accent/10 text-accent border border-accent/40 rounded-lg font-medium transition-colors"
-            >
-              {t("hero.browseCodex")}
-            </button>
+            {chapters[0] && (
+              <button
+                onClick={() => setSelectedChapter(chapters[0])}
+                className="px-7 py-3 bg-primary hover:bg-primary/90 text-primary-foreground rounded-lg font-medium transition-colors shadow-lg"
+              >
+                {t("hero.startReading")} →
+              </button>
+            )}
           </div>
         </div>
       </section>
 
       {/* Two-column: Latest Chapters + Latest Forum Posts */}
       <section className="py-12 sm:py-20 px-4 sm:px-6 border-t border-border/50">
-        <div className="max-w-5xl mx-auto grid grid-cols-1 lg:grid-cols-2 gap-8 lg:gap-12">
+        <div className="max-w-2xl mx-auto">
           {/* Latest Chapters */}
           <div>
             <SectionHeader align="left">{t("home.latestChapters")}</SectionHeader>
@@ -189,54 +104,6 @@ export const HomePage: React.FC<HomePageProps> = ({
             )}
           </div>
 
-          {/* Latest Forum Posts */}
-          <div>
-            <SectionHeader align="center">{t("home.latestDiscussions")}</SectionHeader>
-
-            {forumPosts.length === 0 ? (
-              <p className="text-muted-foreground text-center">No discussions yet.</p>
-            ) : (
-              <div className="space-y-1">
-                {forumPosts.map((post) => (
-                  <div
-                    key={post.id}
-                    onClick={() => navigate(`/forum/${slugify(post.title)}--${post.id.slice(0, 8)}`)}
-                    className="group cursor-pointer py-4 px-4 rounded-lg hover:bg-secondary/30 transition-all duration-200 text-center"
-                  >
-                    <div className="flex items-center justify-center gap-2 text-xs text-muted-foreground mb-1">
-                      {post.isPinned && <span className="text-accent">📌</span>}
-                      <span>{post.category}</span>
-                      <span>·</span>
-                      <span>{post.replies} {post.replies === 1 ? t("home.reply") : t("home.replies")}</span>
-                    </div>
-                    <h3 className="font-display text-base text-foreground/80 group-hover:text-primary transition-colors">
-                      {post.title}
-                    </h3>
-                    <div className="flex items-center justify-center gap-2 mt-1.5">
-                      <ProfileFrame avatarUrl={post.authorAvatar} name={post.author} frame={post.authorFrame} size={20} />
-                      <span className="text-muted-foreground/60 text-xs">{post.author}</span>
-                      <span className="text-muted-foreground/40 text-xs">·</span>
-                      <span className="text-muted-foreground/60 text-xs">
-                        {new Date(post.createdAt).toLocaleDateString(
-                          LOCALE_TAGS[(i18n.language as SupportedLanguage)] ?? LOCALE_TAGS.en,
-                          { month: "short", day: "numeric" },
-                        )}
-                      </span>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            )}
-
-            <div className="text-center mt-6">
-              <button
-                onClick={() => setCurrentPage("forum")}
-                className="text-muted-foreground hover:text-primary text-sm transition-colors"
-              >
-                {t("home.joinForum")} →
-              </button>
-            </div>
-          </div>
         </div>
       </section>
     </div>

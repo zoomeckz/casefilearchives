@@ -4,7 +4,7 @@ import { Link } from "react-router-dom";
 import { Icons } from "@/lib/icons";
 import { Chapter } from "@/hooks/useChapters";
 import { GlossaryEntry } from "@/lib/data";
-import { InteractiveContent } from "@/components/InteractiveContent";
+import DOMPurify from "dompurify";
 import { CommentsSection } from "@/components/CommentsSection";
 import { TextToSpeech } from "@/components/TextToSpeech";
 import { AuthUser } from "@/hooks/useAuth";
@@ -13,9 +13,6 @@ import { ChapterReactions } from "@/components/ChapterReactions";
 import { ChapterPoll } from "@/components/ChapterPoll";
 import { TextHighlightBookmark } from "@/components/TextHighlightBookmark";
 import { ReaderCardsView } from "@/components/ReaderCardsView";
-import { useChapterTranslation } from "@/hooks/useChapterTranslation";
-import { FlagIcon } from "@/components/FlagIcon";
-import { LANGUAGE_LABELS } from "@/i18n";
 
 
 function estimateReadingTime(content: string): number {
@@ -51,10 +48,6 @@ export const ReaderPage: React.FC<ReaderPageProps> = ({
   toggleBookmark,
 }) => {
   const { t } = useTranslation();
-  // Pull the localized title + body for this chapter (if any translation
-  // row exists) and expose a per-chapter language toggle. See the hook
-  // for fallback rules.
-  const translation = useChapterTranslation(chapter);
   const discussionPrompts = [
     t("reader.prompt1", "What do you think will happen next?"),
     t("reader.prompt2", "Which character stood out most in this chapter?"),
@@ -211,10 +204,7 @@ export const ReaderPage: React.FC<ReaderPageProps> = ({
   const currentIndex = chapters.findIndex((c) => c.id === chapter.id);
   const prevChapter = currentIndex > 0 ? chapters[currentIndex - 1] : null;
   const nextChapter = currentIndex < chapters.length - 1 ? chapters[currentIndex + 1] : null;
-  const readTime = estimateReadingTime(translation.content);
-
-  // "Previously on..." — show last chapter title
-  const prevSummary = prevChapter ? prevChapter.title : null;
+  const readTime = estimateReadingTime(chapter.content);
 
   if (cardsMode) {
     return (
@@ -306,36 +296,8 @@ export const ReaderPage: React.FC<ReaderPageProps> = ({
             {t("chapters.chapterLabel")} {chapter.chapterNumber}
           </span>
           <h1 className="font-display text-4xl sm:text-5xl text-accent mt-2 mb-4">
-            {translation.title}
+            {chapter.title}
           </h1>
-          {/* Per-chapter language toggle — only renders flags for languages
-              that actually have a translation row (plus the English source).
-              Hidden entirely when there's nothing to switch to so the header
-              stays clean for chapters that haven't been translated yet. */}
-          {translation.available.length > 1 && (
-            <div className="flex items-center justify-center gap-1.5 mb-4" role="group" aria-label="Reading language">
-              {translation.available.map((lang) => {
-                const isActive = translation.active === lang;
-                return (
-                  <button
-                    key={lang}
-                    type="button"
-                    onClick={() => translation.setActive(lang)}
-                    title={LANGUAGE_LABELS[lang]}
-                    aria-label={LANGUAGE_LABELS[lang]}
-                    aria-pressed={isActive}
-                    className={`inline-flex items-center justify-center w-7 h-7 rounded-full border transition-all ${
-                      isActive
-                        ? "border-primary/60 bg-primary/10 ring-2 ring-primary/30"
-                        : "border-border/40 opacity-60 hover:opacity-100 hover:border-border"
-                    }`}
-                  >
-                    <FlagIcon lang={lang} size={14} />
-                  </button>
-                );
-              })}
-            </div>
-          )}
           <div className="flex flex-nowrap sm:flex-wrap items-center justify-center gap-2 sm:gap-4 text-muted-foreground text-xs sm:text-sm overflow-x-auto whitespace-nowrap">
             <span>{new Date(chapter.publishedAt).toLocaleDateString()}</span>
             <span className="flex items-center gap-1">
@@ -364,43 +326,16 @@ export const ReaderPage: React.FC<ReaderPageProps> = ({
           </div>
         </header>
 
-        {/* Previously on... */}
-        {prevSummary && (
-          <div className="mb-8 p-4 rounded-lg previously-card">
-            <p className="text-xs text-muted-foreground uppercase tracking-wider mb-1">{t("reader.previously")}</p>
-            <p className="text-foreground/80 text-sm italic font-display">
-              {t("chapters.chapterLabel")} {prevChapter!.chapterNumber}: {prevSummary}
-            </p>
-          </div>
-        )}
-
-
-        {!tipDismissed && (
-          <div className="mb-6 flex items-start gap-2 text-muted-foreground/70 text-xs sm:text-sm italic">
-            <span className="flex-1">
-              {t("reader.tip")}
-            </span>
-            <button
-              type="button"
-              aria-label="Dismiss tip"
-              onClick={() => {
-                setTipDismissed(true);
-                try { localStorage.setItem("reader-tip-dismissed", "1"); } catch {}
-              }}
-              className="text-muted-foreground/60 hover:text-foreground"
-            >
-              ✕
-            </button>
-          </div>
-        )}
-
         {/* Text highlight bookmarks */}
         <TextHighlightBookmark chapterId={chapter.id} chapterNumber={chapter.chapterNumber} user={user} setShowAuthModal={setShowAuthModal} />
 
         <article
           className="mb-12 rounded-xl p-6 sm:p-8"
         >
-          <InteractiveContent content={translation.content} glossary={glossary} />
+          <div
+            className="prose-story chapter-content"
+            dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(chapter.content) }}
+          />
         </article>
 
         {/* Chapter Reactions */}
@@ -411,41 +346,6 @@ export const ReaderPage: React.FC<ReaderPageProps> = ({
         {/* Chapter Poll (if any) */}
         <div className="mb-8">
           <ChapterPoll chapterId={chapter.id} user={user} setShowAuthModal={setShowAuthModal} />
-        </div>
-
-        {/* Prev / Next chapter — centered as a pair (no divider lines) so the
-            block reads as a single navigation cluster regardless of whether a
-            previous chapter exists. Each button keeps a fixed width so the
-            "next" card doesn't reflow when "previous" appears or disappears. */}
-        <div className="flex flex-wrap items-stretch justify-center gap-3 py-8 mb-12">
-          {prevChapter && (
-            <button
-              onClick={() => setSelectedChapter(prevChapter)}
-              className="group text-left p-4 rounded-lg border border-border/40 hover:border-primary/40 hover:bg-secondary/30 transition-colors w-full sm:w-72"
-            >
-              <div className="text-xs text-muted-foreground mb-1">← {t("reader.previous")}</div>
-              <div className="font-display text-sm text-foreground/90 group-hover:text-primary truncate">{prevChapter.title}</div>
-            </button>
-          )}
-          {nextChapter ? (
-            <button
-              onClick={() => setSelectedChapter(nextChapter)}
-              className="group text-right p-4 rounded-lg border border-border/40 hover:border-primary/40 hover:bg-secondary/30 transition-colors w-full sm:w-72"
-            >
-              <div className="text-xs text-muted-foreground mb-1">{t("reader.next")} →</div>
-              <div className="font-display text-sm text-foreground/90 group-hover:text-primary truncate">{nextChapter.title}</div>
-            </button>
-          ) : (
-            <button
-              onClick={() => setCurrentPage("forum")}
-              className="group text-right p-4 rounded-lg border border-accent/30 bg-accent/5 hover:bg-accent/10 transition-colors w-full sm:w-72"
-            >
-              <div className="text-xs text-accent mb-1">{t("reader.caughtUp")}</div>
-              <div className="font-display text-sm text-foreground/90 group-hover:text-accent">
-                {t("reader.discussChapter")} →
-              </div>
-            </button>
-          )}
         </div>
 
         {/* Discussion Prompt */}

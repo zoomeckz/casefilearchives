@@ -72,20 +72,11 @@ export const Footer: React.FC<FooterProps> = ({ setCurrentPage }) => {
           >
             ✦
           </span>
-          <p
-            className="text-accent text-2xl tracking-[0.3em] mb-2"
-            style={{ fontFamily: "'Cinzel Decorative', serif" }}
-          >
+          <p className="brand-title text-accent text-2xl tracking-[0.3em] mb-2">
             SEDORIUM
           </p>
           <p className="text-muted-foreground text-sm mb-6">
-            Written by Sam Nowroozi Larki
-          </p>
-
-          {/* Author bio */}
-          <p className="max-w-md text-foreground/70 text-sm leading-relaxed mb-6 italic">
-            Indie dark-fantasy author drawing from anime, music, and a quiet obsession
-            with broken thrones. New chapter every 3 days.
+            Written by AnyoneButSam
           </p>
 
           {/* Subscribe form */}
