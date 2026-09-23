@@ -32,10 +32,11 @@ export const AuthModal: React.FC<AuthModalProps> = ({
     setError("");
     setLoading(true);
     try {
-      const { error } = await lovable.auth.signInWithOAuth("google", {
+      const result: any = await lovable.auth.signInWithOAuth("google", {
         redirect_uri: window.location.origin,
       });
-      if (error) throw error;
+      if (result?.error) throw result.error;
+      if (!result?.redirected) window.location.reload();
     } catch (err: any) {
       setError(err.message || "Failed to sign in with Google");
       setLoading(false);
