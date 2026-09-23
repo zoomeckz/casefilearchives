@@ -296,18 +296,33 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ glossary, authToken, use
   useEffect(() => {
     const fetchAnalytics = async () => {
       try {
-        const [chaptersRes, readersRes, commentsRes, forumRes, subscribersRes, pageViewsRes] = await Promise.all([
+        const after = `created_at=gte.${LEGACY_CUTOFF}`;
+        const before = `created_at=lt.${LEGACY_CUTOFF}`;
+        const [chaptersRes, readersRes, commentsRes, forumRes, subscribersRes, pageViewsRes, oldReadersRes, oldCommentsRes, oldSubsRes] = await Promise.all([
           dbFetch<any[]>('chapters', { select: 'id,title,views,chapter_number,published_at,scheduled_at,is_archived', order: 'chapter_number.asc', token: authToken }),
-          dbFetch<any[]>('profiles', { select: '*', head: true, token: authToken }),
-          dbFetch<any[]>('comments', { select: '*', head: true, token: authToken }),
+          dbFetch<any[]>('profiles', { select: '*', head: true, filters: after, token: authToken }),
+          dbFetch<any[]>('comments', { select: '*', head: true, filters: after, token: authToken }),
           dbFetch<any[]>('forum_posts', { select: '*', head: true, token: authToken }),
-          dbFetch<any[]>('email_subscriptions', { select: '*', head: true, filters: 'new_chapters=eq.true', token: authToken }),
-          dbFetch<any[]>('page_views', { select: 'page,duration_seconds', token: authToken }),
+          dbFetch<any[]>('email_subscriptions', { select: '*', head: true, filters: `new_chapters=eq.true&${after}`, token: authToken }),
+          dbFetch<any[]>('page_views', { select: 'page,duration_seconds', filters: after, token: authToken }),
+          dbFetch<any[]>('profiles', { select: '*', head: true, filters: before, token: authToken }),
+          dbFetch<any[]>('comments', { select: '*', head: true, filters: before, token: authToken }),
+          dbFetch<any[]>('email_subscriptions', { select: '*', head: true, filters: `new_chapters=eq.true&${before}`, token: authToken }),
         ]);
 
         const chapterData = chaptersRes.data || [];
         setChapters(chapterData);
-        const totalViews = chapterData.reduce((sum: number, c: any) => sum + c.views, 0);
+        const newChapters = chapterData.filter((c: any) => !c.is_archived);
+        const oldChapters = chapterData.filter((c: any) => c.is_archived);
+        const totalViews = newChapters.reduce((sum: number, c: any) => sum + c.views, 0);
+        setLegacyStats({
+          views: oldChapters.reduce((sum: number, c: any) => sum + c.views, 0),
+          readers: oldReadersRes.count || 0,
+          comments: oldCommentsRes.count || 0,
+          subscribers: oldSubsRes.count || 0,
+          forumPosts: forumRes.count || 0,
+          chapterStats: oldChapters,
+        });
 
         const pageViews = pageViewsRes.data || [];
         const pageMap = new Map<string, { count: number; totalDuration: number }>();
@@ -328,10 +343,10 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ glossary, authToken, use
           totalViews,
           totalReaders: readersRes.count || 0,
           totalComments: commentsRes.count || 0,
-          totalForumPosts: forumRes.count || 0,
+          totalForumPosts: 0,
           totalSubscribers: subscribersRes.count || 0,
           recentPageViews,
-          chapterStats: chapterData,
+          chapterStats: newChapters,
         });
       } catch (err) {
         console.error('Failed to fetch analytics:', err);
