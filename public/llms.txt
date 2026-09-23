@@ -1,21 +1,9 @@
-# Sedorium — The Five Thrones
+# Sedorium
 
-> A free dark fantasy web novel by Sam Nowroozi Larki. Broken thrones and lost souls, told across 67 chapters with a new chapter every 3 days.
+> Random situations put into story form.
 
-Sedorium follows druids, shapeshifters, oathbound factions and ancient kingdoms across five nations. Every chapter is free to read online, alongside a codex of characters and lore, a world map, illustrated manga panels and a reader forum.
+Sedorium is an English-language collection of standalone fiction by AnyoneButSam.
 
-## Pages
-
-- [Home](/): Series overview, latest chapter and where to start.
-- [All chapters](/chapters): Full chapter list, free to read.
-- [Chapter 1: A Grim Introduction](/chapters/1): The opening chapter.
-- [Codex](/characters): Characters, places, creatures and lore.
-- [World map](/world): The five nations and the lands between.
-- [Manga](/manga): Illustrated panels from the novel.
-- [About](/about): About the novel and the author.
-
-## Optional
-
-- [Forum](/forum): Reader discussion and theories.
-- [Leaderboard](/leaderboard): Reader streaks and ranks.
-- [Full content feed](https://iiezbdlmikvgxjlozwlc.supabase.co/functions/v1/content-feed): Full text of every chapter.
+- [Home](/)
+- [Stories](/chapters)
+- [About](/about)

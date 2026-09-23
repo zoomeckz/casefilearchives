@@ -3,11 +3,9 @@ import { useNavigate } from "react-router-dom";
 import { Icons } from "@/lib/icons";
 import { AuthUser } from "@/hooks/useAuth";
 import { NotificationBell } from "@/components/NotificationBell";
-import { LanguageSwitcher } from "@/components/LanguageSwitcher";
 import { useTranslation } from "react-i18next";
 import {
   NAV_GROUPS,
-  COMMUNITY_GROUP_KEY,
   NAV_CHROME_KEYS,
   type NavEntry,
 } from "@/i18n/navKeys";
@@ -30,14 +28,12 @@ export const Navigation: React.FC<NavigationProps> = ({
   const navigate = useNavigate();
   const { t } = useTranslation();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
-  const [communityOpen, setCommunityOpen] = useState(false);
 
   // All labels resolve through the typed `NAV_GROUPS` registry so adding /
   // renaming a nav item happens in exactly one place. See `src/i18n/navKeys.ts`.
   const labelFor = (entry: NavEntry) => t(`nav.${entry.i18nKey}`);
 
   const navItems = NAV_GROUPS.primary.map((e) => ({ id: e.id, label: labelFor(e) }));
-  const communityItems = NAV_GROUPS.community.map((e) => ({ id: e.id, label: labelFor(e) }));
   const extraItems: { id: string; label: string }[] = [];
   if (user) {
     extraItems.push(...NAV_GROUPS.authed.map((e) => ({ id: e.id, label: labelFor(e) })));
@@ -45,8 +41,6 @@ export const Navigation: React.FC<NavigationProps> = ({
   if (user?.isAdmin) {
     extraItems.push(...NAV_GROUPS.admin.map((e) => ({ id: e.id, label: labelFor(e) })));
   }
-
-  const communityActive = communityItems.some(c => currentPage === c.id);
 
   return (
     /*
@@ -63,8 +57,7 @@ export const Navigation: React.FC<NavigationProps> = ({
           {/* Mobile sigil — replaces a naked hamburger with a small brand mark */}
           <button
             onClick={() => setCurrentPage("home")}
-            className="md:hidden font-display text-accent text-xl tracking-[0.2em] leading-none"
-            style={{ fontFamily: "'Cinzel Decorative', serif" }}
+            className="brand-title md:hidden text-accent text-xl tracking-[0.2em] leading-none"
             aria-label="Sedorium home"
           >
             S
@@ -86,41 +79,6 @@ export const Navigation: React.FC<NavigationProps> = ({
               </button>
             ))}
 
-            {/* Community dropdown */}
-            <div className="relative">
-              <button
-                onClick={() => setCommunityOpen(!communityOpen)}
-                onBlur={() => setTimeout(() => setCommunityOpen(false), 200)}
-                className={`relative text-sm transition-colors flex items-center gap-1 pb-1 ${
-                  communityActive ? "text-primary nav-active-underline" : "text-muted-foreground hover:text-foreground"
-                }`}
-              >
-                {t(`nav.${COMMUNITY_GROUP_KEY}`)}
-                <svg className={`w-3 h-3 transition-transform ${communityOpen ? "rotate-180" : ""}`} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                  <polyline points="6 9 12 15 18 9" />
-                </svg>
-              </button>
-              <div
-                className={`absolute top-full left-1/2 -translate-x-1/2 mt-1 w-44 bg-card border border-border rounded-lg shadow-xl overflow-hidden transition-all duration-200 ease-out origin-top ${
-                  communityOpen
-                    ? "opacity-100 scale-y-100 pointer-events-auto"
-                    : "opacity-0 scale-y-90 pointer-events-none"
-                }`}
-              >
-                  {communityItems.map(item => (
-                    <button
-                      key={item.id}
-                      onClick={() => { setCurrentPage(item.id); setCommunityOpen(false); }}
-                      className={`block w-full text-left px-4 py-2.5 text-sm transition-colors ${
-                        currentPage === item.id ? "text-primary bg-primary/5" : "text-muted-foreground hover:text-foreground hover:bg-secondary/50"
-                      }`}
-                    >
-                      {item.label}
-                    </button>
-                  ))}
-                </div>
-            </div>
-
             {extraItems.map((item) => (
               <button
                 key={item.id}
@@ -138,7 +96,6 @@ export const Navigation: React.FC<NavigationProps> = ({
 
           {/* Right side - auth */}
           <div className="hidden md:flex items-center gap-3">
-            <LanguageSwitcher variant="desktop" />
             {user ? (
               <>
                 <NotificationBell user={user} onNavigate={(path) => navigate(path)} />
@@ -194,18 +151,6 @@ export const Navigation: React.FC<NavigationProps> = ({
                 {item.label}
               </button>
             ))}
-            <div className="py-1 text-xs text-muted-foreground/50 uppercase tracking-wider">{t(`nav.${COMMUNITY_GROUP_KEY}`)}</div>
-            {communityItems.map((item) => (
-              <button
-                key={item.id}
-                onClick={() => { setCurrentPage(item.id); setMobileMenuOpen(false); }}
-                className={`block w-full text-left py-2 pl-3 transition-colors ${
-                  currentPage === item.id ? "text-primary" : "text-muted-foreground hover:text-foreground"
-                }`}
-              >
-                {item.label}
-              </button>
-            ))}
             {extraItems.map((item) => (
               <button
                 key={item.id}
@@ -240,7 +185,6 @@ export const Navigation: React.FC<NavigationProps> = ({
                 {t(`nav.${NAV_CHROME_KEYS.signIn}`)}
               </button>
             )}
-            <LanguageSwitcher variant="mobile" />
           </div>
         )}
       </div>

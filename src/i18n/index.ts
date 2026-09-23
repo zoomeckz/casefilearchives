@@ -2,13 +2,6 @@ import i18n from "i18next";
 import { initReactI18next } from "react-i18next";
 
 import en from "./locales/en.json";
-import bg from "./locales/bg.json";
-import hi from "./locales/hi.json";
-import es from "./locales/es.json";
-import ar from "./locales/ar.json";
-import ja from "./locales/ja.json";
-import ko from "./locales/ko.json";
-import zh from "./locales/zh.json";
 
 /**
  * Add a new language by:
@@ -21,7 +14,7 @@ import zh from "./locales/zh.json";
  * The FIRST entry is always the default language (no URL prefix). Every other
  * language is served at `/<code>/...`.
  */
-export const SUPPORTED_LANGUAGES = ["en", "bg", "es", "hi", "ar", "ja", "ko", "zh"] as const;
+export const SUPPORTED_LANGUAGES = ["en"] as const;
 export type SupportedLanguage = (typeof SUPPORTED_LANGUAGES)[number];
 
 export const DEFAULT_LANGUAGE: SupportedLanguage = SUPPORTED_LANGUAGES[0];
@@ -31,13 +24,6 @@ export const NON_DEFAULT_LANGUAGES: SupportedLanguage[] = SUPPORTED_LANGUAGES.fi
 
 export const LANGUAGE_LABELS: Record<SupportedLanguage, string> = {
   en: "English",
-  bg: "Български",
-  es: "Español",
-  hi: "हिन्दी",
-  ar: "العربية",
-  ja: "日本語",
-  ko: "한국어",
-  zh: "中文",
 };
 
 /**
@@ -54,25 +40,11 @@ export const LANGUAGE_LABELS: Record<SupportedLanguage, string> = {
  */
 export const LANGUAGE_FLAGS: Record<SupportedLanguage, string> = {
   en: "🇬🇧",
-  bg: "🇧🇬",
-  es: "🇪🇸",
-  hi: "🇮🇳",
-  ar: "🇸🇦",
-  ja: "🇯🇵",
-  ko: "🇰🇷",
-  zh: "🇨🇳",
 };
 
 /** Locale tags used by `Intl` / `Date.toLocaleString` — keep one per supported lang. */
 export const LOCALE_TAGS: Record<SupportedLanguage, string> = {
   en: "en-US",
-  bg: "bg-BG",
-  es: "es-ES",
-  hi: "hi-IN",
-  ar: "ar",
-  ja: "ja-JP",
-  ko: "ko-KR",
-  zh: "zh-CN",
 };
 
 /** Reads the URL's first path segment — does NOT touch localStorage on first paint. */
@@ -111,13 +83,6 @@ const initialLang =
 i18n.use(initReactI18next).init({
   resources: {
     en: { translation: en },
-    bg: { translation: bg },
-    es: { translation: es },
-    hi: { translation: hi },
-    ar: { translation: ar },
-    ja: { translation: ja },
-    ko: { translation: ko },
-    zh: { translation: zh },
   },
   lng: initialLang,
   fallbackLng: DEFAULT_LANGUAGE,

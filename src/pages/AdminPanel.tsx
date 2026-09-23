@@ -66,6 +66,7 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ glossary, authToken, use
   const [chapterSubTab, setChapterSubTab] = useState<'published' | 'drafts'>('published');
   const [drafts, setDrafts] = useState<ChapterDraft[]>([]);
   const [chapters, setChapters] = useState<any[]>([]);
+  const [legacyExpanded, setLegacyExpanded] = useState(false);
   const [glossaryEntries, setGlossaryEntries] = useState<any[]>([]);
   // Per-chapter translations modal — open when admin clicks "Translate" on a row.
   const [translatingChapter, setTranslatingChapter] = useState<{
@@ -285,7 +286,7 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ glossary, authToken, use
 
   const fetchChapters = async () => {
     const { data } = await dbFetch<any[]>('chapters', {
-      select: 'id,title,chapter_number,views,published_at,scheduled_at',
+      select: 'id,title,chapter_number,views,published_at,scheduled_at,is_archived',
       order: 'chapter_number.asc',
       token: authToken,
     });
@@ -296,7 +297,7 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ glossary, authToken, use
     const fetchAnalytics = async () => {
       try {
         const [chaptersRes, readersRes, commentsRes, forumRes, subscribersRes, pageViewsRes] = await Promise.all([
-          dbFetch<any[]>('chapters', { select: 'id,title,views,chapter_number,published_at,scheduled_at', order: 'chapter_number.asc', token: authToken }),
+          dbFetch<any[]>('chapters', { select: 'id,title,views,chapter_number,published_at,scheduled_at,is_archived', order: 'chapter_number.asc', token: authToken }),
           dbFetch<any[]>('profiles', { select: '*', head: true, token: authToken }),
           dbFetch<any[]>('comments', { select: '*', head: true, token: authToken }),
           dbFetch<any[]>('forum_posts', { select: '*', head: true, token: authToken }),
@@ -566,6 +567,8 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ glossary, authToken, use
       default: return list;
     }
   }, [chapters, chapterSearch, chapterSort]);
+  const activeChapters = filteredChapters.filter((chapter) => !chapter.is_archived);
+  const archivedChapters = filteredChapters.filter((chapter) => chapter.is_archived);
 
   // Filtered dashboard chapter stats
   const filteredDashboardStats = useMemo(() => {
@@ -829,16 +832,16 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ glossary, authToken, use
                           : 'text-muted-foreground hover:text-foreground'
                       }`}
                     >
-                      {tab === 'published' ? `Published (${filteredChapters.length})` : `Drafts (${filteredDrafts.length})`}
+                      {tab === 'published' ? `Published (${activeChapters.length})` : `Drafts (${filteredDrafts.length})`}
                     </button>
                   ))}
                 </div>
 
                 {chapterSubTab === 'published' && (
                   <>
-                    {filteredChapters.length === 0 ? (
+                    {activeChapters.length === 0 ? (
                       <p className="text-muted-foreground text-sm">
-                        {chapterSearch ? 'No chapters match your search.' : 'No chapters yet. Create your first one!'}
+                        {chapterSearch ? 'No active stories match your search.' : 'No active stories yet. Create your first one!'}
                       </p>
                     ) : (
                       <>
@@ -851,7 +854,7 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ glossary, authToken, use
                           onDeleteLanguage={bulkDeleteLanguage}
                         />
                         <ChapterTable
-                        chapters={filteredChapters}
+                          chapters={activeChapters}
                         translationCounts={translationCounts}
                         totalLanguages={totalTranslationLanguages}
                         chapterSort={chapterSort}
@@ -873,6 +876,42 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ glossary, authToken, use
                         />
                       </>
                     )}
+                    <div className="mt-6 border-t border-border/60 pt-4">
+                      <button
+                        type="button"
+                        onClick={() => setLegacyExpanded((open) => !open)}
+                        className="flex w-full items-center justify-between rounded-md px-3 py-2 text-left text-sm text-muted-foreground hover:bg-card/60 hover:text-foreground"
+                        aria-expanded={legacyExpanded}
+                      >
+                        <span>Legacy Chapters ({archivedChapters.length})</span>
+                        <ChevronDown className={`h-4 w-4 transition-transform ${legacyExpanded ? 'rotate-180' : ''}`} />
+                      </button>
+                      {legacyExpanded && archivedChapters.length > 0 && (
+                        <div className="mt-3">
+                          <ChapterTable
+                            chapters={archivedChapters}
+                            translationCounts={translationCounts}
+                            totalLanguages={totalTranslationLanguages}
+                            chapterSort={chapterSort}
+                            onSortChange={setChapterSort}
+                            selectedIds={selectedChapters}
+                            onToggleSelect={toggleChapterSelection}
+                            onSelectAll={(ids, all) => {
+                              setSelectedChapters((prev) => {
+                                const next = new Set(prev);
+                                if (all) ids.forEach((id) => next.add(id));
+                                else ids.forEach((id) => next.delete(id));
+                                return next;
+                              });
+                            }}
+                            onEdit={(id) => updateAdminRoute({ tab: 'chapters', view: 'edit', chapter: id, draft: null, term: null, sentence: null })}
+                            onDelete={handleDeleteChapter}
+                            onDownload={(num, title) => downloadSingleChapter(num, title)}
+                            onTranslate={openChapterForTranslation}
+                          />
+                        </div>
+                      )}
+                    </div>
                   </>
                 )}
 
@@ -1440,6 +1479,7 @@ type ChapterRow = {
   views: number;
   published_at: string | null;
   scheduled_at: string | null;
+  is_archived?: boolean;
 };
 
 type SortKey = 'number-asc' | 'number-desc' | 'views-desc' | 'views-asc' | 'newest' | 'oldest';

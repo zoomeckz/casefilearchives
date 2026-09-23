@@ -34,7 +34,7 @@ export const Footer: React.FC<FooterProps> = ({ setCurrentPage }) => {
       } catch {}
 
       if (token === key) {
-        toast.info("Create an account to receive new chapter alerts at this address.");
+        toast.info("Create an account to receive story alerts at this address.");
         setShowAuthHint(true);
         setEmail("");
         return;
@@ -51,7 +51,7 @@ export const Footer: React.FC<FooterProps> = ({ setCurrentPage }) => {
         body: JSON.stringify({ email: trimmed, new_chapters: true }),
       });
       if (!res.ok) throw new Error("subscribe failed");
-      toast.success("You're subscribed — new chapter every 3 days.");
+      toast.success("You're subscribed to story alerts.");
       setEmail("");
     } catch {
       toast.error("Couldn't subscribe right now. Try again in a moment.");
@@ -72,20 +72,11 @@ export const Footer: React.FC<FooterProps> = ({ setCurrentPage }) => {
           >
             ✦
           </span>
-          <p
-            className="text-accent text-2xl tracking-[0.3em] mb-2"
-            style={{ fontFamily: "'Cinzel Decorative', serif" }}
-          >
+          <p className="brand-title text-accent text-2xl tracking-[0.3em] mb-2">
             SEDORIUM
           </p>
           <p className="text-muted-foreground text-sm mb-6">
-            Written by Sam Nowroozi Larki
-          </p>
-
-          {/* Author bio */}
-          <p className="max-w-md text-foreground/70 text-sm leading-relaxed mb-6 italic">
-            Indie dark-fantasy author drawing from anime, music, and a quiet obsession
-            with broken thrones. New chapter every 3 days.
+            Written by AnyoneButSam
           </p>
 
           {/* Subscribe form */}

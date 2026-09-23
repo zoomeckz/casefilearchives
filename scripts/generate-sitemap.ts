@@ -1,13 +1,9 @@
 // Runs before `vite dev` and `vite build` (predev/prebuild hooks); writes public/sitemap.xml.
-// Chapter entries come from the live database via the dynamic-seo-meta edge
-// function, so the sitemap never drifts from what's actually published.
 
 import { writeFileSync } from "fs";
 import { resolve } from "path";
 
 const BASE_URL = "https://www.thefivethrones.com";
-const SEO_META_URL =
-  "https://iiezbdlmikvgxjlozwlc.supabase.co/functions/v1/dynamic-seo-meta";
 
 interface SitemapEntry {
   path: string;
@@ -21,33 +17,8 @@ interface SitemapEntry {
 const staticEntries: SitemapEntry[] = [
   { path: "/", changefreq: "daily", priority: "1.0" },
   { path: "/chapters", changefreq: "daily", priority: "0.9" },
-  { path: "/characters", changefreq: "weekly", priority: "0.8" },
-  { path: "/world", changefreq: "monthly", priority: "0.7" },
-  { path: "/manga", changefreq: "weekly", priority: "0.7" },
   { path: "/about", changefreq: "monthly", priority: "0.7" },
-  { path: "/forum", changefreq: "daily", priority: "0.6" },
-  { path: "/leaderboard", changefreq: "weekly", priority: "0.4" },
-  { path: "/rewards", changefreq: "monthly", priority: "0.4" },
 ];
-
-async function fetchChapterEntries(): Promise<SitemapEntry[]> {
-  try {
-    const res = await fetch(SEO_META_URL);
-    if (!res.ok) throw new Error(`dynamic-seo-meta returned ${res.status}`);
-    const meta = (await res.json()) as {
-      chapters?: Array<{ number: number; publishedAt?: string }>;
-    };
-    return (meta.chapters ?? []).map((c) => ({
-      path: `/chapters/${c.number}`,
-      lastmod: c.publishedAt ? c.publishedAt.slice(0, 10) : undefined,
-      changefreq: "monthly" as const,
-      priority: "0.8",
-    }));
-  } catch (err) {
-    console.warn("sitemap: could not load chapters —", err);
-    return [];
-  }
-}
 
 function generateSitemap(entries: SitemapEntry[]) {
   const urls = entries.map((e) =>
@@ -71,6 +42,6 @@ function generateSitemap(entries: SitemapEntry[]) {
   ].join("\n");
 }
 
-const entries = [...staticEntries, ...(await fetchChapterEntries())];
+const entries = staticEntries;
 writeFileSync(resolve("public/sitemap.xml"), generateSitemap(entries));
 console.log(`sitemap.xml written (${entries.length} entries)`);

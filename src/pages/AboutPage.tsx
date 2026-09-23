@@ -10,16 +10,15 @@ export const AboutPage: React.FC = () => {
 
         <div className="space-y-6 text-foreground/80 leading-relaxed">
           <p>
-            Hey — I'm <strong className="text-foreground">Sam Nowroozi Larki</strong>, 
+            Hey — I'm <strong className="text-foreground">AnyoneButSam</strong>, 
             the writer behind Sedorium. In my spare time, I draw from real-life experiences, 
             anime, music, and other mediums to build a world that feels alive — 
             one that's as raw and unpredictable as the things that inspire it. 
             My goal is to create something vivid, layered, and unapologetically immersive.
           </p>
           <p>
-            Sedorium is an ongoing fantasy series that blends dark themes with deep 
-            world-building and characters you won't forget. New chapters are published 
-            when they're ready — quality over quantity, always.
+            Sedorium turns random, disconnected situations into standalone stories.
+            Each one is its own experience, published when it is ready.
           </p>
         </div>
 

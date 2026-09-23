@@ -34,7 +34,7 @@ function normalizeScheduledAt(value: string): string {
   return /^\d{4}-\d{2}-\d{2}$/.test(datePart) ? `${datePart}T10:00` : value;
 }
 
-// Cadence anchor: every 3 days starting Wednesday May 6, 2026 (Swedish).
+// Cadence anchor for optional scheduling.
 const CADENCE_ANCHOR_ISO = '2026-05-06';
 const CADENCE_DAYS = 3;
 
@@ -318,6 +318,7 @@ export const ChapterEditor: React.FC<ChapterEditorProps> = ({ authToken, userId,
           chapter_number: chapterNumber,
           scheduled_at: normalizedScheduledAt ? swedishToUTC(normalizedScheduledAt) : null,
           cover_image_url: coverImageUrl,
+          is_archived: false,
         };
         const { error } = await dbFetch('chapters', {
           method: 'POST',
@@ -403,7 +404,7 @@ export const ChapterEditor: React.FC<ChapterEditorProps> = ({ authToken, userId,
           />
         </div>
         <div>
-          <label className="block text-sm text-muted-foreground mb-1">Schedule (every 3 days, 10:00 🇸🇪)</label>
+          <label className="block text-sm text-muted-foreground mb-1">Schedule publication</label>
           <div className="flex items-center gap-2">
             {!scheduledAt ? (
               <button

@@ -44,13 +44,7 @@ describe("HomePage section alignment", () => {
     expect(match![1]).toBe("left");
   });
 
-  it("declares the Latest Discussions heading with center alignment", () => {
-    // The forum cards are centered; a left-aligned heading would float off
-    // to the side of the column. Lock the pairing in.
-    const match = HOMEPAGE.match(
-      /<SectionHeader\s+align="(\w+)"[^>]*>\s*\{t\("home\.latestDiscussions"\)\}/,
-    );
-    expect(match, "Latest Discussions SectionHeader not found").not.toBeNull();
-    expect(match![1]).toBe("center");
+  it("does not expose the archived discussion section", () => {
+    expect(HOMEPAGE).not.toContain('t("home.latestDiscussions")');
   });
 });

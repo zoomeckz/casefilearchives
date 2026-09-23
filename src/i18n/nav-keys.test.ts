@@ -1,12 +1,5 @@
 import { describe, it, expect } from "vitest";
 import en from "./locales/en.json";
-import bg from "./locales/bg.json";
-import es from "./locales/es.json";
-import hi from "./locales/hi.json";
-import ar from "./locales/ar.json";
-import ja from "./locales/ja.json";
-import ko from "./locales/ko.json";
-import zh from "./locales/zh.json";
 import {
   NAV_GROUPS,
   COMMUNITY_GROUP_KEY,
@@ -20,7 +13,7 @@ import {
  *   - Every key registered in `NAV_GROUPS` must exist in `en.json`.
  *   - Key naming must follow the flat camelCase convention.
  */
-const LOCALES = { bg, es, hi, ar, ja, ko, zh } as const;
+const LOCALES = {} as const;
 const CAMEL_CASE = /^[a-z][a-zA-Z0-9]*$/;
 
 describe("i18n nav keys", () => {
@@ -51,7 +44,6 @@ describe("i18n nav keys", () => {
   it("every key registered in NAV_GROUPS / chrome resolves to a real English entry", () => {
     const referenced: NavI18nKey[] = [
       ...NAV_GROUPS.primary.map((e) => e.i18nKey),
-      ...NAV_GROUPS.community.map((e) => e.i18nKey),
       ...NAV_GROUPS.authed.map((e) => e.i18nKey),
       ...NAV_GROUPS.admin.map((e) => e.i18nKey),
       COMMUNITY_GROUP_KEY,

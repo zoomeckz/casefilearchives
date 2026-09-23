@@ -12,18 +12,12 @@ import { AuthModal } from "@/components/AuthModal";
 import { HomePage } from "@/pages/HomePage";
 import { StoriesPage } from "@/pages/StoriesPage";
 import { ReaderPage } from "@/pages/ReaderPage";
-import { CharactersPage } from "@/pages/CharactersPage";
-import { ForumPage } from "@/pages/ForumPage";
 import { ProfilePage } from "@/pages/ProfilePage";
 import { AdminPanel } from "@/pages/AdminPanel";
 import { RewardsPage } from "@/pages/RewardsPage";
 import { PublicProfilePage } from "@/pages/PublicProfilePage";
 import { AboutPage } from "@/pages/AboutPage";
-import { MangaPage } from "@/pages/MangaPage";
-import { LeaderboardPage } from "@/pages/LeaderboardPage";
-import { WorldMapPage } from "@/pages/WorldMapPage";
 import { usePageTracking } from "@/hooks/usePageTracking";
-import { stripLanguagePrefix, withLanguagePrefix, detectLanguageFromPath } from "@/i18n";
 
 const Index = () => {
   const navigate = useNavigate();
@@ -33,36 +27,25 @@ const Index = () => {
 
   // Derive current page from URL
   const currentPage = (() => {
-    const path = stripLanguagePrefix(location.pathname);
+    const path = location.pathname;
     if (path.startsWith("/chapters/")) return "reader";
     if (path === "/chapters") return "chapters";
-    if (path === "/characters") return "characters";
-    if (path.startsWith("/forum")) return "forum";
     if (path === "/rewards") return "rewards";
     if (path.startsWith("/user/")) return "public-profile";
     if (path === "/profile") return "profile";
     if (path === "/admin") return "admin";
     if (path === "/about") return "about";
-    if (path === "/manga") return "manga";
-    if (path === "/leaderboard") return "leaderboard";
-    if (path === "/world") return "world";
     return "home";
   })();
 
   const setCurrentPage = (page: string) => {
-    const lang = detectLanguageFromPath(location.pathname);
-    const go = (path: string) => navigate(withLanguagePrefix(path, lang));
+    const go = (path: string) => navigate(path);
     if (page === "home") go("/");
     else if (page === "chapters") go("/chapters");
-    else if (page === "characters") go("/characters");
-    else if (page === "forum") go("/forum");
     else if (page === "rewards") go("/rewards");
     else if (page === "profile") go("/profile");
     else if (page === "admin") go("/admin");
     else if (page === "about") go("/about");
-    else if (page === "manga") go("/manga");
-    else if (page === "leaderboard") go("/leaderboard");
-    else if (page === "world") go("/world");
     else if (page === "reader" && selectedChapter) {
       go(`/chapters/${selectedChapter.chapterNumber}`);
     }
@@ -75,12 +58,12 @@ const Index = () => {
   const { chapters, publishedChapters, incrementViews } = useChapters(user?.isAdmin);
 
   // Reading progress
-  const { isRead, markAsRead, markAsUnread, readCount, readChapterIds } = useReadingProgress(user);
+  const { isRead, markAsRead, markAsUnread, readCount } = useReadingProgress(user);
 
   // Bookmarks
   const { isBookmarked, toggleBookmark, bookmarkCount } = useBookmarks(user);
 
-  // Glossary — load from DB only so legacy local data cannot overwrite newer backend content
+  // Glossary remains available to the private admin tools only.
   const [glossary, setGlossary] = useState<Record<string, GlossaryEntry>>({});
   const [glossaryLoading, setGlossaryLoading] = useState(true);
 
@@ -114,24 +97,15 @@ const Index = () => {
   }, []);
 
   useEffect(() => {
-    fetchGlossary();
-  }, [fetchGlossary]);
-
-  // Whenever the user lands on the Codex/Characters page, drop any cached
-  // legacy glossary state and pull fresh entries from the backend so newly
-  // added terms, aliases, or first_chapter gating show up immediately.
-  useEffect(() => {
-    if (currentPage !== "characters") return;
-    setGlossary({});
-    fetchGlossary();
-  }, [currentPage, fetchGlossary]);
+    if (user?.isAdmin) fetchGlossary();
+  }, [fetchGlossary, user?.isAdmin]);
 
   // Page tracking
   usePageTracking(user, currentPage, selectedChapter);
 
   // Resolve chapter from URL param
   useEffect(() => {
-    const match = stripLanguagePrefix(location.pathname).match(/^\/chapters\/(\d+)$/);
+    const match = location.pathname.match(/^\/chapters\/(\d+)$/);
     if (match && chapters.length > 0) {
       const num = parseInt(match[1]);
       const ch = chapters.find(c => c.chapterNumber === num);
@@ -141,8 +115,7 @@ const Index = () => {
 
   const handleSelectChapter = (chapter: Chapter) => {
     setSelectedChapter(chapter);
-    const lang = detectLanguageFromPath(location.pathname);
-    navigate(withLanguagePrefix(`/chapters/${chapter.chapterNumber}`, lang));
+    navigate(`/chapters/${chapter.chapterNumber}`);
   };
 
   const handleSignOut = async () => {
@@ -184,16 +157,6 @@ const Index = () => {
           />
         )}
 
-        {currentPage === "characters" && (
-          <CharactersPage
-            glossary={glossary}
-            glossaryLoading={glossaryLoading}
-            chapters={publishedChapters}
-            readChapterIds={readChapterIds}
-            isLoggedIn={!!user}
-          />
-        )}
-
         {currentPage === "reader" && (
           <ReaderPage
             chapter={selectedChapter}
@@ -207,13 +170,6 @@ const Index = () => {
             incrementViews={incrementViews}
             isBookmarked={isBookmarked}
             toggleBookmark={toggleBookmark}
-          />
-        )}
-
-        {currentPage === "forum" && (
-          <ForumPage
-            user={user}
-            setShowAuthModal={setShowAuthModal}
           />
         )}
 
@@ -238,16 +194,6 @@ const Index = () => {
 
         {currentPage === "about" && <AboutPage />}
 
-        {currentPage === "manga" && (
-          <MangaPage user={user} setCurrentPage={setCurrentPage} />
-        )}
-
-        {currentPage === "leaderboard" && <LeaderboardPage />}
-
-
-        {currentPage === "world" && (
-          <WorldMapPage glossary={glossary} />
-        )}
       </main>
 
       {currentPage !== "admin" && <Footer setCurrentPage={setCurrentPage} />}

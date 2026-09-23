@@ -72,7 +72,7 @@ const FlagFrame: React.FC<{
 };
 
 /** Each renderer below paints a 24×16 area; the frame handles the rounding. */
-const RENDERERS: Record<SupportedLanguage, () => React.ReactNode> = {
+const RENDERERS: Partial<Record<string, () => React.ReactNode>> = {
   // Union Jack (stylised — diagonals + cross) for English.
   en: () => (
     <>
