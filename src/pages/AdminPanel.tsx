@@ -1027,6 +1027,53 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ glossary, authToken, use
               </div>
             )}
 
+            {activeTab === "legacy" && (
+              <div>
+                <h1 className="font-display text-2xl md:text-3xl text-accent mb-2">Legacy Archive</h1>
+                <p className="text-sm text-muted-foreground mb-6">Everything from the old Sedorium world, kept hidden from readers. Numbers here only count activity from before the reset.</p>
+                {legacyStats && (
+                  <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-6 auto-rows-fr gap-3 mb-8">
+                    <StatCard label="Chapter Views" value={legacyStats.views} />
+                    <StatCard label="Registered Readers" value={legacyStats.readers} />
+                    <StatCard label="Email Subscribers" value={legacyStats.subscribers} />
+                    <StatCard label="Comments" value={legacyStats.comments} />
+                    <StatCard label="Forum Posts" value={legacyStats.forumPosts} />
+                    <StatCard label="Glossary Terms" value={Object.keys(glossary).length} />
+                  </div>
+                )}
+                <div className="relative mb-4 sm:w-72">
+                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                  <Input placeholder="Search legacy chapters..." value={chapterSearch} onChange={(e) => setChapterSearch(e.target.value)} className="pl-9 h-9 text-sm" />
+                </div>
+                <h2 className="font-display text-xl text-accent mb-3">Legacy Chapters ({archivedChapters.length})</h2>
+                {archivedChapters.length === 0 ? (
+                  <p className="text-muted-foreground text-sm">No legacy chapters match.</p>
+                ) : (
+                  <ChapterTable
+                    chapters={archivedChapters}
+                    translationCounts={translationCounts}
+                    totalLanguages={totalTranslationLanguages}
+                    chapterSort={chapterSort}
+                    onSortChange={setChapterSort}
+                    selectedIds={selectedChapters}
+                    onToggleSelect={toggleChapterSelection}
+                    onSelectAll={(ids, all) => {
+                      setSelectedChapters((prev) => {
+                        const next = new Set(prev);
+                        if (all) ids.forEach((id) => next.add(id));
+                        else ids.forEach((id) => next.delete(id));
+                        return next;
+                      });
+                    }}
+                    onEdit={(id) => updateAdminRoute({ tab: 'chapters', view: 'edit', chapter: id, draft: null, term: null, sentence: null })}
+                    onDelete={handleDeleteChapter}
+                    onDownload={(num, title) => downloadSingleChapter(num, title)}
+                    onTranslate={openChapterForTranslation}
+                  />
+                )}
+              </div>
+            )}
+
             {activeTab === "search" && (
               <ContentSearch
                 authToken={authToken}
