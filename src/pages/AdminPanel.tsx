@@ -894,42 +894,6 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ glossary, authToken, use
                         />
                       </>
                     )}
-                    <div className="mt-6 border-t border-border/60 pt-4">
-                      <button
-                        type="button"
-                        onClick={() => setLegacyExpanded((open) => !open)}
-                        className="flex w-full items-center justify-between rounded-md px-3 py-2 text-left text-sm text-muted-foreground hover:bg-card/60 hover:text-foreground"
-                        aria-expanded={legacyExpanded}
-                      >
-                        <span>Legacy Chapters ({archivedChapters.length})</span>
-                        <ChevronDown className={`h-4 w-4 transition-transform ${legacyExpanded ? 'rotate-180' : ''}`} />
-                      </button>
-                      {legacyExpanded && archivedChapters.length > 0 && (
-                        <div className="mt-3">
-                          <ChapterTable
-                            chapters={archivedChapters}
-                            translationCounts={translationCounts}
-                            totalLanguages={totalTranslationLanguages}
-                            chapterSort={chapterSort}
-                            onSortChange={setChapterSort}
-                            selectedIds={selectedChapters}
-                            onToggleSelect={toggleChapterSelection}
-                            onSelectAll={(ids, all) => {
-                              setSelectedChapters((prev) => {
-                                const next = new Set(prev);
-                                if (all) ids.forEach((id) => next.add(id));
-                                else ids.forEach((id) => next.delete(id));
-                                return next;
-                              });
-                            }}
-                            onEdit={(id) => updateAdminRoute({ tab: 'chapters', view: 'edit', chapter: id, draft: null, term: null, sentence: null })}
-                            onDelete={handleDeleteChapter}
-                            onDownload={(num, title) => downloadSingleChapter(num, title)}
-                            onTranslate={openChapterForTranslation}
-                          />
-                        </div>
-                      )}
-                    </div>
                   </>
                 )}
 
