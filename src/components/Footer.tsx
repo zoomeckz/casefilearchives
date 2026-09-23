@@ -82,7 +82,7 @@ export const Footer: React.FC<FooterProps> = ({ setCurrentPage }) => {
           {/* Subscribe form */}
           <form
             onSubmit={handleSubscribe}
-            className="w-full max-w-md flex gap-2 mb-3"
+            className="w-full max-w-md mx-auto flex flex-col items-center gap-3 mb-3"
           >
             <input
               type="email"
@@ -90,13 +90,13 @@ export const Footer: React.FC<FooterProps> = ({ setCurrentPage }) => {
               placeholder="your@email.com"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
-              className="flex-1 px-3 py-2 bg-stone-900 border border-border rounded-md text-sm text-foreground placeholder:text-muted-foreground/60 focus:outline-none focus:border-primary/50"
+              className="w-full px-3 py-2 text-center bg-stone-900 border border-border rounded-md text-sm text-foreground placeholder:text-muted-foreground/60 focus:outline-none focus:border-primary/50"
               aria-label="Email address for new chapter notifications"
             />
             <button
               type="submit"
               disabled={submitting}
-              className="px-4 py-2 bg-primary/15 hover:bg-primary/25 text-primary border border-primary/30 rounded-md text-sm transition-colors disabled:opacity-50"
+              className="px-6 py-2 bg-primary/15 hover:bg-primary/25 text-primary border border-primary/30 rounded-md text-sm transition-colors disabled:opacity-50"
             >
               {submitting ? "…" : "Subscribe"}
             </button>
