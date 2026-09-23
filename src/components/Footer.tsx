@@ -34,7 +34,7 @@ export const Footer: React.FC<FooterProps> = ({ setCurrentPage }) => {
       } catch {}
 
       if (token === key) {
-        toast.info("Create an account to receive new chapter alerts at this address.");
+        toast.info("Create an account to receive story alerts at this address.");
         setShowAuthHint(true);
         setEmail("");
         return;
@@ -51,7 +51,7 @@ export const Footer: React.FC<FooterProps> = ({ setCurrentPage }) => {
         body: JSON.stringify({ email: trimmed, new_chapters: true }),
       });
       if (!res.ok) throw new Error("subscribe failed");
-      toast.success("You're subscribed — new chapter every 3 days.");
+      toast.success("You're subscribed to story alerts.");
       setEmail("");
     } catch {
       toast.error("Couldn't subscribe right now. Try again in a moment.");

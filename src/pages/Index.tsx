@@ -18,7 +18,6 @@ import { RewardsPage } from "@/pages/RewardsPage";
 import { PublicProfilePage } from "@/pages/PublicProfilePage";
 import { AboutPage } from "@/pages/AboutPage";
 import { usePageTracking } from "@/hooks/usePageTracking";
-import { stripLanguagePrefix, withLanguagePrefix, detectLanguageFromPath } from "@/i18n";
 
 const Index = () => {
   const navigate = useNavigate();
@@ -28,7 +27,7 @@ const Index = () => {
 
   // Derive current page from URL
   const currentPage = (() => {
-    const path = stripLanguagePrefix(location.pathname);
+    const path = location.pathname;
     if (path.startsWith("/chapters/")) return "reader";
     if (path === "/chapters") return "chapters";
     if (path === "/rewards") return "rewards";
@@ -40,8 +39,7 @@ const Index = () => {
   })();
 
   const setCurrentPage = (page: string) => {
-    const lang = detectLanguageFromPath(location.pathname);
-    const go = (path: string) => navigate(withLanguagePrefix(path, lang));
+    const go = (path: string) => navigate(path);
     if (page === "home") go("/");
     else if (page === "chapters") go("/chapters");
     else if (page === "rewards") go("/rewards");
@@ -107,7 +105,7 @@ const Index = () => {
 
   // Resolve chapter from URL param
   useEffect(() => {
-    const match = stripLanguagePrefix(location.pathname).match(/^\/chapters\/(\d+)$/);
+    const match = location.pathname.match(/^\/chapters\/(\d+)$/);
     if (match && chapters.length > 0) {
       const num = parseInt(match[1]);
       const ch = chapters.find(c => c.chapterNumber === num);
@@ -117,8 +115,7 @@ const Index = () => {
 
   const handleSelectChapter = (chapter: Chapter) => {
     setSelectedChapter(chapter);
-    const lang = detectLanguageFromPath(location.pathname);
-    navigate(withLanguagePrefix(`/chapters/${chapter.chapterNumber}`, lang));
+    navigate(`/chapters/${chapter.chapterNumber}`);
   };
 
   const handleSignOut = async () => {
