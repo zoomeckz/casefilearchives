@@ -491,7 +491,6 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ glossary, authToken, use
       label: "Content",
       items: [
         { id: "chapters", label: "Chapters", icon: BookOpen },
-        { id: "glossary", label: "Glossary", icon: Sparkles },
         { id: "search", label: "Search & replace", icon: Search },
       ],
     },
@@ -500,6 +499,13 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ glossary, authToken, use
       items: [
         { id: "dashboard", label: "Dashboard", icon: Icons.Dashboard },
         { id: "analytics", label: "Analytics", icon: BarChart3 },
+      ],
+    },
+    {
+      label: "Legacy",
+      items: [
+        { id: "legacy", label: "Old chapters & stats", icon: History },
+        { id: "glossary", label: "Glossary", icon: Sparkles },
       ],
     },
     {
@@ -772,8 +778,7 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ glossary, authToken, use
                   <StatCard label="Registered Readers" value={analytics.totalReaders} />
                   <StatCard label="Email Subscribers" value={analytics.totalSubscribers} />
                   <StatCard label="Comments" value={analytics.totalComments} />
-                  <StatCard label="Forum Posts" value={analytics.totalForumPosts} />
-                  <StatCard label="Glossary Terms" value={Object.keys(glossary).length} />
+                  <StatCard label="Stories" value={analytics.chapterStats.length} />
                 </div>
 
                 <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 mb-4">
