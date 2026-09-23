@@ -44,6 +44,9 @@ interface AnalyticsData {
 
 type ChapterSortKey = 'number-asc' | 'number-desc' | 'views-desc' | 'views-asc' | 'newest' | 'oldest';
 
+// Moment the old connected-world content was archived; activity before this counts as legacy.
+const LEGACY_CUTOFF = '2026-09-23T13:49:55Z';
+
 export const AdminPanel: React.FC<AdminPanelProps> = ({ glossary, authToken, userId, onGlossaryChange }) => {
   const [searchParams, setSearchParams] = useSearchParams();
   const [activeTab, setActiveTab] = useState("dashboard");
@@ -66,7 +69,7 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ glossary, authToken, use
   const [chapterSubTab, setChapterSubTab] = useState<'published' | 'drafts'>('published');
   const [drafts, setDrafts] = useState<ChapterDraft[]>([]);
   const [chapters, setChapters] = useState<any[]>([]);
-  const [legacyExpanded, setLegacyExpanded] = useState(false);
+  const [legacyStats, setLegacyStats] = useState<{ views: number; readers: number; comments: number; subscribers: number; forumPosts: number; chapterStats: any[] } | null>(null);
   const [glossaryEntries, setGlossaryEntries] = useState<any[]>([]);
   // Per-chapter translations modal — open when admin clicks "Translate" on a row.
   const [translatingChapter, setTranslatingChapter] = useState<{
