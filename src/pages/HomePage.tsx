@@ -40,14 +40,12 @@ export const HomePage: React.FC<HomePageProps> = ({
             {t("hero.tagline")}
           </p>
           <div className="mt-8 flex flex-wrap items-center justify-center gap-3">
-            {chapters[0] && (
-              <button
-                onClick={() => setSelectedChapter(chapters[0])}
-                className="px-7 py-3 bg-primary hover:bg-primary/90 text-primary-foreground rounded-lg font-medium transition-colors shadow-lg"
-              >
-                {t("hero.startReading")} →
-              </button>
-            )}
+            <button
+              onClick={() => chapters[0] ? setSelectedChapter(chapters[0]) : setCurrentPage("chapters")}
+              className="px-7 py-3 bg-primary hover:bg-primary/90 text-primary-foreground rounded-lg font-medium transition-colors shadow-lg"
+            >
+              {t("hero.startReading")} →
+            </button>
           </div>
         </div>
       </section>

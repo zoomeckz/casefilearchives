@@ -57,8 +57,7 @@ export const Navigation: React.FC<NavigationProps> = ({
           {/* Mobile sigil — replaces a naked hamburger with a small brand mark */}
           <button
             onClick={() => setCurrentPage("home")}
-            className="md:hidden font-display text-accent text-xl tracking-[0.2em] leading-none"
-            style={{ fontFamily: "'Cinzel Decorative', serif" }}
+            className="brand-title md:hidden text-accent text-xl tracking-[0.2em] leading-none"
             aria-label="Sedorium home"
           >
             S

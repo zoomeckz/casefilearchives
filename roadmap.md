@@ -9,3 +9,4 @@
 - [ ] Remove all “New Chapter Every Friday” scheduling copy.
 - [ ] Replace the Sedorium wordmark font with a novel/thriller typeface.
 - [ ] Remove translated site variants and keep English only.
+- [ ] Show the homepage subtitle in all caps, remove Browse the Codex, and always show Start Reading.
