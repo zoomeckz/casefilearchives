@@ -7,8 +7,8 @@ const corsHeaders = {
 };
 
 const SITE_URL = "https://www.thefivethrones.com";
-const AUTHOR = "Sam Nowroozi Larki";
-const TITLE_BASE = "Sedorium — The Five Thrones";
+const AUTHOR = "AnyoneButSam";
+const TITLE_BASE = "Sedorium";
 
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") {
@@ -23,7 +23,8 @@ Deno.serve(async (req) => {
     const nowIso = new Date().toISOString();
     const { data: chaptersRaw } = await supabase
       .from("chapters")
-      .select("chapter_number, title, published_at, scheduled_at, updated_at")
+      .select("chapter_number, title, published_at, scheduled_at, updated_at, is_archived")
+      .eq("is_archived", false)
       .lte("published_at", nowIso)
       .order("chapter_number", { ascending: true });
 
@@ -34,27 +35,14 @@ Deno.serve(async (req) => {
     const total = chapters.length;
     const latest = chapters[chapters.length - 1];
 
-    const description = `A free dark fantasy web novel by ${AUTHOR}. Druids, shapeshifters, ancient kingdoms, the Hjord, and the Five Thrones — read all ${total} chapters free online. Updated weekly.`;
-    const title = `${TITLE_BASE} — ${total} Free Chapters Online`;
+    const description = "Random situations put into story form. Read standalone fiction by AnyoneButSam.";
+    const title = "Sedorium — Standalone Stories by AnyoneButSam";
 
     const keywords = [
-      "dark fantasy",
-      "free fantasy book online",
-      "progression fantasy",
-      "grimdark",
-      "web novel",
-      "Sam Nowroozi Larki",
+      "standalone stories",
+      "short fiction",
+      "AnyoneButSam",
       "Sedorium",
-      "Five Thrones",
-      "Hjord",
-      "druids",
-      "shapeshifters",
-      "Releaser",
-      "Hollow One",
-      "Ozar Accord",
-      "Lyra",
-      "epic fantasy",
-      "serial fiction",
       "indie author",
     ];
 
@@ -101,9 +89,6 @@ Deno.serve(async (req) => {
       itemListElement: [
         { "@type": "ListItem", position: 1, name: "Home", item: SITE_URL },
         { "@type": "ListItem", position: 2, name: "Chapters", item: `${SITE_URL}/chapters` },
-        { "@type": "ListItem", position: 3, name: "Characters", item: `${SITE_URL}/characters` },
-        { "@type": "ListItem", position: 4, name: "World Map", item: `${SITE_URL}/world-map` },
-        { "@type": "ListItem", position: 5, name: "Forum", item: `${SITE_URL}/forum` },
       ],
     };
 

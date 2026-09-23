@@ -302,7 +302,6 @@ export const ChapterEditor: React.FC<ChapterEditorProps> = ({ authToken, userId,
           chapter_number: chapterNumber,
           scheduled_at: normalizedScheduledAt ? swedishToUTC(normalizedScheduledAt) : null,
           cover_image_url: coverImageUrl,
-          is_archived: false,
         };
         const { error } = await dbFetch('chapters', {
           method: 'PATCH',
@@ -319,6 +318,7 @@ export const ChapterEditor: React.FC<ChapterEditorProps> = ({ authToken, userId,
           chapter_number: chapterNumber,
           scheduled_at: normalizedScheduledAt ? swedishToUTC(normalizedScheduledAt) : null,
           cover_image_url: coverImageUrl,
+          is_archived: false,
         };
         const { error } = await dbFetch('chapters', {
           method: 'POST',

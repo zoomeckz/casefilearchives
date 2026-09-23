@@ -20,16 +20,7 @@ const SITE_URL = "https://www.thefivethrones.com";
  * pointing at every other language plus an `x-default`), which is the
  * canonical way to tell search engines about translated content.
  */
-const SUPPORTED_LANGUAGES = [
-  "en",
-  "bg",
-  "es",
-  "hi",
-  "ar",
-  "ja",
-  "ko",
-  "zh",
-] as const;
+const SUPPORTED_LANGUAGES = ["en"] as const;
 type Lang = (typeof SUPPORTED_LANGUAGES)[number];
 const DEFAULT_LANG: Lang = SUPPORTED_LANGUAGES[0];
 const langPath = (path: string, lang: Lang) =>
@@ -53,7 +44,8 @@ Deno.serve(async (req) => {
     const nowIso = new Date().toISOString();
     const { data: chapters } = await supabase
       .from("chapters")
-      .select("chapter_number, updated_at, published_at, scheduled_at")
+      .select("chapter_number, updated_at, published_at, scheduled_at, is_archived")
+      .eq("is_archived", false)
       .lte("published_at", nowIso)
       .order("chapter_number", { ascending: true });
 
@@ -68,14 +60,6 @@ Deno.serve(async (req) => {
       { path: "/", priority: "1.0", changefreq: "weekly" },
       { path: "/chapters", priority: "0.9", changefreq: "weekly" },
       { path: "/about", priority: "0.7", changefreq: "monthly" },
-      { path: "/characters", priority: "0.8", changefreq: "weekly" },
-      { path: "/world-map", priority: "0.7", changefreq: "monthly" },
-      { path: "/manga", priority: "0.7", changefreq: "weekly" },
-      { path: "/forum", priority: "0.7", changefreq: "daily" },
-      { path: "/theories", priority: "0.7", changefreq: "weekly" },
-      { path: "/gallery", priority: "0.6", changefreq: "weekly" },
-      { path: "/leaderboard", priority: "0.5", changefreq: "daily" },
-      { path: "/rewards", priority: "0.5", changefreq: "monthly" },
     ];
 
     const buildAlternates = (path: string) => {
