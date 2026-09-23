@@ -44,6 +44,9 @@ interface AnalyticsData {
 
 type ChapterSortKey = 'number-asc' | 'number-desc' | 'views-desc' | 'views-asc' | 'newest' | 'oldest';
 
+// Moment the old connected-world content was archived; activity before this counts as legacy.
+const LEGACY_CUTOFF = '2026-09-23T13:49:55Z';
+
 export const AdminPanel: React.FC<AdminPanelProps> = ({ glossary, authToken, userId, onGlossaryChange }) => {
   const [searchParams, setSearchParams] = useSearchParams();
   const [activeTab, setActiveTab] = useState("dashboard");
@@ -66,7 +69,7 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ glossary, authToken, use
   const [chapterSubTab, setChapterSubTab] = useState<'published' | 'drafts'>('published');
   const [drafts, setDrafts] = useState<ChapterDraft[]>([]);
   const [chapters, setChapters] = useState<any[]>([]);
-  const [legacyExpanded, setLegacyExpanded] = useState(false);
+  const [legacyStats, setLegacyStats] = useState<{ views: number; readers: number; comments: number; subscribers: number; forumPosts: number; chapterStats: any[] } | null>(null);
   const [glossaryEntries, setGlossaryEntries] = useState<any[]>([]);
   // Per-chapter translations modal — open when admin clicks "Translate" on a row.
   const [translatingChapter, setTranslatingChapter] = useState<{
@@ -296,18 +299,33 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ glossary, authToken, use
   useEffect(() => {
     const fetchAnalytics = async () => {
       try {
-        const [chaptersRes, readersRes, commentsRes, forumRes, subscribersRes, pageViewsRes] = await Promise.all([
+        const after = `created_at=gte.${LEGACY_CUTOFF}`;
+        const before = `created_at=lt.${LEGACY_CUTOFF}`;
+        const [chaptersRes, readersRes, commentsRes, forumRes, subscribersRes, pageViewsRes, oldReadersRes, oldCommentsRes, oldSubsRes] = await Promise.all([
           dbFetch<any[]>('chapters', { select: 'id,title,views,chapter_number,published_at,scheduled_at,is_archived', order: 'chapter_number.asc', token: authToken }),
-          dbFetch<any[]>('profiles', { select: '*', head: true, token: authToken }),
-          dbFetch<any[]>('comments', { select: '*', head: true, token: authToken }),
+          dbFetch<any[]>('profiles', { select: '*', head: true, filters: after, token: authToken }),
+          dbFetch<any[]>('comments', { select: '*', head: true, filters: after, token: authToken }),
           dbFetch<any[]>('forum_posts', { select: '*', head: true, token: authToken }),
-          dbFetch<any[]>('email_subscriptions', { select: '*', head: true, filters: 'new_chapters=eq.true', token: authToken }),
-          dbFetch<any[]>('page_views', { select: 'page,duration_seconds', token: authToken }),
+          dbFetch<any[]>('email_subscriptions', { select: '*', head: true, filters: `new_chapters=eq.true&${after}`, token: authToken }),
+          dbFetch<any[]>('page_views', { select: 'page,duration_seconds', filters: after, token: authToken }),
+          dbFetch<any[]>('profiles', { select: '*', head: true, filters: before, token: authToken }),
+          dbFetch<any[]>('comments', { select: '*', head: true, filters: before, token: authToken }),
+          dbFetch<any[]>('email_subscriptions', { select: '*', head: true, filters: `new_chapters=eq.true&${before}`, token: authToken }),
         ]);
 
         const chapterData = chaptersRes.data || [];
         setChapters(chapterData);
-        const totalViews = chapterData.reduce((sum: number, c: any) => sum + c.views, 0);
+        const newChapters = chapterData.filter((c: any) => !c.is_archived);
+        const oldChapters = chapterData.filter((c: any) => c.is_archived);
+        const totalViews = newChapters.reduce((sum: number, c: any) => sum + c.views, 0);
+        setLegacyStats({
+          views: oldChapters.reduce((sum: number, c: any) => sum + c.views, 0),
+          readers: oldReadersRes.count || 0,
+          comments: oldCommentsRes.count || 0,
+          subscribers: oldSubsRes.count || 0,
+          forumPosts: forumRes.count || 0,
+          chapterStats: oldChapters,
+        });
 
         const pageViews = pageViewsRes.data || [];
         const pageMap = new Map<string, { count: number; totalDuration: number }>();
@@ -328,10 +346,10 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ glossary, authToken, use
           totalViews,
           totalReaders: readersRes.count || 0,
           totalComments: commentsRes.count || 0,
-          totalForumPosts: forumRes.count || 0,
+          totalForumPosts: 0,
           totalSubscribers: subscribersRes.count || 0,
           recentPageViews,
-          chapterStats: chapterData,
+          chapterStats: newChapters,
         });
       } catch (err) {
         console.error('Failed to fetch analytics:', err);
@@ -473,7 +491,6 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ glossary, authToken, use
       label: "Content",
       items: [
         { id: "chapters", label: "Chapters", icon: BookOpen },
-        { id: "glossary", label: "Glossary", icon: Sparkles },
         { id: "search", label: "Search & replace", icon: Search },
       ],
     },
@@ -482,6 +499,13 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ glossary, authToken, use
       items: [
         { id: "dashboard", label: "Dashboard", icon: Icons.Dashboard },
         { id: "analytics", label: "Analytics", icon: BarChart3 },
+      ],
+    },
+    {
+      label: "Legacy",
+      items: [
+        { id: "legacy", label: "Old chapters & stats", icon: History },
+        { id: "glossary", label: "Glossary", icon: Sparkles },
       ],
     },
     {
@@ -754,8 +778,7 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ glossary, authToken, use
                   <StatCard label="Registered Readers" value={analytics.totalReaders} />
                   <StatCard label="Email Subscribers" value={analytics.totalSubscribers} />
                   <StatCard label="Comments" value={analytics.totalComments} />
-                  <StatCard label="Forum Posts" value={analytics.totalForumPosts} />
-                  <StatCard label="Glossary Terms" value={Object.keys(glossary).length} />
+                  <StatCard label="Stories" value={analytics.chapterStats.length} />
                 </div>
 
                 <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 mb-4">
@@ -876,42 +899,6 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ glossary, authToken, use
                         />
                       </>
                     )}
-                    <div className="mt-6 border-t border-border/60 pt-4">
-                      <button
-                        type="button"
-                        onClick={() => setLegacyExpanded((open) => !open)}
-                        className="flex w-full items-center justify-between rounded-md px-3 py-2 text-left text-sm text-muted-foreground hover:bg-card/60 hover:text-foreground"
-                        aria-expanded={legacyExpanded}
-                      >
-                        <span>Legacy Chapters ({archivedChapters.length})</span>
-                        <ChevronDown className={`h-4 w-4 transition-transform ${legacyExpanded ? 'rotate-180' : ''}`} />
-                      </button>
-                      {legacyExpanded && archivedChapters.length > 0 && (
-                        <div className="mt-3">
-                          <ChapterTable
-                            chapters={archivedChapters}
-                            translationCounts={translationCounts}
-                            totalLanguages={totalTranslationLanguages}
-                            chapterSort={chapterSort}
-                            onSortChange={setChapterSort}
-                            selectedIds={selectedChapters}
-                            onToggleSelect={toggleChapterSelection}
-                            onSelectAll={(ids, all) => {
-                              setSelectedChapters((prev) => {
-                                const next = new Set(prev);
-                                if (all) ids.forEach((id) => next.add(id));
-                                else ids.forEach((id) => next.delete(id));
-                                return next;
-                              });
-                            }}
-                            onEdit={(id) => updateAdminRoute({ tab: 'chapters', view: 'edit', chapter: id, draft: null, term: null, sentence: null })}
-                            onDelete={handleDeleteChapter}
-                            onDownload={(num, title) => downloadSingleChapter(num, title)}
-                            onTranslate={openChapterForTranslation}
-                          />
-                        </div>
-                      )}
-                    </div>
                   </>
                 )}
 
@@ -1005,6 +992,53 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ glossary, authToken, use
                       </div>
                     )}
                   </>
+                )}
+              </div>
+            )}
+
+            {activeTab === "legacy" && (
+              <div>
+                <h1 className="font-display text-2xl md:text-3xl text-accent mb-2">Legacy Archive</h1>
+                <p className="text-sm text-muted-foreground mb-6">Everything from the old Sedorium world, kept hidden from readers. Numbers here only count activity from before the reset.</p>
+                {legacyStats && (
+                  <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-6 auto-rows-fr gap-3 mb-8">
+                    <StatCard label="Chapter Views" value={legacyStats.views} />
+                    <StatCard label="Registered Readers" value={legacyStats.readers} />
+                    <StatCard label="Email Subscribers" value={legacyStats.subscribers} />
+                    <StatCard label="Comments" value={legacyStats.comments} />
+                    <StatCard label="Forum Posts" value={legacyStats.forumPosts} />
+                    <StatCard label="Glossary Terms" value={Object.keys(glossary).length} />
+                  </div>
+                )}
+                <div className="relative mb-4 sm:w-72">
+                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                  <Input placeholder="Search legacy chapters..." value={chapterSearch} onChange={(e) => setChapterSearch(e.target.value)} className="pl-9 h-9 text-sm" />
+                </div>
+                <h2 className="font-display text-xl text-accent mb-3">Legacy Chapters ({archivedChapters.length})</h2>
+                {archivedChapters.length === 0 ? (
+                  <p className="text-muted-foreground text-sm">No legacy chapters match.</p>
+                ) : (
+                  <ChapterTable
+                    chapters={archivedChapters}
+                    translationCounts={translationCounts}
+                    totalLanguages={totalTranslationLanguages}
+                    chapterSort={chapterSort}
+                    onSortChange={setChapterSort}
+                    selectedIds={selectedChapters}
+                    onToggleSelect={toggleChapterSelection}
+                    onSelectAll={(ids, all) => {
+                      setSelectedChapters((prev) => {
+                        const next = new Set(prev);
+                        if (all) ids.forEach((id) => next.add(id));
+                        else ids.forEach((id) => next.delete(id));
+                        return next;
+                      });
+                    }}
+                    onEdit={(id) => updateAdminRoute({ tab: 'chapters', view: 'edit', chapter: id, draft: null, term: null, sentence: null })}
+                    onDelete={handleDeleteChapter}
+                    onDownload={(num, title) => downloadSingleChapter(num, title)}
+                    onTranslate={openChapterForTranslation}
+                  />
                 )}
               </div>
             )}
