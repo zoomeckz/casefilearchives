@@ -1,4 +1,4 @@
-import React, { useState, useMemo, useEffect } from "react";
+import React, { useState, useMemo } from "react";
 import { useTranslation } from "react-i18next";
 import { Icons } from "@/lib/icons";
 import { Chapter } from "@/hooks/useChapters";
@@ -6,13 +6,6 @@ import { AuthUser } from "@/hooks/useAuth";
 import { ReadingProgressBadge } from "@/components/ReadingProgressBadge";
 import { ReadingStats } from "@/components/ReadingStats";
 import { BookmarkButton } from "@/components/BookmarkButton";
-import { dbFetch } from "@/lib/dbFetch";
-import { FlagIcon } from "@/components/FlagIcon";
-import {
-  LANGUAGE_LABELS,
-  SUPPORTED_LANGUAGES,
-  type SupportedLanguage,
-} from "@/i18n";
 
 type SortOption = "newest" | "oldest" | "most-viewed" | "most-read";
 
@@ -43,35 +36,6 @@ export const StoriesPage: React.FC<StoriesPageProps> = ({
 }) => {
   const { t } = useTranslation();
   const [sort, setSort] = useState<SortOption>("newest");
-  // Map of chapter_id → list of non-English language codes that have a
-  // translation row. English is always available (canonical) so we don't
-  // render a flag for it — only show flags for *additional* languages.
-  const [translationsByChapter, setTranslationsByChapter] = useState<
-    Record<string, SupportedLanguage[]>
-  >({});
-
-  useEffect(() => {
-    let cancelled = false;
-    (async () => {
-      const { data } = await dbFetch<
-        { chapter_id: string; language_code: string }[]
-      >("chapter_translations", {
-        select: "chapter_id,language_code",
-      });
-      if (cancelled || !Array.isArray(data)) return;
-      const map: Record<string, SupportedLanguage[]> = {};
-      for (const row of data) {
-        if (!(SUPPORTED_LANGUAGES as readonly string[]).includes(row.language_code)) continue;
-        const lang = row.language_code as SupportedLanguage;
-        if (lang === "en") continue;
-        (map[row.chapter_id] ||= []).push(lang);
-      }
-      setTranslationsByChapter(map);
-    })();
-    return () => {
-      cancelled = true;
-    };
-  }, []);
 
   const sortOptions: { value: SortOption; label: string }[] = [
     { value: "newest", label: t("chapters.sortNewest") },
@@ -157,18 +121,6 @@ export const StoriesPage: React.FC<StoriesPageProps> = ({
                     {t("chapters.chapterLabel")} {chapter.chapterNumber} ·{" "}
                     {new Date(chapter.publishedAt).toLocaleDateString()}
                   </span>
-                  {(translationsByChapter[chapter.id] || []).length > 0 && (
-                    <span className="inline-flex items-center gap-1" aria-label="Available translations">
-                      {translationsByChapter[chapter.id].map((lang) => (
-                        <FlagIcon
-                          key={lang}
-                          lang={lang}
-                          size={16}
-                          title={LANGUAGE_LABELS[lang]}
-                        />
-                      ))}
-                    </span>
-                  )}
                   {user && chapterIsRead && (
                     <ReadingProgressBadge
                       isRead={chapterIsRead}
