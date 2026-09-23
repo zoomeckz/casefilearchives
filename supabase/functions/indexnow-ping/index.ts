@@ -70,27 +70,13 @@ Deno.serve(async (req) => {
     const urls: string[] = [];
 
     if (typeof body.chapter_number === "number") {
-      urls.push(`${SITE_URL}/chapters/${body.chapter_number}`);
       urls.push(`${SITE_URL}/chapters`);
       urls.push(`${SITE_URL}/`);
     } else {
-      const nowIso = new Date().toISOString();
-      const { data: chapters } = await supabase
-        .from("chapters")
-        .select("chapter_number, scheduled_at")
-        .lte("published_at", nowIso)
-        .order("chapter_number", { ascending: true });
-
-      const published = (chapters ?? []).filter(
-        (c) => !c.scheduled_at || new Date(c.scheduled_at) <= new Date()
-      );
-
       urls.push(
         `${SITE_URL}/`,
         `${SITE_URL}/chapters`,
-        `${SITE_URL}/characters`,
-        `${SITE_URL}/forum`,
-        ...published.map((c) => `${SITE_URL}/chapters/${c.chapter_number}`)
+        `${SITE_URL}/about`
       );
     }
 
