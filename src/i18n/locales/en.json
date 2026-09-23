@@ -18,7 +18,7 @@
     "tagline": "RANDOM SITUATIONS PUT INTO STORY FORM",
     "schedule": "",
     "startReading": "Start Reading",
-    "browseCodex": "Browse the Codex"
+    "browseCodex": ""
   },
   "home": {
     "latestChapters": "Latest Chapters",
@@ -119,8 +119,8 @@
     "weeksAgo": "{{n}}w ago"
   },
   "footer": {
-    "writtenBy": "Written by Sam Nowroozi Larki",
-    "bio": "Indie dark-fantasy author drawing from anime, music, and a quiet obsession with broken thrones. New chapter every Friday.",
+    "writtenBy": "Written by AnyoneButSam",
+    "bio": "",
     "emailPlaceholder": "your@email.com",
     "subscribe": "Subscribe",
     "subscribed": "You're subscribed — see you Friday.",

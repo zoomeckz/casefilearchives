@@ -117,7 +117,7 @@ export async function downloadAllChapters() {
   const separator = "═".repeat(60);
   const lines: string[] = [
     "SEDORIUM",
-    "A Dark Fantasy Series by Sam Nowroozi Larki",
+    "Standalone stories by AnyoneButSam",
     separator,
     `Generated: ${new Date().toLocaleDateString("en-US", { year: "numeric", month: "long", day: "numeric" })}`,
     `Total Chapters: ${allChapters.length}`,
