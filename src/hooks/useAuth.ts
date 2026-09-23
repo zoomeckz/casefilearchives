@@ -117,12 +117,29 @@ export function useAuth() {
 
   // Initialize from localStorage on mount
   useEffect(() => {
+    const adoptOAuthSession = async (): Promise<StoredSession | null> => {
+      // Google sign-in stores its session via the auth client; bridge it into our store.
+      try {
+        const { supabase } = await import('@/integrations/supabase/client');
+        const res = await Promise.race([
+          supabase.auth.getSession(),
+          new Promise<null>((r) => setTimeout(() => r(null), 4000)),
+        ]);
+        const s = (res as any)?.data?.session;
+        if (s?.access_token && s?.user) return storeSession(s);
+      } catch (e) {
+        console.warn('OAuth session bridge failed:', e);
+      }
+      return null;
+    };
+
     const init = async () => {
-      let stored = getStoredSession();
+      let stored = getStoredSession() || (await adoptOAuthSession());
       if (!stored) {
         setLoading(false);
         return;
       }
+
 
       // If expired, try to refresh first
       if (isSessionExpired(stored)) {
