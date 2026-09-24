@@ -490,7 +490,7 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ glossary, authToken, use
     {
       label: "Content",
       items: [
-        { id: "chapters", label: "Chapters", icon: BookOpen },
+        { id: "chapters", label: "Stories", icon: BookOpen },
         { id: "search", label: "Search & replace", icon: Search },
       ],
     },
