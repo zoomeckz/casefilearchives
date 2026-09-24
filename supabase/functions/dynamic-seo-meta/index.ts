@@ -49,21 +49,18 @@ Deno.serve(async (req) => {
     // JSON-LD: Book + WebSite + BreadcrumbList
     const bookSchema = {
       "@context": "https://schema.org",
-      "@type": "Book",
+      "@type": "CreativeWorkSeries",
       name: TITLE_BASE,
       author: { "@type": "Person", name: AUTHOR },
       url: SITE_URL,
       description,
       inLanguage: "en",
-      bookFormat: "https://schema.org/EBook",
-      numberOfPages: total,
       isAccessibleForFree: true,
       datePublished: chapters[0]?.published_at,
       dateModified: latest?.updated_at || latest?.published_at,
       hasPart: chapters.map((ch) => ({
-        "@type": "Chapter",
+        "@type": "ShortStory",
         name: ch.title,
-        position: ch.chapter_number,
         url: `${SITE_URL}/chapters/${ch.chapter_number}`,
         datePublished: ch.published_at,
       })),
@@ -88,7 +85,7 @@ Deno.serve(async (req) => {
       "@type": "BreadcrumbList",
       itemListElement: [
         { "@type": "ListItem", position: 1, name: "Home", item: SITE_URL },
-        { "@type": "ListItem", position: 2, name: "Chapters", item: `${SITE_URL}/chapters` },
+        { "@type": "ListItem", position: 2, name: "Stories", item: `${SITE_URL}/chapters` },
       ],
     };
 

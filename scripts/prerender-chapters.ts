@@ -10,7 +10,7 @@ const BASE_URL = "https://www.thefivethrones.com";
 const SUPABASE_URL = "https://iiezbdlmikvgxjlozwlc.supabase.co";
 const ANON_KEY =
   "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImlpZXpiZGxtaWt2Z3hqbG96d2xjIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzAxNTg5NjcsImV4cCI6MjA4NTczNDk2N30.y344r25H1VH0f2RBvfEt_RHWBWb0yjGAvKqLE5qLFGU";
-const AUTHOR = "Sam Nowroozi Larki";
+const AUTHOR = "AnyoneButSam";
 
 type Chapter = {
   chapter_number: number;
@@ -20,6 +20,7 @@ type Chapter = {
   scheduled_at: string | null;
   updated_at: string | null;
   cover_image_url: string | null;
+  tags: string[] | null;
 };
 
 const esc = (s: string) =>
@@ -45,8 +46,8 @@ const sanitize = (html: string) =>
 
 async function fetchChapters(): Promise<Chapter[]> {
   const url =
-    `${SUPABASE_URL}/rest/v1/chapters?select=chapter_number,title,content,published_at,scheduled_at,updated_at,cover_image_url` +
-    `&order=chapter_number.asc`;
+    `${SUPABASE_URL}/rest/v1/chapters?select=chapter_number,title,content,published_at,scheduled_at,updated_at,cover_image_url,tags` +
+    `&is_archived=eq.false&order=published_at.desc`;
   const res = await fetch(url, { headers: { apikey: ANON_KEY, Authorization: `Bearer ${ANON_KEY}` } });
   if (!res.ok) throw new Error(`chapters fetch failed: ${res.status}`);
   const now = Date.now();
@@ -119,7 +120,7 @@ async function main() {
   const shell = readFileSync(distIndex, "utf8");
   const chapters = await fetchChapters();
   if (!chapters.length) {
-    console.warn("prerender: no published chapters found — skipping");
+    console.warn("prerender: no published stories found — skipping");
     return;
   }
 
@@ -131,36 +132,37 @@ async function main() {
     const body = sanitize(c.content ?? "");
     const plain = stripTags(body);
     const description =
-      (plain.slice(0, 155).trim() || `Chapter ${c.chapter_number} of Sedorium.`) +
+      (plain.slice(0, 155).trim() || `${c.title} — a standalone story by ${AUTHOR}.`) +
       (plain.length > 155 ? "…" : "");
-    const title = `Chapter ${c.chapter_number}: ${c.title} — Sedorium`;
+    const title = `${c.title} — Sedorium`;
 
     const markup = [
       `<article>`,
-      `<h1>Chapter ${c.chapter_number}: ${esc(c.title)}</h1>`,
+      `<h1>${esc(c.title)}</h1>`,
       c.published_at
         ? `<p><time datetime="${esc(c.published_at)}">${esc(c.published_at.slice(0, 10))}</time> · by ${esc(AUTHOR)}</p>`
         : "",
       body,
       `<nav>`,
-      prev ? `<a href="/chapters/${prev.chapter_number}">Previous: Chapter ${prev.chapter_number}</a>` : "",
-      `<a href="/chapters">All chapters</a>`,
-      next ? `<a href="/chapters/${next.chapter_number}">Next: Chapter ${next.chapter_number}</a>` : "",
+      prev ? `<a href="/chapters/${prev.chapter_number}">Newer: ${esc(prev.title)}</a>` : "",
+      `<a href="/chapters">All stories</a>`,
+      next ? `<a href="/chapters/${next.chapter_number}">Older: ${esc(next.title)}</a>` : "",
       `</nav>`,
       `</article>`,
     ].join("\n");
 
     const jsonLd = {
       "@context": "https://schema.org",
-      "@type": "Chapter",
-      position: c.chapter_number,
-      name: `Chapter ${c.chapter_number}: ${c.title}`,
+      "@type": "ShortStory",
+      name: c.title,
+      keywords: (c.tags ?? []).join(", ") || undefined,
+      image: c.cover_image_url ?? undefined,
       headline: c.title,
       url: canonical,
       datePublished: c.published_at,
       dateModified: c.updated_at ?? c.published_at,
       author: { "@type": "Person", name: AUTHOR },
-      isPartOf: { "@type": "Book", name: "Sedorium — The Five Thrones", url: `${BASE_URL}/chapters` },
+      isPartOf: { "@type": "CreativeWorkSeries", name: "Sedorium", url: `${BASE_URL}/chapters` },
       inLanguage: "en",
       wordCount: plain.split(" ").filter(Boolean).length,
     };
@@ -176,29 +178,29 @@ async function main() {
 
   // Crawlable chapter index so no chapter page is an orphan.
   const listMarkup = [
-    `<h1>All Chapters — Sedorium</h1>`,
+    `<h1>All Stories — Sedorium</h1>`,
     `<ul>`,
     ...chapters.map(
       (c) =>
-        `<li><a href="/chapters/${c.chapter_number}">Chapter ${c.chapter_number}: ${esc(c.title)}</a></li>`,
+        `<li><a href="/chapters/${c.chapter_number}">${esc(c.title)}</a></li>`,
     ),
     `</ul>`,
   ].join("\n");
   const listJsonLd = {
     "@context": "https://schema.org",
     "@type": "ItemList",
-    name: "Sedorium chapters",
-    itemListElement: chapters.map((c) => ({
+    name: "Sedorium stories",
+    itemListElement: chapters.map((c, i) => ({
       "@type": "ListItem",
-      position: c.chapter_number,
-      name: `Chapter ${c.chapter_number}: ${c.title}`,
+      position: i + 1,
+      name: c.title,
       url: `${BASE_URL}/chapters/${c.chapter_number}`,
     })),
   };
   const listPage = injectBody(
     renderHead(shell, {
-      title: `All Chapters — Sedorium, a free dark fantasy web novel`,
-      description: `Read all ${chapters.length} chapters of Sedorium free online. Dark fantasy by ${AUTHOR}, new chapter every 3 days.`,
+      title: `Stories — Sedorium, standalone fiction by ${AUTHOR}`,
+      description: `Read ${chapters.length} free standalone stories by ${AUTHOR}. Random situations put into story form.`,
       canonical: `${BASE_URL}/chapters`,
       jsonLd: listJsonLd,
     }),
@@ -207,7 +209,7 @@ async function main() {
   mkdirSync(resolve("dist/chapters"), { recursive: true });
   writeFileSync(resolve("dist/chapters/index.html"), listPage);
 
-  console.log(`prerender: wrote ${chapters.length} chapter pages + chapter index`);
+  console.log(`prerender: wrote ${chapters.length} story pages + story index`);
 }
 
 main().catch((err) => {
