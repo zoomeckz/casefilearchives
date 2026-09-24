@@ -36,6 +36,8 @@ export const StoriesPage: React.FC<StoriesPageProps> = ({
 }) => {
   const { t } = useTranslation();
   const [sort, setSort] = useState<SortOption>("newest");
+  const [activeTag, setActiveTag] = useState<string | null>(null);
+  const allTags = useMemo(() => Array.from(new Set(chapters.flatMap((c) => c.tags))).sort(), [chapters]);
 
   const sortOptions: { value: SortOption; label: string }[] = [
     { value: "newest", label: t("chapters.sortNewest") },
@@ -44,7 +46,7 @@ export const StoriesPage: React.FC<StoriesPageProps> = ({
   ];
 
   const sorted = useMemo(() => {
-    const copy = [...chapters];
+    const copy = activeTag ? chapters.filter((c) => c.tags.includes(activeTag)) : [...chapters];
     switch (sort) {
       case "newest":
         return copy.sort((a, b) => new Date(b.publishedAt).getTime() - new Date(a.publishedAt).getTime());
@@ -55,7 +57,7 @@ export const StoriesPage: React.FC<StoriesPageProps> = ({
       default:
         return copy;
     }
-  }, [chapters, sort]);
+  }, [chapters, sort, activeTag]);
 
   return (
     <div className="min-h-screen py-8 sm:py-12 px-4 sm:px-6">
@@ -85,6 +87,26 @@ export const StoriesPage: React.FC<StoriesPageProps> = ({
           ))}
         </div>
 
+        {allTags.length > 0 && (
+          <div className="flex items-center justify-center gap-2 mb-6 flex-wrap">
+            <button
+              onClick={() => setActiveTag(null)}
+              className={`px-3 py-1 rounded-full text-xs border transition-colors ${!activeTag ? "bg-accent text-accent-foreground border-accent" : "border-border text-muted-foreground hover:text-foreground"}`}
+            >
+              All
+            </button>
+            {allTags.map((tag) => (
+              <button
+                key={tag}
+                onClick={() => setActiveTag(activeTag === tag ? null : tag)}
+                className={`px-3 py-1 rounded-full text-xs border transition-colors ${activeTag === tag ? "bg-accent text-accent-foreground border-accent" : "border-border text-muted-foreground hover:text-foreground"}`}
+              >
+                {tag}
+              </button>
+            ))}
+          </div>
+        )}
+
         <div className="space-y-2">
           {sorted.map((chapter) => {
             const chapterIsRead = isRead(chapter.id);
@@ -100,7 +122,7 @@ export const StoriesPage: React.FC<StoriesPageProps> = ({
                   {chapter.coverImageUrl ? (
                     <img
                       src={chapter.coverImageUrl}
-                      alt={`Chapter ${chapter.chapterNumber} cover`}
+                      alt={`${chapter.title} cover`}
                       className="w-full h-full object-cover"
                       loading="lazy"
                     />
@@ -118,7 +140,7 @@ export const StoriesPage: React.FC<StoriesPageProps> = ({
                 <div className="flex-1 min-w-0">
                 <div className="flex items-center gap-3 mb-2 flex-wrap">
                   <span className="text-muted-foreground text-xs uppercase tracking-wider">
-                    {t("chapters.chapterLabel")} {chapter.chapterNumber} ·{" "}
+                    {chapter.isArchived && <>{t("chapters.chapterLabel")} {chapter.chapterNumber} ·{" "}</>}
                     {new Date(chapter.publishedAt).toLocaleDateString()}
                   </span>
                   {user && chapterIsRead && (
@@ -144,6 +166,19 @@ export const StoriesPage: React.FC<StoriesPageProps> = ({
                 <h3 className="font-display text-xl text-foreground group-hover:text-primary transition-colors">
                   {chapter.title}
                 </h3>
+                {chapter.tags.length > 0 && (
+                  <div className="flex flex-wrap gap-1.5 mt-2">
+                    {chapter.tags.map((tag) => (
+                      <button
+                        key={tag}
+                        onClick={(e) => { e.stopPropagation(); setActiveTag(tag); }}
+                        className="px-2 py-0.5 rounded-full text-[11px] border border-border/60 text-muted-foreground hover:text-foreground"
+                      >
+                        {tag}
+                      </button>
+                    ))}
+                  </div>
+                )}
                 <div className="flex items-center gap-4 mt-2 text-xs text-muted-foreground">
                   <span className="flex items-center gap-1">
                     <Icons.Eye className="w-3 h-3" /> {chapter.views} {t("chapters.views")}

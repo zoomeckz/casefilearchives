@@ -10,5 +10,5 @@
 - [x] Replace the Sedorium wordmark font with a novel/thriller typeface.
 - [x] Remove translated site variants and keep English only.
 - [x] Show the homepage subtitle in all caps, remove Browse the Codex, and always show Start Reading.
-- [ ] Revamp new publishing: stories with tags (no chapters); keep legacy chapter system.
-- [ ] Rename "Latest chapters" to "Latest stories".
+- [x] Revamp new publishing: stories with tags (no chapters); keep legacy chapter system.
+- [x] Rename "Latest chapters" to "Latest stories".
