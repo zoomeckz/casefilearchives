@@ -4,7 +4,7 @@
 - [x] Change the homepage subtitle to “RANDOM SITUATIONS PUT INTO STORY FORM”.
 - [x] Move all existing and scheduled chapters into a collapsed admin archive.
 - [x] Remove legacy content from public crawler and sitemap outputs.
-- [ ] Verify public and admin views, build health, and security. (Case File verification in progress)
+- [x] Verify Case File public/admin source health, focused interface tests, and Edge Function deployment.
 - [x] Remove the footer subtitle and replace the author name with AnyoneButSam.
 - [x] Remove all “New Chapter Every Friday” scheduling copy.
 - [x] Replace the Sedorium wordmark font with a novel/thriller typeface.
