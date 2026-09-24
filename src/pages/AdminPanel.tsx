@@ -57,7 +57,7 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ glossary, authToken, use
 
   // Search & sort
   const [chapterSearch, setChapterSearch] = useState("");
-  const [chapterSort, setChapterSort] = useState<ChapterSortKey>('number-desc');
+  const [chapterSort, setChapterSort] = useState<ChapterSortKey>('newest');
   const [dashboardSearch, setDashboardSearch] = useState("");
 
   // Chapter editor state
@@ -77,6 +77,7 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ glossary, authToken, use
     chapter_number: number;
     title: string;
     content: string;
+    is_archived: boolean;
   } | null>(null);
 
   // Bulk-selection state for the Chapters table.
@@ -139,7 +140,7 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ glossary, authToken, use
   const openChapterForTranslation = useCallback(
     async (id: string) => {
       const { data, error } = await dbFetch<any[]>("chapters", {
-        select: "id,chapter_number,title,content",
+        select: "id,chapter_number,title,content,is_archived",
         filters: `id=eq.${id}`,
         token: authToken,
       });
@@ -152,6 +153,7 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ glossary, authToken, use
         chapter_number: data[0].chapter_number,
         title: data[0].title,
         content: data[0].content || "",
+        is_archived: data[0].is_archived === true,
       });
       return true;
     },
@@ -579,7 +581,7 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ glossary, authToken, use
     let list = [...chapters];
     if (chapterSearch.trim()) {
       const q = chapterSearch.toLowerCase();
-      list = list.filter(ch => ch.title?.toLowerCase().includes(q) || String(ch.chapter_number).includes(q));
+      list = list.filter(ch => ch.title?.toLowerCase().includes(q) || (ch.is_archived && String(ch.chapter_number).includes(q)));
     }
     switch (chapterSort) {
       case 'number-asc': return list.sort((a, b) => a.chapter_number - b.chapter_number);
@@ -599,7 +601,7 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ glossary, authToken, use
     if (!analytics) return [];
     if (!dashboardSearch.trim()) return analytics.chapterStats;
     const q = dashboardSearch.toLowerCase();
-    return analytics.chapterStats.filter(ch => ch.title?.toLowerCase().includes(q) || String(ch.chapter_number).includes(q));
+    return analytics.chapterStats.filter(ch => ch.title?.toLowerCase().includes(q));
   }, [analytics, dashboardSearch]);
 
   // Filtered drafts
@@ -775,7 +777,7 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ glossary, authToken, use
                   onJump={(tab) => updateAdminRoute({ tab, view: null, chapter: null, draft: null, term: null, sentence: null })}
                 />
                 <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-6 auto-rows-fr gap-3 mb-8 md:mb-12">
-                  <StatCard label="Total Chapter Views" value={analytics.totalViews} />
+                   <StatCard label="Total Story Views" value={analytics.totalViews} />
                   <StatCard label="Registered Readers" value={analytics.totalReaders} />
                   <StatCard label="Email Subscribers" value={analytics.totalSubscribers} />
                   <StatCard label="Comments" value={analytics.totalComments} />
@@ -783,12 +785,12 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ glossary, authToken, use
                 </div>
 
                 <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 mb-4">
-                  <h2 className="font-display text-xl text-accent">Chapter Performance</h2>
+                   <h2 className="font-display text-xl text-accent">Story Performance</h2>
                   <div className="flex items-center gap-2 w-full sm:w-auto">
                     <div className="relative flex-1 sm:flex-initial sm:w-48">
                       <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
                       <Input
-                        placeholder="Search chapters..."
+                         placeholder="Search stories..."
                         value={dashboardSearch}
                         onChange={(e) => setDashboardSearch(e.target.value)}
                         className="pl-9 h-9 text-sm"
@@ -806,8 +808,8 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ glossary, authToken, use
                 </div>
                 <div className="space-y-2">
                   {filteredDashboardStats.map(ch => (
-                    <div key={ch.chapter_number} className="flex items-center justify-between p-3 md:p-4 bg-card/50 rounded-lg border border-border/50">
-                      <span className="text-foreground text-sm md:text-base truncate mr-2">Ch. {ch.chapter_number}: {ch.title}</span>
+                     <div key={ch.id} className="flex items-center justify-between p-3 md:p-4 bg-card/50 rounded-lg border border-border/50">
+                       <span className="text-foreground text-sm md:text-base truncate mr-2">{ch.title}</span>
                       <span className="text-muted-foreground text-xs md:text-sm whitespace-nowrap">{ch.views} views</span>
                     </div>
                   ))}
@@ -833,7 +835,7 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ glossary, authToken, use
                   <div className="relative flex-1">
                     <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
                     <Input
-                      placeholder="Search by title or chapter number..."
+                       placeholder="Search stories by title..."
                       value={chapterSearch}
                       onChange={(e) => setChapterSearch(e.target.value)}
                       className="pl-9 h-9 text-sm"
@@ -897,6 +899,7 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ glossary, authToken, use
                         onDelete={handleDeleteChapter}
                         onDownload={(num, title) => downloadSingleChapter(num, title)}
                         onTranslate={openChapterForTranslation}
+                         legacy={false}
                         />
                       </>
                     )}
@@ -918,9 +921,9 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ glossary, authToken, use
                               `Total Drafts: ${drafts.length}`,
                               separator, '', '',
                             ];
-                            for (const d of [...drafts].sort((a, b) => (a.chapterNumber || 0) - (b.chapterNumber || 0))) {
+                            for (const d of [...drafts].sort((a, b) => new Date(b.lastSaved).getTime() - new Date(a.lastSaved).getTime())) {
                               lines.push(separator);
-                              lines.push(`DRAFT — ${d.title || 'Untitled'} (Ch. ${d.chapterNumber || '?'})`);
+                              lines.push(`DRAFT — ${d.title || 'Untitled'}`);
                               lines.push(`Last saved: ${new Date(d.lastSaved).toLocaleString()}`);
                               lines.push(separator, '');
                               const div = document.createElement('div');
@@ -1047,6 +1050,7 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ glossary, authToken, use
                     onDelete={handleDeleteChapter}
                     onDownload={(num, title) => downloadSingleChapter(num, title)}
                     onTranslate={openChapterForTranslation}
+                    legacy
                   />
                 )}
               </div>
@@ -1085,7 +1089,7 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ glossary, authToken, use
               <div>
                 <h1 className="font-display text-2xl md:text-3xl text-accent mb-6">SEO & Content Sync</h1>
                 <p className="text-muted-foreground text-sm mb-6">
-                  Sync all chapters, glossary, forum posts, theories, and fan art to the AI content feed. This makes your content fully discoverable by Google, ChatGPT, Claude, Perplexity, and other AI crawlers.
+                   Sync published stories to the searchable content feeds used by Google and other discovery services.
                 </p>
 
                 {/* === Live SEO + Cron Status Widget === */}
@@ -1381,6 +1385,7 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ glossary, authToken, use
           authToken={authToken}
           onClose={handleTranslationModalClose}
           queueRemaining={translationQueue.length}
+          legacy={translatingChapter.is_archived}
         />
       )}
     </div>
@@ -1540,6 +1545,7 @@ interface ChapterTableProps {
   selectedIds: Set<string>;
   onToggleSelect: (id: string) => void;
   onSelectAll: (ids: string[], all: boolean) => void;
+  legacy?: boolean;
 }
 
 const ChapterTable: React.FC<ChapterTableProps> = ({
@@ -1555,12 +1561,13 @@ const ChapterTable: React.FC<ChapterTableProps> = ({
   selectedIds,
   onToggleSelect,
   onSelectAll,
+  legacy = false,
 }) => {
   // Each header maps a column to its (asc, desc) sort keys. Clicking a header
   // toggles between the two; the active one shows a directional caret.
   type Column = { key: 'number' | 'title' | 'views' | 'date'; label: string; ascKey?: SortKey; descKey?: SortKey; align?: string; hideOnMobile?: boolean };
   const columns: Column[] = [
-    { key: 'number', label: '#', ascKey: 'number-asc', descKey: 'number-desc' },
+    ...(legacy ? [{ key: 'number' as const, label: '#', ascKey: 'number-asc' as SortKey, descKey: 'number-desc' as SortKey }] : []),
     { key: 'title', label: 'Title' },
     { key: 'views', label: 'Views', ascKey: 'views-asc', descKey: 'views-desc', align: 'text-right', hideOnMobile: true },
     { key: 'date', label: 'Published', ascKey: 'oldest', descKey: 'newest', hideOnMobile: true },
@@ -1587,7 +1594,7 @@ const ChapterTable: React.FC<ChapterTableProps> = ({
                 <input
                   type="checkbox"
                   className="h-4 w-4 rounded border-border accent-primary cursor-pointer"
-                  aria-label="Select all chapters"
+                   aria-label={`Select all ${legacy ? 'chapters' : 'stories'}`}
                   checked={chapters.length > 0 && chapters.every((c) => selectedIds.has(c.id))}
                   ref={(el) => {
                     if (!el) return;
@@ -1637,12 +1644,12 @@ const ChapterTable: React.FC<ChapterTableProps> = ({
                     <input
                       type="checkbox"
                       className="h-4 w-4 rounded border-border accent-primary cursor-pointer"
-                      aria-label={`Select chapter ${ch.chapter_number}`}
+                       aria-label={`Select ${legacy ? `chapter ${ch.chapter_number}` : `story ${ch.title}`}`}
                       checked={isSelected}
                       onChange={() => onToggleSelect(ch.id)}
                     />
                   </td>
-                  <td className="px-3 md:px-4 py-3 text-muted-foreground tabular-nums">{ch.chapter_number}</td>
+                   {legacy && <td className="px-3 md:px-4 py-3 text-muted-foreground tabular-nums">{ch.chapter_number}</td>}
                   <td className="px-3 md:px-4 py-3 min-w-0">
                     <div className="text-foreground font-medium truncate">{ch.title}</div>
                     <div className="md:hidden text-xs text-muted-foreground mt-0.5">
@@ -1672,13 +1679,13 @@ const ChapterTable: React.FC<ChapterTableProps> = ({
                       <DropdownMenuTrigger asChild>
                         <button
                           className="p-1.5 rounded hover:bg-secondary text-muted-foreground hover:text-foreground transition-colors"
-                          aria-label={`Actions for chapter ${ch.chapter_number}`}
+                           aria-label={`Actions for ${legacy ? `chapter ${ch.chapter_number}` : `story ${ch.title}`}`}
                         >
                           <MoreHorizontal className="w-4 h-4" />
                         </button>
                       </DropdownMenuTrigger>
                       <DropdownMenuContent align="end" className="w-48">
-                        <DropdownMenuLabel>Ch. {ch.chapter_number}</DropdownMenuLabel>
+                         <DropdownMenuLabel>{legacy ? `Ch. ${ch.chapter_number}` : ch.title}</DropdownMenuLabel>
                         <DropdownMenuSeparator />
                         <DropdownMenuItem onClick={() => onEdit(ch.id)}>
                           <Edit3 className="w-4 h-4 mr-2" /> Edit
@@ -1692,7 +1699,7 @@ const ChapterTable: React.FC<ChapterTableProps> = ({
                             <Eye className="w-4 h-4 mr-2" /> Preview
                           </a>
                         </DropdownMenuItem>
-                        <DropdownMenuItem onClick={() => onDownload(ch.chapter_number, ch.title)}>
+                         <DropdownMenuItem onClick={() => onDownload(ch.chapter_number, ch.title)}>
                           <Download className="w-4 h-4 mr-2" /> Download
                         </DropdownMenuItem>
                         <DropdownMenuSeparator />
@@ -1756,9 +1763,10 @@ const NeedsAttentionPanel: React.FC<NeedsAttentionProps> = ({
   // Chapters publish on a 3-day cadence (anchored Wed 2026-05-06, 10:00
   // Stockholm). Surface anything dropping inside the next two cadence
   // slots (~6 days) so the admin sees the upcoming release without the
-  // legacy Friday-only weekly framing.
+                         legacy scheduling language.
   const CADENCE_WINDOW_MS = 6 * 24 * 60 * 60 * 1000;
-  const upcoming = chapters.filter(
+   const activeStories = chapters.filter((chapter) => !chapter.is_archived);
+   const upcoming = activeStories.filter(
     (c) =>
       c.scheduled_at &&
       new Date(c.scheduled_at).getTime() > now &&
@@ -1767,7 +1775,7 @@ const NeedsAttentionPanel: React.FC<NeedsAttentionProps> = ({
 
   // Chapters with at least one missing translation. We only surface the count;
   // clicking jumps to the chapter tab where they can hover the row to translate.
-  const missingTranslations = chapters.filter(
+   const missingTranslations = activeStories.filter(
     (c) => (translationCounts[c.id] ?? 0) < totalLanguages,
   );
 
@@ -1782,10 +1790,10 @@ const NeedsAttentionPanel: React.FC<NeedsAttentionProps> = ({
       key: "upcoming",
       icon: Calendar,
       tone: "accent" as const,
-      title: `${upcoming.length} chapter${upcoming.length === 1 ? "" : "s"} on the 3-day cadence`,
+       title: `${upcoming.length} stor${upcoming.length === 1 ? "y" : "ies"} on the 3-day cadence`,
       detail: upcoming
         .slice(0, 3)
-        .map((c) => `Ch. ${c.chapter_number}`)
+         .map((c) => c.title)
         .join(", ") + (upcoming.length > 3 ? "…" : ""),
       action: { label: "Review", tab: "chapters" },
     },
@@ -1793,7 +1801,7 @@ const NeedsAttentionPanel: React.FC<NeedsAttentionProps> = ({
       key: "translations",
       icon: Globe,
       tone: "muted" as const,
-      title: `${missingTranslations.length} chapter${missingTranslations.length === 1 ? "" : "s"} missing translations`,
+       title: `${missingTranslations.length} stor${missingTranslations.length === 1 ? "y" : "ies"} missing translations`,
       detail: `Across ${totalLanguages} non-English languages.`,
       action: { label: "Translate", tab: "chapters" },
     },
@@ -1831,7 +1839,7 @@ const NeedsAttentionPanel: React.FC<NeedsAttentionProps> = ({
         <CheckCircle2 className="w-5 h-5 text-primary shrink-0" />
         <div>
           <div className="text-sm font-medium text-foreground">All clear</div>
-          <div className="text-xs text-muted-foreground">No scheduled chapters this week, no missing translations or empty glossary entries.</div>
+           <div className="text-xs text-muted-foreground">No scheduled stories this week, no missing translations or empty glossary entries.</div>
         </div>
       </div>
     );

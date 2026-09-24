@@ -26,6 +26,7 @@ interface ChapterStat {
   views: number;
   chapter_number: number;
   published_at: string;
+  is_archived: boolean;
 }
 
 type TimeRange = "7d" | "30d" | "90d" | "all";
@@ -69,8 +70,9 @@ export const AnalyticsDashboard: React.FC<AnalyticsDashboardProps> = ({ authToke
           token: authToken,
         }),
         dbFetch<ChapterStat[]>("chapters", {
-          select: "id,title,views,chapter_number,published_at",
-          order: "chapter_number.asc",
+          select: "id,title,views,chapter_number,published_at,is_archived",
+          filters: "is_archived=eq.false",
+          order: "published_at.desc",
           token: authToken,
         }),
       ]);
@@ -95,7 +97,7 @@ export const AnalyticsDashboard: React.FC<AnalyticsDashboardProps> = ({ authToke
   const avgDuration = filteredViews.length > 0
     ? Math.round(filteredViews.reduce((s, pv) => s + (pv.duration_seconds || 0), 0) / filteredViews.length)
     : 0;
-  const totalChapterViews = chapters.reduce((s, c) => s + c.views, 0);
+  const totalStoryViews = chapters.reduce((s, c) => s + c.views, 0);
 
   // ── Views over time (line chart) ──
   const viewsOverTime = useMemo(() => {
@@ -126,10 +128,10 @@ export const AnalyticsDashboard: React.FC<AnalyticsDashboardProps> = ({ authToke
       .sort((a, b) => b.visits - a.visits);
   }, [filteredViews]);
 
-  // ── Chapter performance (bar chart) ──
-  const chapterPerformance = useMemo(() => {
+  // ── Story performance (bar chart) ──
+  const storyPerformance = useMemo(() => {
     return chapters.map((ch) => ({
-      name: `Ch. ${ch.chapter_number}`,
+      name: ch.title,
       title: ch.title,
       views: ch.views,
     }));
@@ -204,7 +206,7 @@ export const AnalyticsDashboard: React.FC<AnalyticsDashboardProps> = ({ authToke
 
   const chartTabs = [
     { id: "overview" as const, label: "Overview" },
-    { id: "chapters" as const, label: "Chapters" },
+    { id: "chapters" as const, label: "Stories" },
     { id: "pages" as const, label: "Pages" },
     { id: "engagement" as const, label: "Engagement" },
     { id: "geography" as const, label: "Geography" },
@@ -242,7 +244,7 @@ export const AnalyticsDashboard: React.FC<AnalyticsDashboardProps> = ({ authToke
         <KPICard label="Unique Visitors" value={uniqueVisitors} />
         <KPICard label="Anonymous Visits" value={anonVisits} />
         <KPICard label="Avg. Duration" value={`${avgDuration}s`} />
-        <KPICard label="Chapter Views" value={totalChapterViews} />
+        <KPICard label="Story Views" value={totalStoryViews} />
       </div>
 
       {/* Chart Tabs */}
@@ -314,15 +316,15 @@ export const AnalyticsDashboard: React.FC<AnalyticsDashboardProps> = ({ authToke
         </div>
       )}
 
-      {/* ── Chapters Tab ── */}
+      {/* ── Stories Tab ── */}
       {activeChart === "chapters" && (
         <div className="space-y-8">
-          <ChartCard title="Chapter Views Comparison">
-            {chapterPerformance.length === 0 ? (
+          <ChartCard title="Story Views Comparison">
+            {storyPerformance.length === 0 ? (
               <EmptyState />
             ) : (
               <ResponsiveContainer width="100%" height={360}>
-                <BarChart data={chapterPerformance} layout="vertical">
+                <BarChart data={storyPerformance} layout="vertical">
                   <CartesianGrid strokeDasharray="3 3" stroke="hsl(20, 6%, 20%)" />
                   <XAxis type="number" stroke="#a8a29e" tick={{ fontSize: 12 }} />
                   <YAxis dataKey="name" type="category" stroke="#a8a29e" tick={{ fontSize: 12 }} width={60} />
@@ -334,7 +336,7 @@ export const AnalyticsDashboard: React.FC<AnalyticsDashboardProps> = ({ authToke
                     ]}
                   />
                   <Bar dataKey="views" radius={[0, 4, 4, 0]}>
-                    {chapterPerformance.map((_, i) => (
+                    {storyPerformance.map((_, i) => (
                       <Cell key={i} fill={COLORS[i % COLORS.length]} />
                     ))}
                   </Bar>
@@ -343,7 +345,7 @@ export const AnalyticsDashboard: React.FC<AnalyticsDashboardProps> = ({ authToke
             )}
           </ChartCard>
 
-          <ChartCard title="Chapter Details">
+          <ChartCard title="Story Details">
             <div className="space-y-2 max-h-[400px] overflow-y-auto">
               {chapters.map((ch, i) => {
                 const maxViews = Math.max(...chapters.map((c) => c.views), 1);
@@ -352,7 +354,7 @@ export const AnalyticsDashboard: React.FC<AnalyticsDashboardProps> = ({ authToke
                   <div key={ch.id} className="p-4 rounded-lg bg-card/30 border border-border/30">
                     <div className="flex items-center justify-between mb-2">
                       <span className="text-foreground font-medium text-sm">
-                        Ch. {ch.chapter_number}: {ch.title}
+                        {ch.title}
                       </span>
                       <span className="text-primary font-display text-lg">{ch.views.toLocaleString()}</span>
                     </div>
