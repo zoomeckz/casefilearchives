@@ -278,7 +278,7 @@ export const ReaderCardsView: React.FC<Props> = ({ chapter, wordsPerCard, setWor
         <div className="flex items-center justify-between gap-3 mb-4">
           <div>
             <p className="text-xs text-muted-foreground uppercase tracking-wider">
-              {t("reader.cardsMode")} · {t("chapters.chapterLabel")} {chapter.chapterNumber}
+              {t("reader.cardsMode")}{chapter.isArchived ? ` · ${t("chapters.chapterLabel")} ${chapter.chapterNumber}` : ""}
             </p>
             <h1 className="font-display text-2xl text-accent">{chapter.title}</h1>
           </div>
