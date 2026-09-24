@@ -61,7 +61,7 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ glossary, authToken, use
   const [dashboardSearch, setDashboardSearch] = useState("");
 
   // Chapter editor state
-  const [editorMode, setEditorMode] = useState<'list' | 'new' | 'edit' | 'draft'>('list');
+  const [editorMode, setEditorMode] = useState<'list' | 'new' | 'new-legacy' | 'edit' | 'draft'>('list');
   const [editChapterId, setEditChapterId] = useState<string | null>(null);
   const [searchHighlight, setSearchHighlight] = useState<string | null>(null);
   const [searchSentence, setSearchSentence] = useState<string | null>(null);
@@ -490,7 +490,7 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ glossary, authToken, use
     {
       label: "Content",
       items: [
-        { id: "chapters", label: "Chapters", icon: BookOpen },
+        { id: "chapters", label: "Stories", icon: BookOpen },
         { id: "search", label: "Search & replace", icon: Search },
       ],
     },
@@ -545,7 +545,7 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ glossary, authToken, use
       : 'dashboard';
     const nextSubTab = searchParams.get('subtab') === 'drafts' ? 'drafts' : 'published';
     const viewParam = searchParams.get('view');
-    const nextView = viewParam === 'new' || viewParam === 'edit' || viewParam === 'draft' ? viewParam : 'list';
+    const nextView = viewParam === 'new' || viewParam === 'new-legacy' || viewParam === 'edit' || viewParam === 'draft' ? viewParam : 'list';
     const nextChapterId = searchParams.get('chapter');
     const nextDraftId = searchParams.get('draft');
     const nextSearchHighlight = searchParams.get('term');
@@ -559,7 +559,7 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ glossary, authToken, use
     }
 
     if (nextTab === 'chapters' && nextView !== 'list') {
-      setEditorMode(nextView);
+      setEditorMode(nextView as any);
       setEditChapterId(nextView === 'edit' ? nextChapterId : null);
       setResumeDraftId(nextView === 'draft' ? nextDraftId : null);
       setSearchHighlight(nextView === 'edit' ? nextSearchHighlight : null);
@@ -621,6 +621,7 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ glossary, authToken, use
           resumeDraftId={editorMode === 'draft' ? resumeDraftId : undefined}
           searchHighlight={editorMode === 'edit' ? searchHighlight : undefined}
           searchSentence={editorMode === 'edit' ? searchSentence : undefined}
+          legacy={editorMode === 'new-legacy'}
           onBack={() => {
             updateAdminRoute({ view: null, chapter: null, draft: null, term: null, sentence: null });
             fetchChapters();
@@ -817,13 +818,13 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ glossary, authToken, use
             {activeTab === "chapters" && (
               <div>
                 <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 mb-4">
-                  <h1 className="font-display text-2xl md:text-3xl text-accent">Chapters</h1>
+                  <h1 className="font-display text-2xl md:text-3xl text-accent">Stories</h1>
                   <button
                     onClick={() => updateAdminRoute({ tab: 'chapters', view: 'new', chapter: null, draft: null, term: null, sentence: null })}
                     className="flex items-center gap-2 px-4 py-2.5 bg-primary hover:bg-primary/90 text-primary-foreground rounded-lg font-medium transition-colors text-sm"
                   >
                     <Icons.Plus className="w-4 h-4" />
-                    New Chapter
+                    New Story
                   </button>
                 </div>
 
@@ -1014,7 +1015,15 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ glossary, authToken, use
                   <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
                   <Input placeholder="Search legacy chapters..." value={chapterSearch} onChange={(e) => setChapterSearch(e.target.value)} className="pl-9 h-9 text-sm" />
                 </div>
-                <h2 className="font-display text-xl text-accent mb-3">Legacy Chapters ({archivedChapters.length})</h2>
+                <div className="flex items-center justify-between mb-3 gap-3">
+                  <h2 className="font-display text-xl text-accent">Legacy Chapters ({archivedChapters.length})</h2>
+                  <button
+                    onClick={() => updateAdminRoute({ tab: 'chapters', view: 'new-legacy', chapter: null, draft: null, term: null, sentence: null })}
+                    className="flex items-center gap-2 px-3 py-2 bg-secondary hover:bg-secondary/80 text-foreground rounded-lg text-sm"
+                  >
+                    <Icons.Plus className="w-4 h-4" /> Add legacy chapter
+                  </button>
+                </div>
                 {archivedChapters.length === 0 ? (
                   <p className="text-muted-foreground text-sm">No legacy chapters match.</p>
                 ) : (

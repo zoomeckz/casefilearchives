@@ -11,6 +11,7 @@ export interface Chapter {
   /** Cover art URL — currently always null until artwork is generated. */
   coverImageUrl: string | null;
   isArchived: boolean;
+  tags: string[];
 }
 
 function mapChapter(c: any): Chapter {
@@ -24,6 +25,7 @@ function mapChapter(c: any): Chapter {
     scheduledAt: c.scheduled_at || null,
     coverImageUrl: c.cover_image_url || null,
     isArchived: c.is_archived === true,
+    tags: Array.isArray(c.tags) ? c.tags : [],
   };
 }
 

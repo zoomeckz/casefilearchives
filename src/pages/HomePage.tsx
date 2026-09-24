@@ -72,9 +72,6 @@ export const HomePage: React.FC<HomePageProps> = ({
                       >
                         {/* Cover-art placeholder slot — wired now, art coming later */}
                         {/* TODO(cover-art): render <img src={chapter.coverImageUrl} /> when populated */}
-                        <span className="font-display text-xs text-muted-foreground tabular-nums w-10 shrink-0">
-                          Ch.{chapter.chapterNumber}
-                        </span>
                         <span className="flex-1 min-w-0">
                           <span className="font-display text-base text-foreground/85 group-hover:text-primary transition-colors block truncate">
                             {chapter.title}
