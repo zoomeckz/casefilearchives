@@ -77,6 +77,25 @@ function getSlotAfterLatestScheduled(takenDates: string[]): string {
   return getNextAvailableSlot(takenDates, latestDate);
 }
 
+// ── Calendar helpers ──
+
+const WEEKDAY_LABELS = ['Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa', 'Su'];
+const MONTH_LABELS = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
+
+/** Monday-first offset of the 1st of the month. */
+function firstWeekdayOffset(year: number, month: number): number {
+  return (new Date(Date.UTC(year, month, 1)).getUTCDay() + 6) % 7;
+}
+
+function daysInMonthOf(year: number, month: number): number {
+  return new Date(Date.UTC(year, month + 1, 0)).getUTCDate();
+}
+
+function todayIsoDate(): string {
+  const now = new Date();
+  return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
+}
+
 // ── DB-backed draft helpers ──
 
 export async function getAllDrafts(token?: string): Promise<ChapterDraft[]> {
