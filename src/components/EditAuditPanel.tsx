@@ -24,7 +24,7 @@ interface SafeReplaceForm {
   note: string;
 }
 
-interface ChapterRow { id: string; chapter_number: number; title: string; }
+interface ChapterRow { id: string; chapter_number: number; title: string; is_archived: boolean; }
 
 interface EditAuditPanelProps {
   authToken?: string;
@@ -72,8 +72,8 @@ export const EditAuditPanel = ({ authToken }: EditAuditPanelProps) => {
     setLoading(true);
     const [chapsRes, auditRes] = await Promise.all([
       dbFetch<ChapterRow[]>("chapters", {
-        select: "id,chapter_number,title",
-        order: "chapter_number.asc",
+        select: "id,chapter_number,title,is_archived",
+        order: "published_at.desc",
         token: authToken,
       }),
       dbFetch<AuditEntry[]>("chapter_edit_audit", {
@@ -98,7 +98,7 @@ export const EditAuditPanel = ({ authToken }: EditAuditPanelProps) => {
   const handleSafeReplace = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!form.chapterId || !form.anchor || !form.replacement) {
-      toast.error("Chapter, anchor, and replacement are required");
+      toast.error("Story, anchor, and replacement are required");
       return;
     }
     setSubmitting(true);
@@ -113,7 +113,7 @@ export const EditAuditPanel = ({ authToken }: EditAuditPanelProps) => {
 
     if (error) { toast.error(error); return; }
     if (data && data.ok === false) {
-      toast.warning(`Anchor not found — chapter unchanged. Logged as anchor_miss.`);
+      toast.warning(`Anchor not found — content unchanged. Logged as anchor_miss.`);
     } else {
       toast.success("Replacement applied; previous version snapshotted.");
       setForm(f => ({ ...f, anchor: "", replacement: "", note: "" }));
@@ -122,12 +122,14 @@ export const EditAuditPanel = ({ authToken }: EditAuditPanelProps) => {
   };
 
   const handleRollback = async (entry: AuditEntry) => {
-    if (!confirm(`Restore chapter ${entry.chapter_number ?? ""} to the snapshot from ${new Date(entry.created_at).toLocaleString()}?`)) return;
+    const item = chapters.find((chapter) => chapter.id === entry.chapter_id);
+    const itemLabel = item?.is_archived ? `chapter ${item.chapter_number}` : `story “${item?.title || 'Untitled'}”`;
+    if (!confirm(`Restore ${itemLabel} to the snapshot from ${new Date(entry.created_at).toLocaleString()}?`)) return;
     setBusyId(entry.id);
     const { error } = await rpc("rollback_chapter_to_audit_entry", { _audit_id: entry.id }, authToken);
     setBusyId(null);
     if (error) { toast.error(error); return; }
-    toast.success("Chapter restored.");
+    toast.success("Content restored.");
     loadAll();
   };
 
@@ -138,7 +140,7 @@ export const EditAuditPanel = ({ authToken }: EditAuditPanelProps) => {
           <History className="w-6 h-6" /> Edit Audit
         </h1>
         <p className="text-muted-foreground text-sm">
-          Every chapter content edit performed via the safe-replace RPC is logged here with a snapshot of the previous content, so you can roll back individual changes.
+          Every story and legacy chapter edit made here is logged with a snapshot, so you can restore individual changes.
         </p>
       </div>
 
@@ -146,7 +148,7 @@ export const EditAuditPanel = ({ authToken }: EditAuditPanelProps) => {
         <h2 className="font-display text-lg text-foreground">Safe replace</h2>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
           <label className="text-sm text-muted-foreground">
-            Chapter
+            Story or legacy chapter
             <select
               value={form.chapterId}
               onChange={(e) => setForm(f => ({ ...f, chapterId: e.target.value }))}
@@ -154,7 +156,7 @@ export const EditAuditPanel = ({ authToken }: EditAuditPanelProps) => {
             >
               <option value="">— select —</option>
               {chapters.map(c => (
-                <option key={c.id} value={c.id}>#{c.chapter_number} — {c.title}</option>
+                <option key={c.id} value={c.id}>{c.is_archived ? `Chapter ${c.chapter_number} — ` : ''}{c.title}</option>
               ))}
             </select>
           </label>
@@ -215,9 +217,9 @@ export const EditAuditPanel = ({ authToken }: EditAuditPanelProps) => {
               onChange={(e) => setFilterChapter(e.target.value)}
               className="px-3 py-1.5 bg-background border border-border rounded-md text-foreground text-sm"
             >
-              <option value="">All chapters</option>
+              <option value="">All stories and legacy chapters</option>
               {chapters.map(c => (
-                <option key={c.id} value={c.id}>#{c.chapter_number} — {c.title}</option>
+                <option key={c.id} value={c.id}>{c.is_archived ? `Chapter ${c.chapter_number} — ` : ''}{c.title}</option>
               ))}
             </select>
             <button
@@ -248,7 +250,10 @@ export const EditAuditPanel = ({ authToken }: EditAuditPanelProps) => {
                   <div className="flex-1 min-w-0">
                     <div className="flex flex-wrap items-baseline gap-2 text-sm">
                       <span className="font-medium text-foreground">
-                        Ch {entry.chapter_number ?? "—"}
+                         {(() => {
+                           const item = chapters.find((chapter) => chapter.id === entry.chapter_id);
+                           return item?.is_archived ? `Ch. ${item.chapter_number}` : item?.title || 'Story';
+                         })()}
                       </span>
                       <span className="text-xs uppercase tracking-wide text-muted-foreground">
                         {entry.action}

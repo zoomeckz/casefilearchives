@@ -12,4 +12,4 @@
 - [x] Show the homepage subtitle in all caps, remove Browse the Codex, and always show Start Reading.
 - [x] Revamp new publishing: stories with tags (no chapters); keep legacy chapter system.
 - [x] Rename "Latest chapters" to "Latest stories".
-- [ ] Audit the entire admin panel and remove chapter numbering/wording from current stories while preserving it in Legacy.
+- [x] Audit the entire admin panel and remove chapter numbering/wording from current stories while preserving it in Legacy.

@@ -14,22 +14,23 @@ function getAuthToken(): string {
   }
 }
 
-export async function downloadSingleChapter(chapterNumber: number, title: string) {
+export async function downloadSingleChapter(chapterNumber: number, title: string, legacy = false) {
   const token = getAuthToken();
   const response = await fetch(
-    `${url}/rest/v1/chapters?select=title,content,chapter_number&chapter_number=eq.${chapterNumber}`,
+    `${url}/rest/v1/chapters?select=title,content,chapter_number,published_at&chapter_number=eq.${chapterNumber}`,
     { headers: { 'apikey': key, 'Authorization': `Bearer ${token}` } }
   );
-  if (!response.ok) throw new Error("Failed to fetch chapter");
+  if (!response.ok) throw new Error(`Failed to fetch ${legacy ? 'chapter' : 'story'}`);
   const data = await response.json();
-  if (!Array.isArray(data) || data.length === 0) throw new Error("Chapter not found");
+  if (!Array.isArray(data) || data.length === 0) throw new Error(`${legacy ? 'Chapter' : 'Story'} not found`);
 
   const ch = data[0];
   const separator = "═".repeat(60);
   const lines = [
     "SEDORIUM",
     separator,
-    `CHAPTER ${ch.chapter_number}: ${(ch.title || "").toUpperCase()}`,
+    legacy ? `CHAPTER ${ch.chapter_number}: ${(ch.title || "").toUpperCase()}` : (ch.title || "UNTITLED STORY").toUpperCase(),
+    !legacy && ch.published_at ? new Date(ch.published_at).toLocaleDateString("en-US", { year: "numeric", month: "long", day: "numeric" }) : "",
     separator,
     "",
     stripHtml(ch.content || ""),
@@ -42,7 +43,8 @@ export async function downloadSingleChapter(chapterNumber: number, title: string
   const blobUrl = URL.createObjectURL(blob);
   const a = document.createElement("a");
   a.href = blobUrl;
-  a.download = `Sedorium_Chapter_${ch.chapter_number}.txt`;
+  const safeTitle = (title || "Untitled_Story").replace(/[^a-z0-9]+/gi, "_").replace(/^_|_$/g, "");
+  a.download = legacy ? `Sedorium_Chapter_${ch.chapter_number}.txt` : `Sedorium_${safeTitle}.txt`;
   a.style.display = "none";
   document.body.appendChild(a);
   await new Promise((r) => setTimeout(r, 100));
@@ -83,14 +85,12 @@ function stripHtml(html: string): string {
 }
 
 export async function downloadAllChapters() {
-  // Use the admin's access token so RLS lets us include both live AND
-  // scheduled (future) chapters. Without it the anon key is filtered to
-  // only chapters whose scheduled_at is null or already in the past.
+  // Use the admin's access token so scheduled stories are included.
   const token = getAuthToken();
 
-  // Fetch all chapters in a single request with explicit high limit
+  // Fetch all current stories in a single request with an explicit high limit.
   const response = await fetch(
-    `${url}/rest/v1/chapters?select=title,content,chapter_number&order=chapter_number.asc&limit=1000`,
+    `${url}/rest/v1/chapters?select=title,content,published_at&is_archived=eq.false&order=published_at.desc&limit=1000`,
     {
       headers: {
         'apikey': key,
@@ -100,18 +100,18 @@ export async function downloadAllChapters() {
   );
 
   if (!response.ok) {
-    throw new Error("Failed to fetch chapters");
+    throw new Error("Failed to fetch stories");
   }
 
   const allChapters = await response.json();
   if (!Array.isArray(allChapters) || allChapters.length === 0) {
-    throw new Error("No chapters found");
+    throw new Error("No stories found");
   }
 
-  console.log(`[Download] Fetched ${allChapters.length} chapters`);
+  console.log(`[Download] Fetched ${allChapters.length} stories`);
 
   if (allChapters.length === 0) {
-    throw new Error("No chapters found");
+    throw new Error("No stories found");
   }
 
   const separator = "═".repeat(60);
@@ -120,7 +120,7 @@ export async function downloadAllChapters() {
     "Standalone stories by AnyoneButSam",
     separator,
     `Generated: ${new Date().toLocaleDateString("en-US", { year: "numeric", month: "long", day: "numeric" })}`,
-    `Total Chapters: ${allChapters.length}`,
+    `Total Stories: ${allChapters.length}`,
     separator,
     "",
     "",
@@ -128,7 +128,8 @@ export async function downloadAllChapters() {
 
   for (const ch of allChapters) {
     lines.push(separator);
-    lines.push(`CHAPTER ${ch.chapter_number}: ${(ch.title || "").toUpperCase()}`);
+    lines.push((ch.title || "UNTITLED STORY").toUpperCase());
+    if (ch.published_at) lines.push(new Date(ch.published_at).toLocaleDateString("en-US", { year: "numeric", month: "long", day: "numeric" }));
     lines.push(separator);
     lines.push("");
     lines.push(stripHtml(ch.content || ""));
@@ -147,7 +148,7 @@ export async function downloadAllChapters() {
   // Use window.open as fallback for mobile browsers where <a> click doesn't trigger download
   const a = document.createElement("a");
   a.href = blobUrl;
-  a.download = `Sedorium_All_Chapters.txt`;
+  a.download = `Sedorium_All_Stories.txt`;
   a.style.display = "none";
   document.body.appendChild(a);
 

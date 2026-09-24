@@ -67,7 +67,7 @@ function getNextAvailableSlot(takenDates: string[], after?: Date): string {
 }
 
 /**
- * Returns the next cadence slot following the latest already-scheduled chapter.
+ * Returns the next cadence slot following the latest already-scheduled story.
  */
 function getSlotAfterLatestScheduled(takenDates: string[]): string {
   if (!takenDates.length) return getNextAvailableSlot(takenDates);
@@ -177,7 +177,7 @@ export const ChapterEditor: React.FC<ChapterEditorProps> = ({ authToken, userId,
     loadTaken();
   }, [authToken, editChapterId]);
 
-  // Load existing chapter for editing
+  // Load existing story or legacy chapter for editing
   useEffect(() => {
     if (editChapterId) {
       const loadChapter = async () => {
@@ -201,7 +201,7 @@ export const ChapterEditor: React.FC<ChapterEditorProps> = ({ authToken, userId,
       };
       loadChapter();
     } else {
-      // Load draft or set next chapter number
+      // Load a draft or reserve the internal compatibility number.
       const loadDraftOrNext = async () => {
         if (resumeDraftId) {
           const draft = await getDraftById(resumeDraftId, authToken);
@@ -213,7 +213,7 @@ export const ChapterEditor: React.FC<ChapterEditorProps> = ({ authToken, userId,
             return;
           }
         }
-        // Get next chapter number
+        // The database still requires this internal number, but current stories never display it.
         const { data } = await dbFetch<any[]>('chapters', {
           select: 'chapter_number',
           order: 'chapter_number.desc',
@@ -278,10 +278,10 @@ export const ChapterEditor: React.FC<ChapterEditorProps> = ({ authToken, userId,
     toast.success(`Marked ${terms.length} glossary terms`);
   };
 
-  // Publish chapter
+  // Publish a story or legacy chapter
   const handlePublish = async () => {
     if (!title.trim()) {
-      toast.error('Please enter a chapter title');
+      toast.error(`Please enter a ${isLegacy ? 'chapter' : 'story'} title`);
       return;
     }
     if (!content.trim()) {
@@ -289,7 +289,7 @@ export const ChapterEditor: React.FC<ChapterEditorProps> = ({ authToken, userId,
       return;
     }
     if (scheduledAt && takenSlots.includes(scheduledAt.slice(0, 10))) {
-      toast.error('Another chapter is already scheduled for this date. Use "Next →" to pick a different slot.');
+      toast.error(`Another ${isLegacy ? 'chapter' : 'story'} is already scheduled for this date. Use "Next →" to pick a different slot.`);
       return;
     }
 
@@ -347,7 +347,7 @@ export const ChapterEditor: React.FC<ChapterEditorProps> = ({ authToken, userId,
   };
 
   if (loadingChapter) {
-    return <p className="text-muted-foreground p-8">Loading chapter...</p>;
+    return <p className="text-muted-foreground p-8">Loading {isLegacy ? 'chapter' : 'story'}...</p>;
   }
 
   return (
@@ -390,7 +390,7 @@ export const ChapterEditor: React.FC<ChapterEditorProps> = ({ authToken, userId,
         </div>
       </div>
 
-      {/* Chapter metadata */}
+      {/* Story metadata; numbering is shown only for legacy chapters. */}
       <div className="grid grid-cols-1 md:grid-cols-[1fr_auto_auto] gap-4 mb-6">
         <div>
           <label className="block text-sm text-muted-foreground mb-1">{isLegacy ? 'Chapter Title' : 'Story Title'}</label>
@@ -451,7 +451,7 @@ export const ChapterEditor: React.FC<ChapterEditorProps> = ({ authToken, userId,
             )}
           </div>
           {scheduledAt && takenSlots.includes(scheduledAt.slice(0, 10)) && (
-            <span className="text-xs text-destructive mt-1 block">⚠ Another chapter is already scheduled for this date!</span>
+            <span className="text-xs text-destructive mt-1 block">⚠ Another {isLegacy ? 'chapter' : 'story'} is already scheduled for this date!</span>
           )}
         </div>
       </div>
@@ -473,22 +473,22 @@ export const ChapterEditor: React.FC<ChapterEditorProps> = ({ authToken, userId,
         />
       </div>
 
-      {/* Glossary terms indicator */}
-      <div className="flex items-center gap-2 mb-3">
+      {/* Glossary tooling belongs only to the connected legacy story. */}
+      {isLegacy && <div className="flex items-center gap-2 mb-3">
         <span className="text-xs text-muted-foreground">
           {Object.keys(glossary).length} glossary terms available
         </span>
         {glossaryMarked && (
           <span className="text-xs text-primary">✓ Terms marked</span>
         )}
-      </div>
+      </div>}
 
       {/* Editor */}
       <RichTextEditor
         content={content}
         onChange={setContent}
-        glossaryTerms={Object.keys(glossary)}
-        onMarkGlossary={handleMarkGlossary}
+        glossaryTerms={isLegacy ? Object.keys(glossary) : []}
+        onMarkGlossary={isLegacy ? handleMarkGlossary : undefined}
         searchHighlight={searchHighlight || undefined}
         searchSentence={searchSentence || undefined}
       />

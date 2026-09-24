@@ -13,6 +13,7 @@ interface SearchResult {
   chapterId: string;
   chapterNumber: number;
   chapterTitle: string;
+  publishedAt: string;
   sentence: string;
   matchIndex: number;
 }
@@ -77,13 +78,14 @@ export const ContentSearch: React.FC<ContentSearchProps> = ({ authToken, onEditC
 
     try {
       const { data, error } = await dbFetch<any[]>("chapters", {
-        select: "id,chapter_number,title,content",
-        order: "chapter_number.asc",
+        select: "id,chapter_number,title,content,published_at,is_archived",
+        filters: "is_archived=eq.false",
+        order: "published_at.desc",
         token: authToken,
       });
 
       if (error || !data) {
-        toast.error("Failed to fetch chapters");
+        toast.error("Failed to fetch stories");
         setResults([]);
         setSearching(false);
         return;
@@ -98,6 +100,7 @@ export const ContentSearch: React.FC<ContentSearchProps> = ({ authToken, onEditC
             chapterId: chapter.id,
             chapterNumber: chapter.chapter_number,
             chapterTitle: chapter.title,
+            publishedAt: chapter.published_at,
             sentence: m.sentence,
             matchIndex: m.matchIndex,
           });
@@ -121,7 +124,7 @@ export const ContentSearch: React.FC<ContentSearchProps> = ({ authToken, onEditC
     <div>
       <h1 className="font-display text-2xl md:text-3xl text-accent mb-2">Content Search</h1>
       <p className="text-muted-foreground text-sm mb-6">
-        Search for any word or phrase across all published chapters.
+        Search for any word or phrase across all published stories.
       </p>
 
       <div className="flex items-center gap-2 mb-6">
@@ -151,8 +154,8 @@ export const ContentSearch: React.FC<ContentSearchProps> = ({ authToken, onEditC
           {results.length > 0 && (
             <span>
               {" "}across{" "}
-              {new Set(results.map((r) => r.chapterId)).size} chapter
-              {new Set(results.map((r) => r.chapterId)).size !== 1 ? "s" : ""}
+              {new Set(results.map((r) => r.chapterId)).size} stor
+              {new Set(results.map((r) => r.chapterId)).size !== 1 ? "ies" : "y"}
             </span>
           )}
         </p>
@@ -161,7 +164,7 @@ export const ContentSearch: React.FC<ContentSearchProps> = ({ authToken, onEditC
       {searching && (
         <div className="flex items-center gap-3 text-muted-foreground py-8">
           <Loader2 className="w-5 h-5 animate-spin" />
-          Searching all chapters…
+          Searching all stories…
         </div>
       )}
 
@@ -174,7 +177,7 @@ export const ContentSearch: React.FC<ContentSearchProps> = ({ authToken, onEditC
             >
               <div className="flex items-center justify-between gap-3 mb-2">
                 <span className="text-xs font-medium text-accent">
-                  Ch. {result.chapterNumber}: {result.chapterTitle}
+                  {result.chapterTitle} · {new Date(result.publishedAt).toLocaleDateString()}
                 </span>
                 <div className="flex items-center gap-2 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity">
                   <a
@@ -191,7 +194,7 @@ export const ContentSearch: React.FC<ContentSearchProps> = ({ authToken, onEditC
                     className="flex items-center gap-1 px-2.5 py-1 bg-primary/20 hover:bg-primary/30 text-primary rounded text-xs transition-colors"
                   >
                     <FileEdit className="w-3 h-3" />
-                    Edit Chapter
+                    Edit Story
                   </button>
                 </div>
               </div>

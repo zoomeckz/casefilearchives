@@ -45,6 +45,7 @@ import {
 interface ChapterTranslationsManagerProps {
   chapterId: string;
   chapterNumber: number;
+  legacy?: boolean;
   englishTitle: string;
   englishContent: string;
   authToken?: string;
@@ -119,6 +120,7 @@ function wordCount(html: string): number {
 export const ChapterTranslationsManager: React.FC<ChapterTranslationsManagerProps> = ({
   chapterId,
   chapterNumber,
+  legacy = false,
   englishTitle,
   englishContent,
   authToken,
@@ -412,7 +414,7 @@ export const ChapterTranslationsManager: React.FC<ChapterTranslationsManagerProp
         <div className="flex items-center justify-between gap-3 px-4 md:px-6 py-3 border-b border-border">
           <div className="min-w-0">
             <h2 className="text-lg md:text-xl font-bold text-foreground truncate">
-              Translations · Ch. {chapterNumber}
+              Translations · {legacy ? `Ch. ${chapterNumber}` : englishTitle}
               {queueRemaining > 0 && (
                 <span className="ml-2 align-middle text-[11px] uppercase tracking-wider text-primary/80">
                   {queueRemaining} more queued
