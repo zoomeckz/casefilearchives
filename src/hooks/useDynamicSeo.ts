@@ -5,16 +5,16 @@ const SITE_URL = "https://www.thefivethrones.com";
 
 const META: Record<string, { title: string; description: string }> = {
   "/": {
-    title: "Sedorium — Standalone Stories by AnyoneButSam",
-    description: "Sedorium: random situations put into story form. Read standalone fiction by AnyoneButSam.",
+    title: "Case File — Standalone Stories by AnyoneButSam",
+    description: "Unrelated stories. Uncomfortable possibilities. Read standalone fiction by AnyoneButSam.",
   },
   "/chapters": {
-    title: "Stories — Sedorium",
-    description: "Browse standalone Sedorium stories by AnyoneButSam.",
+    title: "Stories — Case File",
+    description: "Browse the Case File archive of standalone stories by AnyoneButSam.",
   },
   "/about": {
-    title: "About — Sedorium",
-    description: "About Sedorium, a collection of standalone stories by AnyoneButSam.",
+    title: "About — Case File",
+    description: "About Case File, a collection of standalone stories by AnyoneButSam.",
   },
 };
 

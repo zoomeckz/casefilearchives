@@ -4,6 +4,7 @@ import { Icons } from "@/lib/icons";
 import { AuthUser } from "@/hooks/useAuth";
 import { NotificationBell } from "@/components/NotificationBell";
 import { useTranslation } from "react-i18next";
+import { ThemeToggle } from "@/components/ThemeToggle";
 import {
   NAV_GROUPS,
   NAV_CHROME_KEYS,
@@ -50,21 +51,22 @@ export const Navigation: React.FC<NavigationProps> = ({
      * and the dropdown menus open from the wrong edge. The chrome is
      * intentionally locale-agnostic — only page CONTENT mirrors for RTL.
      */
-    <nav dir="ltr" className="sticky top-0 z-50 bg-stone-950/95 backdrop-blur-sm border-b border-border/50">
-      <div className="max-w-4xl mx-auto px-4 sm:px-6">
-        <div className="flex items-center justify-between h-14">
+    <nav dir="ltr" className="sticky top-0 z-50 bg-background/95 backdrop-blur-sm border-b border-border">
+      <div className="max-w-6xl mx-auto px-4 sm:px-6">
+        <div className="flex items-center justify-between h-16">
 
           {/* Mobile sigil — replaces a naked hamburger with a small brand mark */}
           <button
             onClick={() => setCurrentPage("home")}
-            className="brand-title md:hidden text-accent text-xl tracking-[0.2em] leading-none"
-            aria-label="Sedorium home"
+            className="brand-title md:hidden text-foreground text-xl leading-none"
+            aria-label="Case File home"
           >
-            S
+            CF
           </button>
 
           {/* Centered Nav */}
-          <div className="hidden md:flex items-center justify-center gap-6 flex-1">
+          <button onClick={() => setCurrentPage("home")} className="hidden md:block brand-title text-xl text-foreground mr-10">CASE FILE</button>
+          <div className="hidden md:flex items-center gap-7 flex-1">
             {navItems.map((item) => (
               <button
                 key={item.id}
@@ -96,6 +98,7 @@ export const Navigation: React.FC<NavigationProps> = ({
 
           {/* Right side - auth */}
           <div className="hidden md:flex items-center gap-3">
+            <ThemeToggle />
             {user ? (
               <>
                 <NotificationBell user={user} onNavigate={(path) => navigate(path)} />
@@ -131,10 +134,11 @@ export const Navigation: React.FC<NavigationProps> = ({
           {/* Mobile Menu Button */}
           <button
             onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-            className="md:hidden text-muted-foreground hover:text-foreground"
+            className="md:hidden text-muted-foreground hover:text-foreground ml-auto mr-3"
           >
             {mobileMenuOpen ? <Icons.Close /> : <Icons.Menu />}
           </button>
+          <div className="md:hidden"><ThemeToggle /></div>
         </div>
 
         {/* Mobile Menu */}
