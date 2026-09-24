@@ -89,10 +89,11 @@ export const PublicProfilePage: React.FC = () => {
     <div className="min-h-screen py-8 sm:py-12 px-4 sm:px-6">
       <div className="max-w-2xl mx-auto">
         {/* Header */}
+        <p className="case-label text-[9px] mb-5">Reader record / public</p>
         <div className="flex flex-col sm:flex-row items-center sm:items-start gap-4 sm:gap-6 mb-8">
           <ProfileFrame avatarUrl={profile.avatar_url} name={profile.name} frame={profile.selected_frame} size={128} />
           <div className="flex-1 text-center sm:text-left">
-            <h1 className="text-2xl text-foreground font-display">{profile.name}</h1>
+            <h1 className="text-3xl uppercase text-foreground font-display">{profile.name}</h1>
             <p className="text-muted-foreground text-sm mt-1">Member since {memberSince}</p>
             {profile.bio && <p className="text-foreground/70 mt-3 text-sm">{profile.bio}</p>}
             {(profile.instagram || profile.tiktok || profile.website) && (
@@ -110,10 +111,10 @@ export const PublicProfilePage: React.FC = () => {
         </div>
 
         {/* Activity Stats */}
-        <div className="grid grid-cols-3 gap-4 sm:gap-6 text-center mb-12 p-4 sm:p-6 bg-card/30 rounded-xl border border-border">
+        <div className="case-file grid grid-cols-3 gap-4 sm:gap-6 text-center mb-12 p-4 sm:p-6">
           <div>
             <div className="text-2xl font-display text-foreground">{stats.chaptersRead}</div>
-            <div className="text-muted-foreground text-sm mt-1">Chapters Read</div>
+            <div className="text-muted-foreground text-sm mt-1">Stories Read</div>
           </div>
           <div>
             <div className="text-2xl font-display text-foreground">{stats.comments}</div>

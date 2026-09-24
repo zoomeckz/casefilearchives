@@ -27,7 +27,7 @@ export async function downloadSingleChapter(chapterNumber: number, title: string
   const ch = data[0];
   const separator = "═".repeat(60);
   const lines = [
-    "SEDORIUM",
+    "CASE FILE",
     separator,
     legacy ? `CHAPTER ${ch.chapter_number}: ${(ch.title || "").toUpperCase()}` : (ch.title || "UNTITLED STORY").toUpperCase(),
     !legacy && ch.published_at ? new Date(ch.published_at).toLocaleDateString("en-US", { year: "numeric", month: "long", day: "numeric" }) : "",
@@ -44,7 +44,7 @@ export async function downloadSingleChapter(chapterNumber: number, title: string
   const a = document.createElement("a");
   a.href = blobUrl;
   const safeTitle = (title || "Untitled_Story").replace(/[^a-z0-9]+/gi, "_").replace(/^_|_$/g, "");
-  a.download = legacy ? `Sedorium_Chapter_${ch.chapter_number}.txt` : `Sedorium_${safeTitle}.txt`;
+  a.download = legacy ? `Legacy_Chapter_${ch.chapter_number}.txt` : `Case_File_${safeTitle}.txt`;
   a.style.display = "none";
   document.body.appendChild(a);
   await new Promise((r) => setTimeout(r, 100));
@@ -116,7 +116,7 @@ export async function downloadAllChapters() {
 
   const separator = "═".repeat(60);
   const lines: string[] = [
-    "SEDORIUM",
+    "CASE FILE",
     "Standalone stories by AnyoneButSam",
     separator,
     `Generated: ${new Date().toLocaleDateString("en-US", { year: "numeric", month: "long", day: "numeric" })}`,
@@ -148,7 +148,7 @@ export async function downloadAllChapters() {
   // Use window.open as fallback for mobile browsers where <a> click doesn't trigger download
   const a = document.createElement("a");
   a.href = blobUrl;
-  a.download = `Sedorium_All_Stories.txt`;
+  a.download = `Case_File_All_Stories.txt`;
   a.style.display = "none";
   document.body.appendChild(a);
 

@@ -33,7 +33,7 @@
   },
   "chapters": {
     "title": "Capítulos",
-    "subtitle": "Todos los capítulos de Sedorium hasta la fecha",
+    "subtitle": "Todos los capítulos de the legacy archive hasta la fecha",
     "search": "Buscar capítulos",
     "read": "Leer",
     "continue": "Continuar",
@@ -71,7 +71,7 @@
   },
   "codex": {
     "title": "Codex",
-    "subtitle": "Personajes, lugares, criaturas y trasfondo de Sedorium",
+    "subtitle": "Personajes, lugares, criaturas y trasfondo de the legacy archive",
     "browse": "Explorar",
     "characters": "Personajes",
     "locations": "Lugares",

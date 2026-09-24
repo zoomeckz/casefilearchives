@@ -116,7 +116,8 @@ export const ProfilePage: React.FC<ProfilePageProps> = ({
   return (
     <div className="min-h-screen py-8 sm:py-12 px-4 sm:px-6">
       <div className="max-w-2xl mx-auto">
-        <h1 className="font-display text-3xl sm:text-4xl text-accent mb-2">Your Profile</h1>
+        <p className="case-label text-[9px] mb-2">Reader record</p>
+        <h1 className="font-display text-3xl sm:text-4xl text-foreground uppercase mb-2">Your Profile</h1>
         <p className="text-muted-foreground mb-8 sm:mb-12">Manage your account and preferences</p>
 
         <div className="space-y-8">
@@ -197,7 +198,7 @@ export const ProfilePage: React.FC<ProfilePageProps> = ({
 
           {/* XP Progress to next rank */}
           {nextRank && (
-            <div className="p-4 bg-card/30 rounded-xl border border-border">
+            <div className="case-file p-4">
               <div className="flex items-center justify-between text-sm mb-2">
                 <span className="text-muted-foreground">Progress to {nextRank.icon} {nextRank.title}</span>
                 <span className="text-foreground">{xp} / {nextRank.minXp} XP</span>
@@ -212,7 +213,7 @@ export const ProfilePage: React.FC<ProfilePageProps> = ({
           )}
 
           {/* Reading Streak */}
-          <div className="p-4 bg-card/30 rounded-xl border border-border">
+          <div className="case-file p-4">
             <ReadingStreak user={user} />
           </div>
 
@@ -260,13 +261,13 @@ export const ProfilePage: React.FC<ProfilePageProps> = ({
         </div>
 
         {/* Email Notifications */}
-        <div className="mt-8 p-6 bg-card/30 rounded-xl border border-border">
+        <div className="mt-8 case-file p-6">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
               <Icons.Mail className="w-5 h-5 text-muted-foreground" />
               <div>
-                <h4 className="text-foreground font-medium">New Chapter Notifications</h4>
-                <p className="text-muted-foreground text-sm">Get notified when new chapters are published</p>
+                <h4 className="text-foreground font-medium">New Story Notifications</h4>
+                <p className="text-muted-foreground text-sm">Get notified when new stories are published</p>
               </div>
             </div>
             <button
@@ -289,7 +290,7 @@ export const ProfilePage: React.FC<ProfilePageProps> = ({
           <div className="grid grid-cols-2 md:grid-cols-4 gap-6 text-center">
             <div>
               <div className="text-3xl font-display text-foreground">{readCount}</div>
-              <div className="text-muted-foreground text-sm mt-1">Chapters Read</div>
+              <div className="text-muted-foreground text-sm mt-1">Stories Read</div>
             </div>
             <div>
               <div className="text-3xl font-display text-foreground">{bookmarkCount}</div>

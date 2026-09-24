@@ -1,9 +1,6 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
-  <defs>
-    <linearGradient id="g" x1="0" y1="0" x2="0" y2="1">
-      <stop offset="0%" stop-color="#fbbf24"/>
-      <stop offset="100%" stop-color="#d97706"/>
-    </linearGradient>
-  </defs>
-  <text x="32" y="48" text-anchor="middle" font-family="Georgia, serif" font-weight="bold" font-size="48" fill="url(#g)">S</text>
+  <rect width="64" height="64" rx="4" fill="#101010"/>
+  <path d="M14 15h25l11 11v23H14z" fill="none" stroke="#e7e5e4" stroke-width="3"/>
+  <path d="M39 15v12h11" fill="none" stroke="#e7e5e4" stroke-width="3"/>
+  <path d="M20 35h24M20 42h17" stroke="#b91c1c" stroke-width="3"/>
 </svg>

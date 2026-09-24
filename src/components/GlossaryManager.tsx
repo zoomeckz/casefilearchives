@@ -219,7 +219,7 @@ export const GlossaryManager: React.FC<GlossaryManagerProps> = ({ authToken, ent
                 ))}
               </ul>
               <p className="text-xs text-muted-foreground mt-2 ml-4">
-                Tip: name files like <code className="text-accent">TermName_Sedorium.png</code> for auto-matching.
+                Tip: use the legacy character name in the filename for automatic matching.
               </p>
             </details>
           )}

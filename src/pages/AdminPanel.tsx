@@ -711,7 +711,7 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ glossary, authToken, use
             >
               {sidebarOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
             </button>
-            <h2 className="font-display text-lg text-accent">Admin</h2>
+            <h2 className="font-display text-lg text-foreground uppercase">Case File Admin</h2>
           </div>
           <span className="text-xs text-muted-foreground capitalize">{activeTab}</span>
       </div>
@@ -725,7 +725,7 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ glossary, authToken, use
           />
           <aside className="md:hidden fixed top-0 left-0 h-full z-40 w-64 bg-card border-r border-border p-4 overflow-y-auto animate-in slide-in-from-left">
             <div className="flex items-center justify-between mb-6">
-              <h2 className="font-display text-lg text-accent">Admin Panel</h2>
+              <h2 className="font-display text-lg text-foreground uppercase">Case File Admin</h2>
               <button
                 onClick={() => setSidebarOpen(false)}
                 className="p-1.5 rounded hover:bg-secondary"
@@ -746,8 +746,8 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ glossary, authToken, use
           <div className={`flex items-center ${showLabels ? "justify-between" : "justify-center"} mb-6 px-2`}>
             {showLabels && (
               <div>
-                <h2 className="font-display text-base text-accent leading-none">Sedorium</h2>
-                <p className="text-[10px] uppercase tracking-widest text-muted-foreground mt-1">Admin</p>
+                <h2 className="font-display text-base text-foreground leading-none">CASE FILE</h2>
+                <p className="case-label text-[9px] mt-1">Admin archive</p>
               </div>
             )}
             <button
@@ -917,7 +917,7 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ glossary, authToken, use
                             if (drafts.length === 0) { toast.error('No drafts to download'); return; }
                             const separator = '═'.repeat(60);
                             const lines: string[] = [
-                              'SEDORIUM — DRAFTS',
+                              'CASE FILE / DRAFTS',
                               separator,
                               `Exported: ${new Date().toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })}`,
                               `Total Drafts: ${drafts.length}`,
@@ -942,7 +942,7 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ glossary, authToken, use
                             const url = URL.createObjectURL(blob);
                             const a = document.createElement('a');
                             a.href = url;
-                            a.download = 'Sedorium_Drafts.txt';
+                            a.download = 'Case_File_Drafts.txt';
                             document.body.appendChild(a);
                             a.click();
                             setTimeout(() => { document.body.removeChild(a); URL.revokeObjectURL(url); }, 3000);
@@ -1005,7 +1005,7 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ glossary, authToken, use
             {activeTab === "legacy" && (
               <div>
                 <h1 className="font-display text-2xl md:text-3xl text-accent mb-2">Legacy Archive</h1>
-                <p className="text-sm text-muted-foreground mb-6">Everything from the old Sedorium world, kept hidden from readers. Numbers here only count activity from before the reset.</p>
+                <p className="text-sm text-muted-foreground mb-6">Everything from the previous connected world, kept hidden from readers. Numbers here only count activity from before the reset.</p>
                 {legacyStats && (
                   <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-6 auto-rows-fr gap-3 mb-8">
                     <StatCard label="Chapter Views" value={legacyStats.views} />

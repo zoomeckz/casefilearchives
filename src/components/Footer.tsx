@@ -61,20 +61,11 @@ export const Footer: React.FC<FooterProps> = ({ setCurrentPage }) => {
   };
 
   return (
-    <footer className="border-t border-border/50 py-14 px-6 bg-stone-950">
-      <div className="max-w-4xl mx-auto">
-        {/* Sigil mark above wordmark */}
+    <footer className="border-t border-border py-14 px-6 bg-card/40">
+      <div className="max-w-6xl mx-auto">
         <div className="flex flex-col items-center text-center">
-          <span
-            className="text-accent text-3xl leading-none mb-2 select-none"
-            aria-hidden="true"
-            style={{ fontFamily: "'Cinzel Decorative', serif", textShadow: "0 0 12px hsl(var(--accent) / 0.35)" }}
-          >
-            ✦
-          </span>
-          <p className="brand-title text-accent text-2xl tracking-[0.3em] mb-2">
-            SEDORIUM
-          </p>
+          <p className="brand-title text-foreground text-2xl mb-2">CASE FILE</p>
+          <p className="case-label text-[9px] mb-3">Independent fiction archive</p>
           <p className="text-muted-foreground text-sm mb-6">
             Written by AnyoneButSam
           </p>
@@ -90,13 +81,13 @@ export const Footer: React.FC<FooterProps> = ({ setCurrentPage }) => {
               placeholder="your@email.com"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
-              className="w-full px-3 py-2 text-center bg-stone-900 border border-border rounded-md text-sm text-foreground placeholder:text-muted-foreground/60 focus:outline-none focus:border-primary/50"
-              aria-label="Email address for new chapter notifications"
+              className="w-full px-3 py-2 text-center bg-background border border-border rounded-none text-sm text-foreground placeholder:text-muted-foreground/60 focus:outline-none focus:border-primary"
+              aria-label="Email address for new story notifications"
             />
             <button
               type="submit"
               disabled={submitting}
-              className="px-6 py-2 bg-primary/15 hover:bg-primary/25 text-primary border border-primary/30 rounded-md text-sm transition-colors disabled:opacity-50"
+              className="px-6 py-2 bg-primary text-primary-foreground border border-primary rounded-none text-sm uppercase tracking-widest transition-colors disabled:opacity-50"
             >
               {submitting ? "…" : "Subscribe"}
             </button>

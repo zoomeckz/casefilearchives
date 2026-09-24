@@ -8,7 +8,7 @@ const corsHeaders = {
 
 const SITE_URL = "https://www.thefivethrones.com";
 const AUTHOR = "AnyoneButSam";
-const TITLE_BASE = "Sedorium";
+const TITLE_BASE = "Case File";
 
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") {
@@ -35,14 +35,14 @@ Deno.serve(async (req) => {
     const total = chapters.length;
     const latest = chapters[chapters.length - 1];
 
-    const description = "Random situations put into story form. Read standalone fiction by AnyoneButSam.";
-    const title = "Sedorium — Standalone Stories by AnyoneButSam";
+    const description = "Unrelated stories. Uncomfortable possibilities. Read standalone fiction by AnyoneButSam.";
+    const title = "Case File — Standalone Stories by AnyoneButSam";
 
     const keywords = [
       "standalone stories",
       "short fiction",
       "AnyoneButSam",
-      "Sedorium",
+      "Case File",
       "indie author",
     ];
 

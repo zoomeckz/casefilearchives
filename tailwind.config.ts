@@ -19,8 +19,8 @@ export default {
     },
     extend: {
       fontFamily: {
-        sans: ['"Nunito Sans"', 'sans-serif'],
-        display: ['Lora', 'serif'],
+        sans: ['"IBM Plex Sans"', 'sans-serif'],
+        display: ['"Oswald"', 'sans-serif'],
       },
       colors: {
         border: "hsl(var(--border))",

@@ -62,7 +62,7 @@ export const WorldMapPage: React.FC<WorldMapPageProps> = ({ glossary }) => {
     <div className="min-h-screen py-8 sm:py-12 px-4 sm:px-6">
       <div className="max-w-6xl mx-auto">
         <h1 className="font-display text-3xl sm:text-4xl text-accent mb-2">🗺️ World Atlas</h1>
-        <p className="text-muted-foreground mb-8">Explore the world of Sedorium and its connections</p>
+        <p className="text-muted-foreground mb-8">Explore the archived world and its connections</p>
 
         <div className="mb-6">
           <input

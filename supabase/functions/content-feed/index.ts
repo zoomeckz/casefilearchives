@@ -7,9 +7,9 @@ Deno.serve((req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
   const url = new URL(req.url);
   const data = {
-    title: "Sedorium",
+    title: "Case File",
     author: "AnyoneButSam",
-    description: "Random situations put into story form.",
+    description: "Unrelated stories. Uncomfortable possibilities.",
     language: "en",
     url: "https://www.thefivethrones.com",
   };
@@ -19,7 +19,7 @@ Deno.serve((req) => {
     });
   }
   return new Response(
-    `<!doctype html><html lang="en"><head><title>Sedorium</title><meta name="description" content="${data.description}"></head><body><main><h1>Sedorium</h1><p>${data.description}</p><p>By ${data.author}</p></main></body></html>`,
+    `<!doctype html><html lang="en"><head><title>Case File</title><meta name="description" content="${data.description}"></head><body><main><h1>Case File</h1><p>${data.description}</p><p>By ${data.author}</p></main></body></html>`,
     { headers: { ...corsHeaders, "Content-Type": "text/html; charset=utf-8" } },
   );
 });

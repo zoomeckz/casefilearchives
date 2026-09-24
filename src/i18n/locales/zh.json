@@ -33,7 +33,7 @@
   },
   "chapters": {
     "title": "章节列表",
-    "subtitle": "Sedorium迄今为止的所有章节",
+    "subtitle": "the legacy archive迄今为止的所有章节",
     "search": "搜索章节",
     "read": "阅读",
     "continue": "继续阅读",
@@ -71,7 +71,7 @@
   },
   "codex": {
     "title": "Codex",
-    "subtitle": "Sedorium中的人物、地点、生物及背景传说",
+    "subtitle": "the legacy archive中的人物、地点、生物及背景传说",
     "browse": "浏览",
     "characters": "人物",
     "locations": "地点",
