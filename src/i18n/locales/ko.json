@@ -33,7 +33,7 @@
   },
   "chapters": {
     "title": "챕터",
-    "subtitle": "지금까지 공개된 Sedorium의 모든 챕터",
+    "subtitle": "지금까지 공개된 the legacy archive의 모든 챕터",
     "search": "챕터 검색",
     "read": "읽기",
     "continue": "이어 보기",
@@ -71,7 +71,7 @@
   },
   "codex": {
     "title": "Codex",
-    "subtitle": "Sedorium의 등장인물, 장소, 생명체, 그리고 세계관",
+    "subtitle": "the legacy archive의 등장인물, 장소, 생명체, 그리고 세계관",
     "browse": "둘러보기",
     "characters": "등장인물",
     "locations": "장소",

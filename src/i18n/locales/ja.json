@@ -33,7 +33,7 @@
   },
   "chapters": {
     "title": "チャプター",
-    "subtitle": "Sedoriumの全チャプター一覧",
+    "subtitle": "the legacy archiveの全チャプター一覧",
     "search": "チャプターを検索",
     "read": "読む",
     "continue": "続きを読む",
@@ -71,7 +71,7 @@
   },
   "codex": {
     "title": "Codex",
-    "subtitle": "Sedoriumの登場人物、地名、生物、そして伝承を収めたCodex",
+    "subtitle": "the legacy archiveの登場人物、地名、生物、そして伝承を収めたCodex",
     "browse": "閲覧",
     "characters": "登場人物",
     "locations": "地名",

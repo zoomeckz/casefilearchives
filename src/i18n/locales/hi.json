@@ -33,7 +33,7 @@
   },
   "chapters": {
     "title": "अध्याय",
-    "subtitle": "Sedorium के अब तक के सभी अध्याय",
+    "subtitle": "the legacy archive के अब तक के सभी अध्याय",
     "search": "अध्याय खोजें",
     "read": "पढ़ें",
     "continue": "जारी रखें",
@@ -71,7 +71,7 @@
   },
   "codex": {
     "title": "Codex",
-    "subtitle": "Sedorium के पात्र, स्थान, जीव और विद्या",
+    "subtitle": "the legacy archive के पात्र, स्थान, जीव और विद्या",
     "browse": "ब्राउज़ करें",
     "characters": "पात्र",
     "locations": "स्थान",
