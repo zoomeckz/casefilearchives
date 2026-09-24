@@ -57,9 +57,11 @@ const APP_ROUTES: { path: string }[] = [
   { path: "/profile" },
   { path: "/admin" },
   { path: "/about" },
+  { path: "/forum" },
+  { path: "/forum/:postId" },
 ];
 
-const LEGACY_ROUTES = ["/characters", "/forum", "/forum/:postId", "/manga", "/leaderboard", "/world", "/rewards"];
+const LEGACY_ROUTES = ["/characters", "/manga", "/leaderboard", "/world", "/rewards"];
 
 const App = () => {
   useEffect(() => {
