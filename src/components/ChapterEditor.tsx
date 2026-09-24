@@ -393,6 +393,7 @@ export const ChapterEditor: React.FC<ChapterEditorProps> = ({ authToken, userId,
             className="w-full px-4 py-3 bg-card/50 border border-border rounded-lg text-foreground text-lg font-display focus:outline-none focus:border-primary transition-colors"
           />
         </div>
+        {isLegacy ? (
         <div>
           <label className="block text-sm text-muted-foreground mb-1">Chapter #</label>
           <input
@@ -403,6 +404,7 @@ export const ChapterEditor: React.FC<ChapterEditorProps> = ({ authToken, userId,
             className="w-24 px-4 py-3 bg-card/50 border border-border rounded-lg text-foreground text-lg text-center focus:outline-none focus:border-primary transition-colors"
           />
         </div>
+        ) : <div className="hidden md:block" />}
         <div>
           <label className="block text-sm text-muted-foreground mb-1">Schedule publication</label>
           <div className="flex items-center gap-2">
@@ -444,6 +446,12 @@ export const ChapterEditor: React.FC<ChapterEditorProps> = ({ authToken, userId,
           )}
         </div>
       </div>
+
+      {!isLegacy && (
+        <div className="mb-6 p-4 rounded-lg border border-border/60 bg-card/30">
+          <TagPicker selected={tags} onChange={setTags} authToken={authToken} />
+        </div>
+      )}
 
       {/* Cover image (optional) */}
       <div className="mb-6 p-4 rounded-lg border border-border/60 bg-card/30">
@@ -495,7 +503,7 @@ export const ChapterEditor: React.FC<ChapterEditorProps> = ({ authToken, userId,
           </div>
           <div className="max-w-[720px] mx-auto px-4 sm:px-6 py-8 sm:py-12" style={{ fontFamily: "'Nunito Sans', sans-serif", lineHeight: 1.9, fontSize: '1.05rem' }}>
             <header className="text-center mb-12">
-              <span className="text-accent text-sm font-medium tracking-wider uppercase">Chapter {chapterNumber}</span>
+              <span className="text-accent text-sm font-medium tracking-wider uppercase">{isLegacy ? `Chapter ${chapterNumber}` : tags.join(' · ')}</span>
               <h1 className="font-display text-3xl sm:text-4xl text-primary mt-2 mb-3" style={{ lineHeight: 1.2 }}>{title || 'Untitled'}</h1>
               <div className="text-muted-foreground text-sm px-4 py-2 bg-card/30 rounded-lg inline-block">Preview — Not yet published</div>
             </header>
