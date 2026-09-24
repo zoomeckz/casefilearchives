@@ -454,6 +454,7 @@ export type Database = {
           id: string
           is_archived: boolean
           is_pinned: boolean | null
+          story_id: string | null
           title: string
           updated_at: string
           user_id: string
@@ -465,6 +466,7 @@ export type Database = {
           id?: string
           is_archived?: boolean
           is_pinned?: boolean | null
+          story_id?: string | null
           title: string
           updated_at?: string
           user_id: string
@@ -476,11 +478,20 @@ export type Database = {
           id?: string
           is_archived?: boolean
           is_pinned?: boolean | null
+          story_id?: string | null
           title?: string
           updated_at?: string
           user_id?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "forum_posts_story_id_fkey"
+            columns: ["story_id"]
+            isOneToOne: false
+            referencedRelation: "chapters"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       forum_replies: {
         Row: {

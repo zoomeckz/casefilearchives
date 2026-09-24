@@ -17,6 +17,7 @@ import { AdminPanel } from "@/pages/AdminPanel";
 import { RewardsPage } from "@/pages/RewardsPage";
 import { PublicProfilePage } from "@/pages/PublicProfilePage";
 import { AboutPage } from "@/pages/AboutPage";
+import { ForumPage } from "@/pages/ForumPage";
 import { usePageTracking } from "@/hooks/usePageTracking";
 
 const Index = () => {
@@ -35,6 +36,7 @@ const Index = () => {
     if (path === "/profile") return "profile";
     if (path === "/admin") return "admin";
     if (path === "/about") return "about";
+    if (path === "/forum" || path.startsWith("/forum/")) return "forum";
     return "home";
   })();
 
@@ -46,6 +48,7 @@ const Index = () => {
     else if (page === "profile") go("/profile");
     else if (page === "admin") go("/admin");
     else if (page === "about") go("/about");
+    else if (page === "forum") go("/forum");
     else if (page === "reader" && selectedChapter) {
       go(`/chapters/${selectedChapter.chapterNumber}`);
     }
@@ -197,6 +200,10 @@ const Index = () => {
         {currentPage === "public-profile" && <PublicProfilePage />}
 
         {currentPage === "about" && <AboutPage />}
+
+        {currentPage === "forum" && (
+          <ForumPage user={user} authToken={session?.access_token} stories={publishedChapters.filter((c) => !c.isArchived)} setShowAuthModal={setShowAuthModal} />
+        )}
 
       </main>
 
