@@ -42,6 +42,32 @@ function generateSitemap(entries: SitemapEntry[]) {
   ].join("\n");
 }
 
-const entries = staticEntries;
+const SUPABASE_URL = "https://iiezbdlmikvgxjlozwlc.supabase.co";
+const ANON_KEY =
+  "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImlpZXpiZGxtaWt2Z3hqbG96d2xjIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzAxNTg5NjcsImV4cCI6MjA4NTczNDk2N30.y344r25H1VH0f2RBvfEt_RHWBWb0yjGAvKqLE5qLFGU";
+
+async function storyEntries(): Promise<SitemapEntry[]> {
+  try {
+    const res = await fetch(
+      `${SUPABASE_URL}/rest/v1/chapters?select=chapter_number,published_at,scheduled_at,updated_at&is_archived=eq.false&order=published_at.desc`,
+      { headers: { apikey: ANON_KEY, Authorization: `Bearer ${ANON_KEY}` } },
+    );
+    if (!res.ok) return [];
+    const now = Date.now();
+    const rows = (await res.json()) as { chapter_number: number; published_at: string | null; scheduled_at: string | null; updated_at: string | null }[];
+    return rows
+      .filter((r) => r.published_at && new Date(r.published_at).getTime() <= now && (!r.scheduled_at || new Date(r.scheduled_at).getTime() <= now))
+      .map((r) => ({
+        path: `/chapters/${r.chapter_number}`,
+        lastmod: (r.updated_at || r.published_at || "").slice(0, 10) || undefined,
+        changefreq: "monthly" as const,
+        priority: "0.8",
+      }));
+  } catch {
+    return [];
+  }
+}
+
+const entries = [...staticEntries, ...(await storyEntries())];
 writeFileSync(resolve("public/sitemap.xml"), generateSitemap(entries));
 console.log(`sitemap.xml written (${entries.length} entries)`);
