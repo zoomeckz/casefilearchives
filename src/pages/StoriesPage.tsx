@@ -4,7 +4,6 @@ import { useTranslation } from "react-i18next";
 import { Icons } from "@/lib/icons";
 import { Chapter } from "@/hooks/useChapters";
 import { AuthUser } from "@/hooks/useAuth";
-import { ReadingProgressBadge } from "@/components/ReadingProgressBadge";
 import { ReadingStats } from "@/components/ReadingStats";
 import { BookmarkButton } from "@/components/BookmarkButton";
 
