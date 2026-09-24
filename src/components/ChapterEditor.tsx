@@ -157,6 +157,9 @@ export const ChapterEditor: React.FC<ChapterEditorProps> = ({ authToken, userId,
   const autoSaveTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [glossaryMarked, setGlossaryMarked] = useState(false);
   const [takenSlots, setTakenSlots] = useState<string[]>([]);
+  const [calendarOpen, setCalendarOpen] = useState(false);
+  const [calYear, setCalYear] = useState(new Date().getFullYear());
+  const [calMonth, setCalMonth] = useState(new Date().getMonth()); // 0-based
 
   // Load all scheduled slots to prevent double-booking
   useEffect(() => {
