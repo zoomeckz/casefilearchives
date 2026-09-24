@@ -55,7 +55,9 @@ const Index = () => {
   const { user, session, loading: authLoading, signIn, signUp, signOut, refreshUser } = useAuth();
 
   // Chapters from database
-  const { chapters, publishedChapters, incrementViews } = useChapters(user?.isAdmin);
+  const { chapters: allChapters, publishedChapters, incrementViews } = useChapters(user?.isAdmin);
+  // Legacy/archived chapters are admin-panel only — never shown on public pages, even to admins.
+  const chapters = React.useMemo(() => allChapters.filter((c) => !c.isArchived), [allChapters]);
 
   // Reading progress
   const { isRead, markAsRead, markAsUnread, readCount } = useReadingProgress(user);
