@@ -77,6 +77,25 @@ function getSlotAfterLatestScheduled(takenDates: string[]): string {
   return getNextAvailableSlot(takenDates, latestDate);
 }
 
+// ── Calendar helpers ──
+
+const WEEKDAY_LABELS = ['Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa', 'Su'];
+const MONTH_LABELS = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
+
+/** Monday-first offset of the 1st of the month. */
+function firstWeekdayOffset(year: number, month: number): number {
+  return (new Date(Date.UTC(year, month, 1)).getUTCDay() + 6) % 7;
+}
+
+function daysInMonthOf(year: number, month: number): number {
+  return new Date(Date.UTC(year, month + 1, 0)).getUTCDate();
+}
+
+function todayIsoDate(): string {
+  const now = new Date();
+  return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
+}
+
 // ── DB-backed draft helpers ──
 
 export async function getAllDrafts(token?: string): Promise<ChapterDraft[]> {
@@ -157,6 +176,9 @@ export const ChapterEditor: React.FC<ChapterEditorProps> = ({ authToken, userId,
   const autoSaveTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [glossaryMarked, setGlossaryMarked] = useState(false);
   const [takenSlots, setTakenSlots] = useState<string[]>([]);
+  const [calendarOpen, setCalendarOpen] = useState(false);
+  const [calYear, setCalYear] = useState(new Date().getFullYear());
+  const [calMonth, setCalMonth] = useState(new Date().getMonth()); // 0-based
 
   // Load all scheduled slots to prevent double-booking
   useEffect(() => {
@@ -415,15 +437,21 @@ export const ChapterEditor: React.FC<ChapterEditorProps> = ({ authToken, userId,
           />
         </div>
         ) : <div className="hidden md:block" />}
-        <div>
+        <div className="relative">
           <label className="block text-sm text-muted-foreground mb-1">Schedule publication (Swedish time)</label>
           <div className="flex items-center gap-2">
-            <input
-              type="datetime-local"
-              value={scheduledAt}
-              onChange={(e) => setScheduledAt(e.target.value)}
-              className="px-4 py-3 bg-card/50 border border-border rounded-lg text-foreground text-sm focus:outline-none focus:border-primary transition-colors [color-scheme:dark]"
-            />
+            <button
+              type="button"
+              onClick={() => {
+                const base = scheduledAt || `${todayIsoDate()}T10:00`;
+                setCalYear(parseInt(base.slice(0, 4), 10));
+                setCalMonth(parseInt(base.slice(5, 7), 10) - 1);
+                setCalendarOpen((v) => !v);
+              }}
+              className="px-4 py-3 bg-card/50 border border-border rounded-lg text-foreground text-sm text-left focus:outline-none focus:border-primary transition-colors hover:border-primary/60 min-w-[220px]"
+            >
+              {scheduledAt ? scheduledAt.replace('T', ' ') : 'Pick date & time…'}
+            </button>
             {scheduledAt && (
               <button
                 type="button"
@@ -440,6 +468,105 @@ export const ChapterEditor: React.FC<ChapterEditorProps> = ({ authToken, userId,
           </span>
           {scheduledAt && takenSlots.includes(scheduledAt.slice(0, 10)) && (
             <span className="text-xs text-accent mt-1 block">Note: another {isLegacy ? 'chapter' : 'story'} is also scheduled that day.</span>
+          )}
+
+          {calendarOpen && (
+            <>
+              <div
+                className="fixed inset-0 z-40"
+                onClick={() => setCalendarOpen(false)}
+                aria-hidden="true"
+              />
+              <div className="absolute z-50 mt-2 p-4 rounded-lg border border-border bg-card shadow-xl w-[280px]">
+                <div className="flex items-center justify-between mb-3">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      const m = calMonth - 1;
+                      setCalMonth((m + 12) % 12);
+                      if (m < 0) setCalYear((y) => y - 1);
+                    }}
+                    className="px-2 py-1 text-muted-foreground hover:text-foreground transition-colors"
+                    aria-label="Previous month"
+                  >
+                    ‹
+                  </button>
+                  <span className="text-sm font-medium text-foreground">
+                    {MONTH_LABELS[calMonth]} {calYear}
+                  </span>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      const m = calMonth + 1;
+                      setCalMonth(m % 12);
+                      if (m > 11) setCalYear((y) => y + 1);
+                    }}
+                    className="px-2 py-1 text-muted-foreground hover:text-foreground transition-colors"
+                    aria-label="Next month"
+                  >
+                    ›
+                  </button>
+                </div>
+                <div className="grid grid-cols-7 gap-1 mb-1">
+                  {WEEKDAY_LABELS.map((d) => (
+                    <span key={d} className="text-center text-[10px] text-muted-foreground py-1">{d}</span>
+                  ))}
+                </div>
+                <div className="grid grid-cols-7 gap-1">
+                  {Array.from({ length: firstWeekdayOffset(calYear, calMonth) }).map((_, i) => (
+                    <span key={`pad-${i}`} />
+                  ))}
+                  {Array.from({ length: daysInMonthOf(calYear, calMonth) }).map((_, i) => {
+                    const day = i + 1;
+                    const iso = `${calYear}-${String(calMonth + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+                    const booked = takenSlots.includes(iso);
+                    const selected = scheduledAt.startsWith(iso);
+                    return (
+                      <button
+                        key={iso}
+                        type="button"
+                        onClick={() => {
+                          const timePart = scheduledAt.slice(11) || '10:00';
+                          setScheduledAt(`${iso}T${timePart}`);
+                        }}
+                        className={[
+                          'h-8 rounded text-sm transition-colors',
+                          booked
+                            ? 'bg-destructive/25 text-destructive font-semibold hover:bg-destructive/40'
+                            : 'text-foreground hover:bg-secondary',
+                          selected ? 'ring-2 ring-primary' : '',
+                        ].join(' ')}
+                        title={booked ? 'A story is already scheduled this day' : undefined}
+                      >
+                        {day}
+                      </button>
+                    );
+                  })}
+                </div>
+                {scheduledAt && (
+                  <div className="mt-3 pt-3 border-t border-border flex items-center gap-2">
+                    <label className="text-xs text-muted-foreground">Time</label>
+                    <input
+                      type="time"
+                      value={scheduledAt.slice(11, 16) || '10:00'}
+                      onChange={(e) => setScheduledAt(`${scheduledAt.slice(0, 10)}T${e.target.value || '10:00'}`)}
+                      className="px-2 py-1.5 bg-secondary/50 border border-border rounded text-foreground text-sm focus:outline-none focus:border-primary transition-colors [color-scheme:dark]"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setCalendarOpen(false)}
+                      className="ml-auto px-3 py-1.5 bg-primary hover:bg-primary/90 text-primary-foreground rounded text-sm transition-colors"
+                    >
+                      Done
+                    </button>
+                  </div>
+                )}
+                <p className="mt-3 text-[11px] text-muted-foreground">
+                  <span className="inline-block w-2 h-2 rounded-sm bg-destructive/60 mr-1 align-middle" />
+                  Days with a story already scheduled
+                </p>
+              </div>
+            </>
           )}
         </div>
       </div>
