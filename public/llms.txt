@@ -1,8 +1,8 @@
-# Sedorium
+# Case File
 
-> Random situations put into story form.
+> Unrelated stories. Uncomfortable possibilities.
 
-Sedorium is an English-language collection of standalone fiction by AnyoneButSam.
+Case File is an English-language collection of standalone fiction by AnyoneButSam.
 
 - [Home](/)
 - [Stories](/chapters)

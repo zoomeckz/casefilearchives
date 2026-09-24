@@ -134,7 +134,7 @@ async function main() {
     const description =
       (plain.slice(0, 155).trim() || `${c.title} — a standalone story by ${AUTHOR}.`) +
       (plain.length > 155 ? "…" : "");
-    const title = `${c.title} — Sedorium`;
+    const title = `${c.title} — Case File`;
 
     const markup = [
       `<article>`,
@@ -162,7 +162,7 @@ async function main() {
       datePublished: c.published_at,
       dateModified: c.updated_at ?? c.published_at,
       author: { "@type": "Person", name: AUTHOR },
-      isPartOf: { "@type": "CreativeWorkSeries", name: "Sedorium", url: `${BASE_URL}/chapters` },
+      isPartOf: { "@type": "CreativeWorkSeries", name: "Case File", url: `${BASE_URL}/chapters` },
       inLanguage: "en",
       wordCount: plain.split(" ").filter(Boolean).length,
     };
@@ -178,7 +178,7 @@ async function main() {
 
   // Crawlable chapter index so no chapter page is an orphan.
   const listMarkup = [
-    `<h1>All Stories — Sedorium</h1>`,
+    `<h1>All Stories — Case File</h1>`,
     `<ul>`,
     ...chapters.map(
       (c) =>
@@ -189,7 +189,7 @@ async function main() {
   const listJsonLd = {
     "@context": "https://schema.org",
     "@type": "ItemList",
-    name: "Sedorium stories",
+    name: "Case File stories",
     itemListElement: chapters.map((c, i) => ({
       "@type": "ListItem",
       position: i + 1,
@@ -199,8 +199,8 @@ async function main() {
   };
   const listPage = injectBody(
     renderHead(shell, {
-      title: `Stories — Sedorium, standalone fiction by ${AUTHOR}`,
-      description: `Read ${chapters.length} free standalone stories by ${AUTHOR}. Random situations put into story form.`,
+      title: `Stories — Case File, standalone fiction by ${AUTHOR}`,
+      description: `Read ${chapters.length} free standalone stories by ${AUTHOR}. Unrelated stories. Uncomfortable possibilities.`,
       canonical: `${BASE_URL}/chapters`,
       jsonLd: listJsonLd,
     }),

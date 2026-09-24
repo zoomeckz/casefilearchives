@@ -265,8 +265,8 @@ export const ProfilePage: React.FC<ProfilePageProps> = ({
             <div className="flex items-center gap-3">
               <Icons.Mail className="w-5 h-5 text-muted-foreground" />
               <div>
-                <h4 className="text-foreground font-medium">New Chapter Notifications</h4>
-                <p className="text-muted-foreground text-sm">Get notified when new chapters are published</p>
+                <h4 className="text-foreground font-medium">New Story Notifications</h4>
+                <p className="text-muted-foreground text-sm">Get notified when new stories are published</p>
               </div>
             </div>
             <button
@@ -289,7 +289,7 @@ export const ProfilePage: React.FC<ProfilePageProps> = ({
           <div className="grid grid-cols-2 md:grid-cols-4 gap-6 text-center">
             <div>
               <div className="text-3xl font-display text-foreground">{readCount}</div>
-              <div className="text-muted-foreground text-sm mt-1">Chapters Read</div>
+              <div className="text-muted-foreground text-sm mt-1">Stories Read</div>
             </div>
             <div>
               <div className="text-3xl font-display text-foreground">{bookmarkCount}</div>

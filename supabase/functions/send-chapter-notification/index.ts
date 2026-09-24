@@ -92,9 +92,9 @@ const handler = async (req: Request): Promise<Response> => {
      // Send emails to all subscribers
      const emailPromises = subscribers.map((subscriber) =>
        resend.emails.send({
-         from: "Sedorium <noreply@resend.dev>",
+          from: "Case File <noreply@resend.dev>",
          to: [subscriber.email],
-         subject: `New Chapter: ${chapterTitle}`,
+          subject: `New Story: ${chapterTitle}`,
          html: `
            <!DOCTYPE html>
            <html>
@@ -104,12 +104,12 @@ const handler = async (req: Request): Promise<Response> => {
            </head>
            <body style="font-family: Georgia, serif; background-color: #1c1917; color: #d6d3d1; padding: 40px 20px; margin: 0;">
              <div style="max-width: 600px; margin: 0 auto;">
-               <h1 style="color: #fef3c7; font-size: 28px; margin-bottom: 8px;">New Chapter Available</h1>
-               <p style="color: #78716c; margin-bottom: 24px;">Chapter ${chapterNumber} has been published</p>
+                <h1 style="color: #fef3c7; font-size: 28px; margin-bottom: 8px;">New Case Available</h1>
+                <p style="color: #78716c; margin-bottom: 24px;">A new standalone story has been published</p>
                
                <div style="background-color: #292524; border: 1px solid #44403c; border-radius: 12px; padding: 24px; margin-bottom: 24px;">
                  <h2 style="color: #fef3c7; font-size: 24px; margin: 0 0 8px 0;">${chapterTitle}</h2>
-                 <p style="color: #a8a29e; margin: 0;">A new chapter of Sedorium awaits you.</p>
+                  <p style="color: #a8a29e; margin: 0;">A new Case File story awaits you.</p>
                </div>
                
                <a href="${siteUrl}" style="display: inline-block; background-color: #0284c7; color: white; padding: 12px 24px; border-radius: 8px; text-decoration: none; font-weight: 500;">
@@ -117,7 +117,7 @@ const handler = async (req: Request): Promise<Response> => {
                </a>
                
                <p style="color: #57534e; font-size: 12px; margin-top: 32px;">
-                 You're receiving this because you subscribed to chapter notifications on Sedorium.
+                  You're receiving this because you subscribed to story notifications from Case File.
                  <br>
                  To unsubscribe, visit your profile settings.
                </p>
