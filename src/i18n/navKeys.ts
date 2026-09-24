@@ -46,9 +46,8 @@ export const NAV_GROUPS = {
   ] as const satisfies readonly NavEntry[],
   community: [] as const satisfies readonly NavEntry[],
   /** Visible only to signed-in users. */
-  authed: [
-    { id: "rewards", i18nKey: "rewards" },
-  ] as const satisfies readonly NavEntry[],
+  // Rewards hidden (functionality kept in RewardsPage / useAchievements)
+  authed: [] as readonly NavEntry[],
   /** Visible only to admins. */
   admin: [
     { id: "admin", i18nKey: "admin" },

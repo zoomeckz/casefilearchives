@@ -53,14 +53,13 @@ const APP_ROUTES: { path: string }[] = [
   { path: "/" },
   { path: "/chapters" },
   { path: "/chapters/:chapterNumber" },
-  { path: "/rewards" },
   { path: "/user/:userId" },
   { path: "/profile" },
   { path: "/admin" },
   { path: "/about" },
 ];
 
-const LEGACY_ROUTES = ["/characters", "/forum", "/forum/:postId", "/manga", "/leaderboard", "/world"];
+const LEGACY_ROUTES = ["/characters", "/forum", "/forum/:postId", "/manga", "/leaderboard", "/world", "/rewards"];
 
 const App = () => {
   useEffect(() => {

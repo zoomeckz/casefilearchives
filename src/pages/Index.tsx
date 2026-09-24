@@ -186,7 +186,7 @@ const Index = () => {
           <AdminPanel glossary={glossary} authToken={session?.access_token} userId={session?.user?.id} onGlossaryChange={fetchGlossary} />
         )}
 
-        {currentPage === "rewards" && user && (
+        {false && currentPage === "rewards" && user && (
           <RewardsPage user={user} />
         )}
 

@@ -237,7 +237,7 @@ export const ProfilePage: React.FC<ProfilePageProps> = ({
         </div>
 
         {/* Recent Achievements */}
-        {recentAchievements.length > 0 && (
+        {false && recentAchievements.length > 0 && (
           <div className="mt-12 p-6 bg-card/30 rounded-xl border border-border">
             <h3 className="font-display text-lg text-accent mb-4">Recent Achievements</h3>
             <div className="flex flex-wrap gap-3">

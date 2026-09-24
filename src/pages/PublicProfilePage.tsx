@@ -126,7 +126,7 @@ export const PublicProfilePage: React.FC = () => {
         </div>
 
         {/* Achievements */}
-        {achievements.length > 0 && (
+        {false && achievements.length > 0 && (
           <section>
             <h2 className="font-display text-xl text-accent mb-4">Achievements ({achievements.length})</h2>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
@@ -143,7 +143,7 @@ export const PublicProfilePage: React.FC = () => {
           </section>
         )}
 
-        {achievements.length === 0 && (
+        {false && achievements.length === 0 && (
           <p className="text-muted-foreground text-center py-8">No achievements yet</p>
         )}
 
