@@ -291,7 +291,7 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ glossary, authToken, use
 
   const fetchChapters = async () => {
     const { data } = await dbFetch<any[]>('chapters', {
-      select: 'id,title,chapter_number,views,published_at,scheduled_at,is_archived',
+      select: 'id,title,chapter_number,views,published_at,scheduled_at,is_archived,tags',
       order: 'chapter_number.asc',
       token: authToken,
     });
@@ -304,7 +304,7 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ glossary, authToken, use
         const after = `created_at=gte.${LEGACY_CUTOFF}`;
         const before = `created_at=lt.${LEGACY_CUTOFF}`;
         const [chaptersRes, readersRes, commentsRes, forumRes, subscribersRes, pageViewsRes, oldReadersRes, oldCommentsRes, oldSubsRes] = await Promise.all([
-          dbFetch<any[]>('chapters', { select: 'id,title,views,chapter_number,published_at,scheduled_at,is_archived', order: 'chapter_number.asc', token: authToken }),
+          dbFetch<any[]>('chapters', { select: 'id,title,views,chapter_number,published_at,scheduled_at,is_archived,tags', order: 'chapter_number.asc', token: authToken }),
           dbFetch<any[]>('profiles', { select: '*', head: true, filters: after, token: authToken }),
           dbFetch<any[]>('comments', { select: '*', head: true, filters: after, token: authToken }),
           dbFetch<any[]>('forum_posts', { select: '*', head: true, token: authToken }),
@@ -368,25 +368,27 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ glossary, authToken, use
     setDownloading(true);
     try {
       await downloadAllChapters();
-      toast.success("Chapters downloaded successfully");
+      toast.success("Stories downloaded successfully");
     } catch {
-      toast.error("Failed to download chapters");
+      toast.error("Failed to download stories");
     } finally {
       setDownloading(false);
     }
   };
 
   const handleDeleteChapter = async (id: string, title: string) => {
-    if (!confirm(`Are you sure you want to delete "${title}"? This cannot be undone.`)) return;
+    const isLegacy = chapters.find((item) => item.id === id)?.is_archived === true;
+    const itemType = isLegacy ? 'legacy chapter' : 'story';
+    if (!confirm(`Are you sure you want to delete the ${itemType} "${title}"? This cannot be undone.`)) return;
     const { error } = await dbFetch('chapters', {
       method: 'DELETE',
       filters: `id=eq.${id}`,
       token: authToken,
     });
     if (error) {
-      toast.error('Failed to delete chapter');
+      toast.error(`Failed to delete ${itemType}`);
     } else {
-      toast.success('Chapter deleted');
+      toast.success(`${isLegacy ? 'Legacy chapter' : 'Story'} deleted`);
       fetchChapters();
     }
   };
@@ -542,7 +544,7 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ glossary, authToken, use
 
   useEffect(() => {
     const tabParam = searchParams.get('tab');
-    const nextTab = ['dashboard', 'chapters', 'search', 'analytics', 'glossary', 'seo', 'audit'].includes(tabParam || '')
+    const nextTab = ['dashboard', 'chapters', 'search', 'analytics', 'legacy', 'glossary', 'seo', 'audit'].includes(tabParam || '')
       ? (tabParam as string)
       : 'dashboard';
     const nextSubTab = searchParams.get('subtab') === 'drafts' ? 'drafts' : 'published';
@@ -1127,16 +1129,13 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ glossary, authToken, use
                         <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
                           <div className="p-3 bg-background/50 rounded-lg border border-border">
                             <div className="text-2xl font-display text-foreground">{seoStatus.live.totalChapters}</div>
-                            <div className="text-[10px] uppercase tracking-wide text-muted-foreground mt-1">Chapters exposed to crawlers</div>
+                             <div className="text-[10px] uppercase tracking-wide text-muted-foreground mt-1">Stories exposed to crawlers</div>
                           </div>
                           <div className="p-3 bg-background/50 rounded-lg border border-border">
                             <div className="text-sm font-medium text-foreground truncate" title={seoStatus.live.latestChapter?.title}>
-                              {seoStatus.live.latestChapter ? `#${seoStatus.live.latestChapter.number}` : '—'}
+                               {seoStatus.live.latestChapter?.title || '—'}
                             </div>
-                            <div className="text-[10px] uppercase tracking-wide text-muted-foreground mt-1">Latest chapter</div>
-                            <div className="text-xs text-muted-foreground truncate" title={seoStatus.live.latestChapter?.title}>
-                              {seoStatus.live.latestChapter?.title || '—'}
-                            </div>
+                             <div className="text-[10px] uppercase tracking-wide text-muted-foreground mt-1">Latest story</div>
                           </div>
                           <div className="p-3 bg-background/50 rounded-lg border border-border">
                             <div className="text-sm font-medium text-foreground">{seoStatus.live.schemas?.length ?? 0}</div>
@@ -1294,7 +1293,7 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ glossary, authToken, use
                     <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
                       <div className="p-4 bg-card/50 rounded-xl border border-border text-center">
                         <div className="text-2xl font-display text-foreground">{seoResult.stats.chapters.total}</div>
-                        <div className="text-xs text-muted-foreground mt-1">Chapters Indexed</div>
+                        <div className="text-xs text-muted-foreground mt-1">Stories Indexed</div>
                       </div>
                       <div className="p-4 bg-card/50 rounded-xl border border-border text-center">
                         <div className="text-2xl font-display text-foreground">{seoResult.stats.glossary.total}</div>
@@ -1345,7 +1344,7 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ glossary, authToken, use
                       <h3 className="font-medium text-foreground mb-3">SEO Checklist</h3>
                       <div className="space-y-2">
                         {[
-                          { label: `${seoResult.seoChecklist.structuredDataChapters} chapters in structured data`, ok: seoResult.seoChecklist.structuredDataChapters > 0 },
+                           { label: `${seoResult.seoChecklist.structuredDataChapters} stories in structured data`, ok: seoResult.seoChecklist.structuredDataChapters > 0 },
                           { label: 'Content feed serving', ok: seoResult.seoChecklist.contentFeedServing },
                           { label: `${seoResult.seoChecklist.glossaryTermsIndexed} glossary terms indexed`, ok: seoResult.seoChecklist.glossaryTermsIndexed > 0 },
                           { label: `${seoResult.seoChecklist.communityContentIndexed} community items indexed`, ok: seoResult.seoChecklist.communityContentIndexed > 0 },
@@ -1528,6 +1527,7 @@ type ChapterRow = {
   published_at: string | null;
   scheduled_at: string | null;
   is_archived?: boolean;
+  tags?: string[];
 };
 
 type SortKey = 'number-asc' | 'number-desc' | 'views-desc' | 'views-asc' | 'newest' | 'oldest';
@@ -1565,10 +1565,11 @@ const ChapterTable: React.FC<ChapterTableProps> = ({
 }) => {
   // Each header maps a column to its (asc, desc) sort keys. Clicking a header
   // toggles between the two; the active one shows a directional caret.
-  type Column = { key: 'number' | 'title' | 'views' | 'date'; label: string; ascKey?: SortKey; descKey?: SortKey; align?: string; hideOnMobile?: boolean };
+  type Column = { key: 'number' | 'title' | 'tags' | 'views' | 'date'; label: string; ascKey?: SortKey; descKey?: SortKey; align?: string; hideOnMobile?: boolean };
   const columns: Column[] = [
     ...(legacy ? [{ key: 'number' as const, label: '#', ascKey: 'number-asc' as SortKey, descKey: 'number-desc' as SortKey }] : []),
     { key: 'title', label: 'Title' },
+    ...(!legacy ? [{ key: 'tags' as const, label: 'Tags', hideOnMobile: true }] : []),
     { key: 'views', label: 'Views', ascKey: 'views-asc', descKey: 'views-desc', align: 'text-right', hideOnMobile: true },
     { key: 'date', label: 'Published', ascKey: 'oldest', descKey: 'newest', hideOnMobile: true },
   ];
@@ -1656,6 +1657,15 @@ const ChapterTable: React.FC<ChapterTableProps> = ({
                       {ch.views} views · {ch.published_at ? new Date(ch.published_at).toLocaleDateString() : 'No date'}
                     </div>
                   </td>
+                   {!legacy && (
+                     <td className="px-3 md:px-4 py-3 hidden md:table-cell">
+                       <div className="flex flex-wrap gap-1">
+                         {(ch.tags || []).length > 0 ? (ch.tags || []).map((tag) => (
+                           <span key={tag} className="px-1.5 py-0.5 rounded border border-border text-[10px] text-muted-foreground">{tag}</span>
+                         )) : <span className="text-xs text-muted-foreground">—</span>}
+                       </div>
+                     </td>
+                   )}
                   <td className="px-3 md:px-4 py-3 text-right tabular-nums text-muted-foreground hidden md:table-cell">
                     {ch.views.toLocaleString()}
                   </td>

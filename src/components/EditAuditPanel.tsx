@@ -113,7 +113,7 @@ export const EditAuditPanel = ({ authToken }: EditAuditPanelProps) => {
 
     if (error) { toast.error(error); return; }
     if (data && data.ok === false) {
-      toast.warning(`Anchor not found — chapter unchanged. Logged as anchor_miss.`);
+      toast.warning(`Anchor not found — content unchanged. Logged as anchor_miss.`);
     } else {
       toast.success("Replacement applied; previous version snapshotted.");
       setForm(f => ({ ...f, anchor: "", replacement: "", note: "" }));

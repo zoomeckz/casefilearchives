@@ -20,9 +20,9 @@ export async function downloadSingleChapter(chapterNumber: number, title: string
     `${url}/rest/v1/chapters?select=title,content,chapter_number,published_at&chapter_number=eq.${chapterNumber}`,
     { headers: { 'apikey': key, 'Authorization': `Bearer ${token}` } }
   );
-  if (!response.ok) throw new Error("Failed to fetch chapter");
+  if (!response.ok) throw new Error(`Failed to fetch ${legacy ? 'chapter' : 'story'}`);
   const data = await response.json();
-  if (!Array.isArray(data) || data.length === 0) throw new Error("Chapter not found");
+  if (!Array.isArray(data) || data.length === 0) throw new Error(`${legacy ? 'Chapter' : 'Story'} not found`);
 
   const ch = data[0];
   const separator = "═".repeat(60);
@@ -85,12 +85,10 @@ function stripHtml(html: string): string {
 }
 
 export async function downloadAllChapters() {
-  // Use the admin's access token so RLS lets us include both live AND
-  // scheduled (future) chapters. Without it the anon key is filtered to
-  // only chapters whose scheduled_at is null or already in the past.
+  // Use the admin's access token so scheduled stories are included.
   const token = getAuthToken();
 
-  // Fetch all chapters in a single request with explicit high limit
+  // Fetch all current stories in a single request with an explicit high limit.
   const response = await fetch(
     `${url}/rest/v1/chapters?select=title,content,published_at&is_archived=eq.false&order=published_at.desc&limit=1000`,
     {
