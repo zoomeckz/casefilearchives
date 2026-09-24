@@ -897,7 +897,7 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ glossary, authToken, use
                         }}
                         onEdit={(id) => updateAdminRoute({ tab: 'chapters', view: 'edit', chapter: id, draft: null, term: null, sentence: null })}
                         onDelete={handleDeleteChapter}
-                        onDownload={(num, title) => downloadSingleChapter(num, title)}
+                        onDownload={(num, title) => downloadSingleChapter(num, title, false)}
                         onTranslate={openChapterForTranslation}
                          legacy={false}
                         />
@@ -1048,7 +1048,7 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ glossary, authToken, use
                     }}
                     onEdit={(id) => updateAdminRoute({ tab: 'chapters', view: 'edit', chapter: id, draft: null, term: null, sentence: null })}
                     onDelete={handleDeleteChapter}
-                    onDownload={(num, title) => downloadSingleChapter(num, title)}
+                    onDownload={(num, title) => downloadSingleChapter(num, title, true)}
                     onTranslate={openChapterForTranslation}
                     legacy
                   />
@@ -1760,10 +1760,7 @@ const NeedsAttentionPanel: React.FC<NeedsAttentionProps> = ({
   onJump,
 }) => {
   const now = Date.now();
-  // Chapters publish on a 3-day cadence (anchored Wed 2026-05-06, 10:00
-  // Stockholm). Surface anything dropping inside the next two cadence
-  // slots (~6 days) so the admin sees the upcoming release without the
-                         legacy scheduling language.
+  // Surface stories publishing in the next six days.
   const CADENCE_WINDOW_MS = 6 * 24 * 60 * 60 * 1000;
    const activeStories = chapters.filter((chapter) => !chapter.is_archived);
    const upcoming = activeStories.filter(

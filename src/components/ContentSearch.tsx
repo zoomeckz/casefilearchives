@@ -11,6 +11,7 @@ interface ContentSearchProps {
 
 interface SearchResult {
   chapterId: string;
+  chapterNumber: number;
   chapterTitle: string;
   publishedAt: string;
   sentence: string;
@@ -97,6 +98,7 @@ export const ContentSearch: React.FC<ContentSearchProps> = ({ authToken, onEditC
         matches.forEach((m) => {
           allResults.push({
             chapterId: chapter.id,
+            chapterNumber: chapter.chapter_number,
             chapterTitle: chapter.title,
             publishedAt: chapter.published_at,
             sentence: m.sentence,
@@ -179,7 +181,7 @@ export const ContentSearch: React.FC<ContentSearchProps> = ({ authToken, onEditC
                 </span>
                 <div className="flex items-center gap-2 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity">
                   <a
-                    href={`/chapters/${encodeURIComponent(result.chapterTitle)}`}
+                    href={`/chapters/${result.chapterNumber}`}
                     target="_blank"
                     rel="noopener noreferrer"
                     className="flex items-center gap-1 px-2.5 py-1 bg-accent/20 hover:bg-accent/30 text-accent rounded text-xs transition-colors"

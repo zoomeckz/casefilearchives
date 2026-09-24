@@ -30,6 +30,7 @@ interface ChapterStat {
 }
 
 type TimeRange = "7d" | "30d" | "90d" | "all";
+const LEGACY_CUTOFF = new Date("2026-09-23T13:49:55Z");
 
 const COLORS = [
   "hsl(36, 90%, 55%)", // amber
@@ -76,8 +77,13 @@ export const AnalyticsDashboard: React.FC<AnalyticsDashboardProps> = ({ authToke
           token: authToken,
         }),
       ]);
-      setPageViews(pvRes.data || []);
-      setChapters(chRes.data || []);
+      const currentStories = chRes.data || [];
+      const currentStoryIds = new Set(currentStories.map((story) => story.id));
+      setPageViews((pvRes.data || []).filter((view) =>
+        new Date(view.created_at) >= LEGACY_CUTOFF &&
+        (!view.chapter_id || currentStoryIds.has(view.chapter_id))
+      ));
+      setChapters(currentStories);
       setLoading(false);
     };
     fetchData();
