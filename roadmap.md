@@ -14,3 +14,4 @@
 - [x] Rename "Latest chapters" to "Latest stories".
 - [x] Audit the entire admin panel and remove chapter numbering/wording from current stories while preserving it in Legacy.
 - [x] Rebrand the public site and admin panel with the Case File direction, remove all public-facing Sedorium branding, add light/dark themes, and retain account registration.
+- [x] Remove visible chapter/file numbering from current stories while preserving legacy chapter numbers.

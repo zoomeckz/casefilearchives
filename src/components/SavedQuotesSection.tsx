@@ -8,6 +8,7 @@ interface SavedQuote {
   chapter_id: string;
   chapter_number?: number;
   chapter_title?: string;
+  is_archived?: boolean;
   created_at: string;
 }
 
@@ -34,13 +35,13 @@ export const SavedQuotesSection: React.FC<SavedQuotesSectionProps> = ({ userId, 
         const chapterIds = [...new Set(data.map((q: any) => q.chapter_id))];
         const { data: chapters } = await supabase
           .from("chapters")
-          .select("id, chapter_number, title")
+          .select("id, chapter_number, title, is_archived")
           .in("id", chapterIds);
 
-        const chapterMap: Record<string, { chapter_number: number; title: string }> = {};
+        const chapterMap: Record<string, { chapter_number: number; title: string; is_archived: boolean }> = {};
         if (chapters) {
           for (const ch of chapters) {
-            chapterMap[ch.id] = { chapter_number: ch.chapter_number, title: ch.title };
+            chapterMap[ch.id] = { chapter_number: ch.chapter_number, title: ch.title, is_archived: ch.is_archived };
           }
         }
 
@@ -48,6 +49,7 @@ export const SavedQuotesSection: React.FC<SavedQuotesSectionProps> = ({ userId, 
           ...q,
           chapter_number: chapterMap[q.chapter_id]?.chapter_number,
           chapter_title: chapterMap[q.chapter_id]?.title,
+          is_archived: chapterMap[q.chapter_id]?.is_archived,
         })));
       }
       setLoading(false);
@@ -77,7 +79,11 @@ export const SavedQuotesSection: React.FC<SavedQuotesSectionProps> = ({ userId, 
                 onClick={() => quote.chapter_number && navigate(`/chapters/${quote.chapter_number}`)}
                 className="text-primary/70 text-xs hover:text-primary transition-colors"
               >
-                {quote.chapter_title ? `Chapter ${quote.chapter_number}: ${quote.chapter_title}` : "View chapter"}
+                {quote.chapter_title
+                  ? quote.is_archived
+                    ? `Chapter ${quote.chapter_number}: ${quote.chapter_title}`
+                    : quote.chapter_title
+                  : "View story"}
               </button>
               <div className="flex items-center gap-2">
                 <span className="text-muted-foreground/50 text-xs">
