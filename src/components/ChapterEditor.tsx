@@ -33,8 +33,9 @@ export interface ChapterDraft {
 function normalizeScheduledAt(value: string): string {
   if (!value) return '';
 
-  const datePart = value.split('T')[0];
-  return /^\d{4}-\d{2}-\d{2}$/.test(datePart) ? `${datePart}T10:00` : value;
+  if (/^\d{4}-\d{2}-\d{2}$/.test(value)) return `${value}T10:00`;
+  const m = value.match(/^(\d{4}-\d{2}-\d{2})T(\d{2}:\d{2})/);
+  return m ? `${m[1]}T${m[2]}` : value;
 }
 
 // Cadence anchor for optional scheduling.
@@ -288,8 +289,8 @@ export const ChapterEditor: React.FC<ChapterEditorProps> = ({ authToken, userId,
       toast.error('Please write some content');
       return;
     }
-    if (scheduledAt && takenSlots.includes(scheduledAt.slice(0, 10))) {
-      toast.error(`Another ${isLegacy ? 'chapter' : 'story'} is already scheduled for this date. Use "Next →" to pick a different slot.`);
+    if (scheduledAt && new Date(swedishToUTC(normalizeScheduledAt(scheduledAt))).getTime() < Date.now()) {
+      toast.error('The scheduled time is in the past. Pick a future time or clear it to publish now.');
       return;
     }
 
@@ -415,43 +416,30 @@ export const ChapterEditor: React.FC<ChapterEditorProps> = ({ authToken, userId,
         </div>
         ) : <div className="hidden md:block" />}
         <div>
-          <label className="block text-sm text-muted-foreground mb-1">Schedule publication</label>
+          <label className="block text-sm text-muted-foreground mb-1">Schedule publication (Swedish time)</label>
           <div className="flex items-center gap-2">
-            {!scheduledAt ? (
+            <input
+              type="datetime-local"
+              value={scheduledAt}
+              onChange={(e) => setScheduledAt(e.target.value)}
+              className="px-4 py-3 bg-card/50 border border-border rounded-lg text-foreground text-sm focus:outline-none focus:border-primary transition-colors [color-scheme:dark]"
+            />
+            {scheduledAt && (
               <button
-                onClick={() => setScheduledAt(getSlotAfterLatestScheduled(takenSlots))}
-                className="px-4 py-3 bg-accent/20 hover:bg-accent/30 text-accent rounded-lg text-sm font-medium transition-colors"
+                type="button"
+                onClick={() => setScheduledAt('')}
+                className="px-2 py-1 text-xs text-destructive hover:text-destructive/80 transition-colors"
+                title="Clear schedule (publish immediately)"
               >
-                Schedule for next slot
+                ✕
               </button>
-            ) : (
-              <>
-                <span className="px-4 py-3 bg-card/50 border border-border rounded-lg text-foreground text-sm">
-                  📅 {new Date(scheduledAt.slice(0, 10) + 'T12:00:00').toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })} — 10:00 🇸🇪
-                </span>
-                <button
-                  onClick={() => {
-                    const currentDate = new Date(scheduledAt.slice(0, 10) + 'T12:00:00');
-                    const next = getNextAvailableSlot(takenSlots, currentDate);
-                    setScheduledAt(next);
-                  }}
-                  className="px-3 py-2 bg-secondary hover:bg-secondary/80 text-foreground rounded-lg text-xs transition-colors"
-                  title="Skip to next available slot"
-                >
-                  Next →
-                </button>
-                <button
-                  onClick={() => setScheduledAt('')}
-                  className="px-2 py-1 text-xs text-destructive hover:text-destructive/80 transition-colors"
-                  title="Clear schedule (publish immediately)"
-                >
-                  ✕
-                </button>
-              </>
             )}
           </div>
+          <span className="text-xs text-muted-foreground mt-1 block">
+            {scheduledAt ? 'Will go live automatically at this time.' : 'Leave empty to publish immediately.'}
+          </span>
           {scheduledAt && takenSlots.includes(scheduledAt.slice(0, 10)) && (
-            <span className="text-xs text-destructive mt-1 block">⚠ Another {isLegacy ? 'chapter' : 'story'} is already scheduled for this date!</span>
+            <span className="text-xs text-accent mt-1 block">Note: another {isLegacy ? 'chapter' : 'story'} is also scheduled that day.</span>
           )}
         </div>
       </div>
