@@ -7,6 +7,7 @@ import { GlossaryEntry } from '@/lib/data';
 import { swedishToUTC, utcToSwedishDateTimeLocal } from '@/lib/timezone';
 import { normalizeRichTextHtml } from '@/lib/contentFormatting';
 import { toast } from 'sonner';
+import { TagPicker } from '@/components/TagPicker';
 
 interface ChapterEditorProps {
   authToken?: string;
@@ -17,6 +18,8 @@ interface ChapterEditorProps {
   resumeDraftId?: string | null;
   searchHighlight?: string | null;
   searchSentence?: string | null;
+  /** Create a new chapter in the archived legacy story instead of a standalone story. */
+  legacy?: boolean;
 }
 
 export interface ChapterDraft {
@@ -136,7 +139,9 @@ export async function deleteDraft(draftId: string, token?: string) {
   });
 }
 
-export const ChapterEditor: React.FC<ChapterEditorProps> = ({ authToken, userId, glossary, onBack, editChapterId, resumeDraftId, searchHighlight, searchSentence }) => {
+export const ChapterEditor: React.FC<ChapterEditorProps> = ({ authToken, userId, glossary, onBack, editChapterId, resumeDraftId, searchHighlight, searchSentence, legacy = false }) => {
+  const [isLegacy, setIsLegacy] = useState(legacy);
+  const [tags, setTags] = useState<string[]>([]);
   const draftIdRef = useRef<string>(resumeDraftId || '');
   const [title, setTitle] = useState('');
   const [content, setContent] = useState('');
@@ -177,7 +182,7 @@ export const ChapterEditor: React.FC<ChapterEditorProps> = ({ authToken, userId,
     if (editChapterId) {
       const loadChapter = async () => {
         const { data } = await dbFetch<any[]>('chapters', {
-          select: 'title,content,chapter_number,scheduled_at,cover_image_url',
+          select: 'title,content,chapter_number,scheduled_at,cover_image_url,is_archived,tags',
           filters: `id=eq.${editChapterId}`,
           token: authToken,
         });
@@ -186,6 +191,8 @@ export const ChapterEditor: React.FC<ChapterEditorProps> = ({ authToken, userId,
           setContent(data[0].content);
           setChapterNumber(data[0].chapter_number);
           setCoverImageUrl(data[0].cover_image_url || null);
+          setIsLegacy(data[0].is_archived === true);
+          setTags(Array.isArray(data[0].tags) ? data[0].tags : []);
           if (data[0].scheduled_at) {
             setScheduledAt(normalizeScheduledAt(utcToSwedishDateTimeLocal(data[0].scheduled_at)));
           }
@@ -302,6 +309,7 @@ export const ChapterEditor: React.FC<ChapterEditorProps> = ({ authToken, userId,
           chapter_number: chapterNumber,
           scheduled_at: normalizedScheduledAt ? swedishToUTC(normalizedScheduledAt) : null,
           cover_image_url: coverImageUrl,
+          ...(isLegacy ? {} : { tags }),
         };
         const { error } = await dbFetch('chapters', {
           method: 'PATCH',
@@ -310,7 +318,7 @@ export const ChapterEditor: React.FC<ChapterEditorProps> = ({ authToken, userId,
           token: authToken,
         });
         if (error) throw new Error(error);
-        toast.success(normalizedScheduledAt ? `Chapter scheduled for ${normalizedScheduledAt.replace('T', ' ')} (Swedish time)` : 'Chapter updated!');
+        toast.success(normalizedScheduledAt ? `${isLegacy ? 'Chapter' : 'Story'} scheduled for ${normalizedScheduledAt.replace('T', ' ')} (Swedish time)` : `${isLegacy ? 'Chapter' : 'Story'} updated!`);
       } else {
         const body: any = {
           title: title.trim(),
@@ -318,7 +326,8 @@ export const ChapterEditor: React.FC<ChapterEditorProps> = ({ authToken, userId,
           chapter_number: chapterNumber,
           scheduled_at: normalizedScheduledAt ? swedishToUTC(normalizedScheduledAt) : null,
           cover_image_url: coverImageUrl,
-          is_archived: false,
+          is_archived: isLegacy,
+          tags: isLegacy ? [] : tags,
         };
         const { error } = await dbFetch('chapters', {
           method: 'POST',
@@ -327,11 +336,11 @@ export const ChapterEditor: React.FC<ChapterEditorProps> = ({ authToken, userId,
         });
         if (error) throw new Error(error);
         await deleteDraft(draftIdRef.current, authToken);
-        toast.success(normalizedScheduledAt ? `Chapter scheduled for ${normalizedScheduledAt.replace('T', ' ')} (Swedish time)` : 'Chapter published!');
+        toast.success(normalizedScheduledAt ? `${isLegacy ? 'Chapter' : 'Story'} scheduled for ${normalizedScheduledAt.replace('T', ' ')} (Swedish time)` : `${isLegacy ? 'Chapter' : 'Story'} published!`);
       }
       onBack();
     } catch (err: any) {
-      toast.error(err.message || 'Failed to save chapter');
+      toast.error(err.message || 'Failed to save');
     } finally {
       setPublishing(false);
     }
@@ -351,7 +360,7 @@ export const ChapterEditor: React.FC<ChapterEditorProps> = ({ authToken, userId,
           className="flex items-center gap-2 text-muted-foreground hover:text-foreground transition-colors"
         >
           <Icons.ChevronLeft className="w-4 h-4" />
-          Back to Chapters
+          Back
         </a>
         <div className="flex items-center gap-3">
           {draftStatus && (
@@ -376,7 +385,7 @@ export const ChapterEditor: React.FC<ChapterEditorProps> = ({ authToken, userId,
             disabled={publishing}
             className="px-6 py-2 bg-primary hover:bg-primary/90 text-primary-foreground rounded-lg text-sm font-medium transition-colors disabled:opacity-50"
           >
-            {publishing ? 'Saving...' : editChapterId ? 'Update Chapter' : scheduledAt ? 'Schedule Chapter' : 'Publish Chapter'}
+            {publishing ? 'Saving...' : `${editChapterId ? 'Update' : scheduledAt ? 'Schedule' : 'Publish'} ${isLegacy ? 'Chapter' : 'Story'}`}
           </button>
         </div>
       </div>
@@ -384,12 +393,12 @@ export const ChapterEditor: React.FC<ChapterEditorProps> = ({ authToken, userId,
       {/* Chapter metadata */}
       <div className="grid grid-cols-1 md:grid-cols-[1fr_auto_auto] gap-4 mb-6">
         <div>
-          <label className="block text-sm text-muted-foreground mb-1">Chapter Title</label>
+          <label className="block text-sm text-muted-foreground mb-1">{isLegacy ? 'Chapter Title' : 'Story Title'}</label>
           <input
             type="text"
             value={title}
             onChange={(e) => setTitle(e.target.value)}
-            placeholder="Enter chapter title..."
+            placeholder={isLegacy ? "Enter chapter title..." : "Enter story title..."}
             className="w-full px-4 py-3 bg-card/50 border border-border rounded-lg text-foreground text-lg font-display focus:outline-none focus:border-primary transition-colors"
           />
         </div>
