@@ -1,7 +1,7 @@
 {
   "nav": {
     "home": "Home",
-    "chapters": "Chapters",
+    "chapters": "Stories",
     "codex": "Codex",
     "community": "Community",
     "forum": "Forum",
@@ -31,12 +31,12 @@
     "reply": "reply"
   },
   "chapters": {
-    "title": "Chapters",
-    "subtitle": "Every chapter of Sedorium so far",
-    "search": "Search chapters",
+    "title": "Stories",
+    "subtitle": "Every story so far",
+    "search": "Search stories",
     "read": "Read",
     "continue": "Continue",
-    "noResults": "No chapters match your search.",
+    "noResults": "No stories match your search.",
     "scheduled": "Coming",
     "newBadge": "New",
     "views": "views",
@@ -48,7 +48,7 @@
     "releases": "Releases"
   },
   "reader": {
-    "back": "Back to chapters",
+    "back": "Back to stories",
     "previous": "Previous",
     "next": "Next",
     "previously": "Previously...",
@@ -59,7 +59,7 @@
     "save": "Save",
     "notRead": "Not read",
     "caughtUp": "You're caught up",
-    "discussChapter": "Discuss this chapter",
+    "discussChapter": "Discuss this story",
     "discussionPrompt": "Discussion Prompt",
     "tip": "Tip: Click highlighted names for lore. Use ||spoiler|| tags in comments to hide spoilers.",
     "edit": "Edit",
@@ -125,7 +125,7 @@
     "subscribe": "Subscribe",
     "subscribed": "You're subscribed — see you Friday.",
     "subscribeError": "Couldn't subscribe right now. Try again in a moment.",
-    "subscribeInfo": "Create an account to receive new chapter alerts at this address.",
+    "subscribeInfo": "Create an account to receive new story alerts at this address.",
     "subscribeTip": "Tip: sign in to manage your subscription preferences.",
     "invalidEmail": "Please enter a valid email address.",
     "about": "About"
