@@ -49,11 +49,11 @@ export const ReaderPage: React.FC<ReaderPageProps> = ({
 }) => {
   const { t } = useTranslation();
   const discussionPrompts = [
-    t("reader.prompt1", "What do you think will happen next?"),
-    t("reader.prompt2", "Which character stood out most in this chapter?"),
+    t("reader.prompt1", "What stayed with you after reading this story?"),
+    t("reader.prompt2", "Which character stood out most in this story?"),
     t("reader.prompt3", "Did anything surprise you?"),
     t("reader.prompt4", "What's your theory about the ending?"),
-    t("reader.prompt5", "How did this chapter change your view of the story?"),
+    t("reader.prompt5", "What would you have done in the same situation?"),
   ];
   const [randomPrompt] = useState(() => discussionPrompts[Math.floor(Math.random() * discussionPrompts.length)]);
   const [scrollProgress, setScrollProgress] = useState(0);

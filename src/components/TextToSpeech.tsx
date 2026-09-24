@@ -58,7 +58,7 @@ export const TextToSpeech: React.FC<TextToSpeechProps> = ({ content }) => {
       const available = window.speechSynthesis.getVoices();
       if (available.length > 0) {
         setVoices(available);
-        const saved = localStorage.getItem("sedorium-tts-voice");
+        const saved = localStorage.getItem("case-file-tts-voice") || localStorage.getItem("sedorium-tts-voice");
         if (saved && available.find((v) => v.voiceURI === saved)) {
           setSelectedVoiceURI(saved);
         } else {
@@ -155,7 +155,7 @@ export const TextToSpeech: React.FC<TextToSpeechProps> = ({ content }) => {
 
   const handleVoiceChange = (uri: string) => {
     setSelectedVoiceURI(uri);
-    localStorage.setItem("sedorium-tts-voice", uri);
+    localStorage.setItem("case-file-tts-voice", uri);
     if (isPlaying || isPaused) {
       handleStop();
     }

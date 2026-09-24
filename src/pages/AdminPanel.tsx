@@ -917,7 +917,7 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ glossary, authToken, use
                             if (drafts.length === 0) { toast.error('No drafts to download'); return; }
                             const separator = '═'.repeat(60);
                             const lines: string[] = [
-                              'CASE FILE — DRAFTS',
+                              'CASE FILE / DRAFTS',
                               separator,
                               `Exported: ${new Date().toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })}`,
                               `Total Drafts: ${drafts.length}`,

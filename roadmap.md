@@ -13,4 +13,4 @@
 - [x] Revamp new publishing: stories with tags (no chapters); keep legacy chapter system.
 - [x] Rename "Latest chapters" to "Latest stories".
 - [x] Audit the entire admin panel and remove chapter numbering/wording from current stories while preserving it in Legacy.
-- [ ] Rebrand the public site and admin panel with the Case File direction, remove all Sedorium branding, add light/dark themes, and retain account registration. (in progress)
+- [x] Rebrand the public site and admin panel with the Case File direction, remove all public-facing Sedorium branding, add light/dark themes, and retain account registration.
