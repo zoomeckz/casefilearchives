@@ -1,9 +1,9 @@
+import { Check } from "lucide-react";
 import React, { useState, useMemo } from "react";
 import { useTranslation } from "react-i18next";
 import { Icons } from "@/lib/icons";
 import { Chapter } from "@/hooks/useChapters";
 import { AuthUser } from "@/hooks/useAuth";
-import { ReadingProgressBadge } from "@/components/ReadingProgressBadge";
 import { ReadingStats } from "@/components/ReadingStats";
 import { BookmarkButton } from "@/components/BookmarkButton";
 
@@ -118,8 +118,18 @@ export const StoriesPage: React.FC<StoriesPageProps> = ({
               <div
                 key={chapter.id}
                 onClick={() => setSelectedChapter(chapter)}
-                className="case-file group p-5 cursor-pointer transition-all duration-200 flex items-start gap-4"
+                className="case-file group relative p-5 cursor-pointer transition-all duration-200 flex items-start gap-4"
               >
+                {user && chapterIsRead && (
+                  <button
+                    type="button"
+                    title="Read — click to mark unread"
+                    onClick={(e) => { e.stopPropagation(); markAsUnread(chapter.id); }}
+                    className="absolute top-3 right-3 flex h-7 w-7 items-center justify-center rounded-full bg-success text-success-foreground shadow"
+                  >
+                    <Check className="h-4 w-4" strokeWidth={3} />
+                  </button>
+                )}
                 {/* Cover-art slot — renders a faint placeholder until cover_image_url is populated */}
                 <div className="hidden sm:flex shrink-0 w-20 aspect-[4/5] overflow-hidden border border-border bg-secondary items-center justify-center">
                   {chapter.coverImageUrl ? (
@@ -146,15 +156,6 @@ export const StoriesPage: React.FC<StoriesPageProps> = ({
                     {chapter.isArchived && <>{t("chapters.chapterLabel")} {chapter.chapterNumber} ·{" "}</>}
                     {new Date(chapter.publishedAt).toLocaleDateString()}
                   </span>
-                  {user && chapterIsRead && (
-                    <ReadingProgressBadge
-                      isRead={chapterIsRead}
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        markAsUnread(chapter.id);
-                      }}
-                    />
-                  )}
                   {user && (
                     <BookmarkButton
                       isBookmarked={chapterIsBookmarked}

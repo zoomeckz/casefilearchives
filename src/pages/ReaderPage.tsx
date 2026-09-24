@@ -1,3 +1,4 @@
+import { ReadToggle } from "@/components/ReadToggle";
 import React, { useEffect, useRef, useState, useMemo } from "react";
 import { useTranslation } from "react-i18next";
 import { Link } from "react-router-dom";
@@ -29,6 +30,8 @@ interface ReaderPageProps {
   setShowAuthModal: (show: boolean) => void;
   glossary: Record<string, GlossaryEntry>;
   markAsRead: (chapterId: string) => void;
+  markAsUnread: (chapterId: string) => void;
+  isRead: (chapterId: string) => boolean;
   incrementViews: (chapterId: string) => void;
   isBookmarked: (chapterId: string) => boolean;
   toggleBookmark: (chapterId: string) => void;
@@ -43,6 +46,8 @@ export const ReaderPage: React.FC<ReaderPageProps> = ({
   setShowAuthModal,
   glossary,
   markAsRead,
+  markAsUnread,
+  isRead,
   incrementViews,
   isBookmarked,
   toggleBookmark,
@@ -142,7 +147,6 @@ export const ReaderPage: React.FC<ReaderPageProps> = ({
       const t1 = window.setTimeout(jumpTop, 50);
       const t2 = window.setTimeout(jumpTop, 200);
       incrementViews(chapter.id);
-      if (user) markAsRead(chapter.id);
       return () => {
         window.clearTimeout(t1);
         window.clearTimeout(t2);
@@ -326,6 +330,17 @@ export const ReaderPage: React.FC<ReaderPageProps> = ({
           </div>
         </header>
 
+
+        <div className="my-8 flex justify-center">
+          <ReadToggle
+            isRead={!!user && isRead(chapter.id)}
+            onToggle={() => {
+              if (!user) { setShowAuthModal(true); return; }
+              isRead(chapter.id) ? markAsUnread(chapter.id) : markAsRead(chapter.id);
+            }}
+          />
+        </div>
+
         {/* Text highlight bookmarks */}
         <TextHighlightBookmark chapterId={chapter.id} chapterNumber={chapter.chapterNumber} user={user} setShowAuthModal={setShowAuthModal} />
 
@@ -337,6 +352,16 @@ export const ReaderPage: React.FC<ReaderPageProps> = ({
             dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(chapter.content) }}
           />
         </article>
+
+        <div className="my-8 flex justify-center">
+          <ReadToggle
+            isRead={!!user && isRead(chapter.id)}
+            onToggle={() => {
+              if (!user) { setShowAuthModal(true); return; }
+              isRead(chapter.id) ? markAsUnread(chapter.id) : markAsRead(chapter.id);
+            }}
+          />
+        </div>
 
         {/* Chapter Reactions */}
         <div className="mb-8">

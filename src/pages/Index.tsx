@@ -153,7 +153,7 @@ const Index = () => {
             isAdmin={user?.isAdmin ?? false}
             isRead={isRead}
             markAsUnread={markAsUnread}
-            readCount={readCount}
+            readCount={chapters.filter((c) => isRead(c.id)).length}
             isBookmarked={isBookmarked}
             toggleBookmark={toggleBookmark}
           />
@@ -169,6 +169,8 @@ const Index = () => {
             setShowAuthModal={setShowAuthModal}
             glossary={glossary}
             markAsRead={markAsRead}
+            markAsUnread={markAsUnread}
+            isRead={isRead}
             incrementViews={incrementViews}
             isBookmarked={isBookmarked}
             toggleBookmark={toggleBookmark}
