@@ -60,26 +60,29 @@ export const StoriesPage: React.FC<StoriesPageProps> = ({
   }, [chapters, sort, activeTag]);
 
   return (
-    <div className="min-h-screen py-8 sm:py-12 px-4 sm:px-6">
-      <div className="max-w-2xl mx-auto">
-        <h1 className="font-display text-3xl sm:text-4xl text-accent mb-8 text-center">
-          {t("chapters.title")}
-        </h1>
+    <div className="min-h-screen py-10 sm:py-16 px-4 sm:px-6">
+      <div className="max-w-6xl mx-auto">
+        <div className="border-l-4 border-primary pl-6 mb-10">
+          <p className="case-label text-[9px] mb-2">Declassified index / all active files</p>
+          <h1 className="font-display text-4xl sm:text-5xl text-foreground uppercase">
+            Story Archive
+          </h1>
+        </div>
 
         {user && (
           <ReadingStats readCount={readCount} totalCount={chapters.length} />
         )}
 
         {/* Sort buttons */}
-        <div className="flex items-center justify-center gap-2 mb-6 flex-wrap">
+        <div className="flex items-center gap-2 mb-6 flex-wrap border-b border-border pb-5">
           {sortOptions.map((opt) => (
             <button
               key={opt.value}
               onClick={() => setSort(opt.value)}
-              className={`px-3 py-1.5 rounded-full text-xs font-medium transition-colors ${
+              className={`px-3 py-1.5 rounded-none case-label text-[9px] border transition-colors ${
                 sort === opt.value
-                  ? "bg-primary text-primary-foreground"
-                  : "bg-secondary/50 text-muted-foreground hover:text-foreground hover:bg-secondary"
+                  ? "bg-foreground text-background border-foreground"
+                  : "bg-transparent text-muted-foreground border-border hover:text-foreground"
               }`}
             >
               {opt.label}
@@ -88,10 +91,10 @@ export const StoriesPage: React.FC<StoriesPageProps> = ({
         </div>
 
         {allTags.length > 0 && (
-          <div className="flex items-center justify-center gap-2 mb-6 flex-wrap">
+          <div className="flex items-center gap-2 mb-8 flex-wrap">
             <button
               onClick={() => setActiveTag(null)}
-              className={`px-3 py-1 rounded-full text-xs border transition-colors ${!activeTag ? "bg-accent text-accent-foreground border-accent" : "border-border text-muted-foreground hover:text-foreground"}`}
+              className={`px-3 py-1 rounded-none case-label text-[9px] border transition-colors ${!activeTag ? "bg-primary text-primary-foreground border-primary" : "border-border text-muted-foreground hover:text-foreground"}`}
             >
               All
             </button>
@@ -99,7 +102,7 @@ export const StoriesPage: React.FC<StoriesPageProps> = ({
               <button
                 key={tag}
                 onClick={() => setActiveTag(activeTag === tag ? null : tag)}
-                className={`px-3 py-1 rounded-full text-xs border transition-colors ${activeTag === tag ? "bg-accent text-accent-foreground border-accent" : "border-border text-muted-foreground hover:text-foreground"}`}
+                className={`px-3 py-1 rounded-none case-label text-[9px] border transition-colors ${activeTag === tag ? "bg-primary text-primary-foreground border-primary" : "border-border text-muted-foreground hover:text-foreground"}`}
               >
                 {tag}
               </button>
@@ -107,7 +110,7 @@ export const StoriesPage: React.FC<StoriesPageProps> = ({
           </div>
         )}
 
-        <div className="space-y-2">
+        <div className="grid md:grid-cols-2 gap-x-6 gap-y-9">
           {sorted.map((chapter) => {
             const chapterIsRead = isRead(chapter.id);
             const chapterIsBookmarked = isBookmarked(chapter.id);
@@ -115,10 +118,10 @@ export const StoriesPage: React.FC<StoriesPageProps> = ({
               <div
                 key={chapter.id}
                 onClick={() => setSelectedChapter(chapter)}
-                className="group py-5 px-5 cursor-pointer rounded-lg hover:bg-secondary/30 transition-all duration-200 flex items-start gap-4"
+                className="case-file group p-5 cursor-pointer transition-all duration-200 flex items-start gap-4"
               >
                 {/* Cover-art slot — renders a faint placeholder until cover_image_url is populated */}
-                <div className="hidden sm:flex shrink-0 w-16 h-20 rounded-md overflow-hidden border border-border/40 bg-stone-900 items-center justify-center">
+                <div className="hidden sm:flex shrink-0 w-20 aspect-[4/5] overflow-hidden border border-border bg-secondary items-center justify-center">
                   {chapter.coverImageUrl ? (
                     <img
                       src={chapter.coverImageUrl}
@@ -139,7 +142,7 @@ export const StoriesPage: React.FC<StoriesPageProps> = ({
 
                 <div className="flex-1 min-w-0">
                 <div className="flex items-center gap-3 mb-2 flex-wrap">
-                  <span className="text-muted-foreground text-xs uppercase tracking-wider">
+                  <span className="case-label text-[9px]">
                     {chapter.isArchived && <>{t("chapters.chapterLabel")} {chapter.chapterNumber} ·{" "}</>}
                     {new Date(chapter.publishedAt).toLocaleDateString()}
                   </span>
@@ -163,7 +166,7 @@ export const StoriesPage: React.FC<StoriesPageProps> = ({
                     />
                   )}
                 </div>
-                <h3 className="font-display text-xl text-foreground group-hover:text-primary transition-colors">
+                <h3 className="font-display text-xl uppercase text-foreground group-hover:text-primary transition-colors">
                   {chapter.title}
                 </h3>
                 {chapter.tags.length > 0 && (
@@ -172,7 +175,7 @@ export const StoriesPage: React.FC<StoriesPageProps> = ({
                       <button
                         key={tag}
                         onClick={(e) => { e.stopPropagation(); setActiveTag(tag); }}
-                        className="px-2 py-0.5 rounded-full text-[11px] border border-border/60 text-muted-foreground hover:text-foreground"
+                        className="px-2 py-0.5 rounded-none case-label text-[8px] border border-border text-muted-foreground hover:text-foreground"
                       >
                         {tag}
                       </button>

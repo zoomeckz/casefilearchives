@@ -261,7 +261,7 @@ export const ReaderPage: React.FC<ReaderPageProps> = ({
         </button>
 
         {/* Reader controls — width slider + cards mode toggle */}
-        <div className="mb-8 flex flex-wrap items-center gap-4 text-xs text-muted-foreground border border-border/40 rounded-lg p-3">
+        <div className="mb-8 flex flex-wrap items-center gap-4 text-xs text-muted-foreground border-y border-border p-3">
           <label className="flex items-center gap-2 flex-1 min-w-[220px]">
             <span className="whitespace-nowrap">{t("reader.pageWidth")}</span>
             <input
@@ -281,7 +281,7 @@ export const ReaderPage: React.FC<ReaderPageProps> = ({
           <button
             type="button"
             onClick={() => setCardsMode(true)}
-            className="inline-flex items-center gap-2 px-4 py-2 rounded-md bg-accent text-accent-foreground border border-accent shadow-md hover:bg-accent/90 hover:shadow-lg transition-all font-semibold text-sm"
+            className="inline-flex items-center gap-2 px-4 py-2 rounded-none bg-foreground text-background border border-foreground transition-colors font-semibold text-sm"
             title="Read in focused, swipeable cards — great on mobile"
           >
             📇 {t("reader.cardsMode")}
@@ -291,14 +291,14 @@ export const ReaderPage: React.FC<ReaderPageProps> = ({
           </button>
         </div>
 
-        <header className="mb-12 text-center">
-          <span className="text-primary text-sm font-medium">
+        <header className="mb-12 border-l-4 border-primary pl-6 text-left">
+          <span className="case-label text-[9px]">
             {chapter.isArchived ? `${t("chapters.chapterLabel")} ${chapter.chapterNumber}` : chapter.tags.join(" · ")}
           </span>
-          <h1 className="font-display text-4xl sm:text-5xl text-accent mt-2 mb-4">
+          <h1 className="font-display text-4xl sm:text-6xl uppercase text-foreground mt-2 mb-4">
             {chapter.title}
           </h1>
-          <div className="flex flex-nowrap sm:flex-wrap items-center justify-center gap-2 sm:gap-4 text-muted-foreground text-xs sm:text-sm overflow-x-auto whitespace-nowrap">
+          <div className="flex flex-nowrap sm:flex-wrap items-center gap-2 sm:gap-4 text-muted-foreground text-xs sm:text-sm overflow-x-auto whitespace-nowrap">
             <span>{new Date(chapter.publishedAt).toLocaleDateString()}</span>
             <span className="flex items-center gap-1">
               <Icons.Eye className="w-4 h-4" /> {chapter.views}
@@ -330,7 +330,7 @@ export const ReaderPage: React.FC<ReaderPageProps> = ({
         <TextHighlightBookmark chapterId={chapter.id} chapterNumber={chapter.chapterNumber} user={user} setShowAuthModal={setShowAuthModal} />
 
         <article
-          className="mb-12 rounded-xl p-6 sm:p-8"
+          className="mb-12 border-y border-border py-8 sm:py-12"
         >
           <div
             className="prose-story chapter-content"

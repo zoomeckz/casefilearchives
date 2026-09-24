@@ -82,7 +82,7 @@ export const Footer: React.FC<FooterProps> = ({ setCurrentPage }) => {
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               className="w-full px-3 py-2 text-center bg-background border border-border rounded-none text-sm text-foreground placeholder:text-muted-foreground/60 focus:outline-none focus:border-primary"
-              aria-label="Email address for new chapter notifications"
+              aria-label="Email address for new story notifications"
             />
             <button
               type="submit"

@@ -711,7 +711,7 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ glossary, authToken, use
             >
               {sidebarOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
             </button>
-            <h2 className="font-display text-lg text-accent">Admin</h2>
+            <h2 className="font-display text-lg text-foreground uppercase">Case File Admin</h2>
           </div>
           <span className="text-xs text-muted-foreground capitalize">{activeTab}</span>
       </div>
@@ -725,7 +725,7 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ glossary, authToken, use
           />
           <aside className="md:hidden fixed top-0 left-0 h-full z-40 w-64 bg-card border-r border-border p-4 overflow-y-auto animate-in slide-in-from-left">
             <div className="flex items-center justify-between mb-6">
-              <h2 className="font-display text-lg text-accent">Admin Panel</h2>
+              <h2 className="font-display text-lg text-foreground uppercase">Case File Admin</h2>
               <button
                 onClick={() => setSidebarOpen(false)}
                 className="p-1.5 rounded hover:bg-secondary"

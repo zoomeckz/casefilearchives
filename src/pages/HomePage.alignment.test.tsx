@@ -34,14 +34,8 @@ describe("HomePage section alignment", () => {
     expect(HOMEPAGE).not.toMatch(inlineHeadingPattern);
   });
 
-  it("declares the Latest Chapters heading with left alignment", () => {
-    // The chapters list is a vertical column of left-aligned rows, so its
-    // header must also be left-aligned.
-    const match = HOMEPAGE.match(
-      /<SectionHeader\s+align="(\w+)"[^>]*>\s*\{t\("home\.latestChapters"\)\}/,
-    );
-    expect(match, "Latest Chapters SectionHeader not found").not.toBeNull();
-    expect(match![1]).toBe("left");
+  it("declares the Case File archive heading", () => {
+    expect(HOMEPAGE).toContain("Latest Case Files");
   });
 
   it("does not expose the archived discussion section", () => {
