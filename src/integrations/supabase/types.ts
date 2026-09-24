@@ -293,6 +293,7 @@ export type Database = {
           is_archived: boolean
           published_at: string
           scheduled_at: string | null
+          tags: string[]
           title: string
           updated_at: string
           views: number
@@ -306,6 +307,7 @@ export type Database = {
           is_archived?: boolean
           published_at?: string
           scheduled_at?: string | null
+          tags?: string[]
           title: string
           updated_at?: string
           views?: number
@@ -319,6 +321,7 @@ export type Database = {
           is_archived?: boolean
           published_at?: string
           scheduled_at?: string | null
+          tags?: string[]
           title?: string
           updated_at?: string
           views?: number
@@ -859,6 +862,27 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      story_tags: {
+        Row: {
+          created_at: string
+          id: string
+          is_favorite: boolean
+          name: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          is_favorite?: boolean
+          name: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          is_favorite?: boolean
+          name?: string
+        }
+        Relationships: []
       }
       text_highlights: {
         Row: {
