@@ -11,7 +11,7 @@ Deno.serve((req) => {
     author: "AnyoneButSam",
     description: "Unrelated stories. Uncomfortable possibilities.",
     language: "en",
-    url: "https://www.thefivethrones.com",
+    url: "https://www.thecasefiles.org",
   };
   if (url.searchParams.get("format") === "json") {
     return new Response(JSON.stringify(data), {

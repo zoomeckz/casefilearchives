@@ -87,7 +87,7 @@ const handler = async (req: Request): Promise<Response> => {
      }
  
      // Get the site URL from env or use default
-     const siteUrl = Deno.env.get("SITE_URL") || "https://www.thefivethrones.com";
+     const siteUrl = Deno.env.get("SITE_URL") || "https://www.thecasefiles.org";
  
      // Send emails to all subscribers
      const emailPromises = subscribers.map((subscriber) =>

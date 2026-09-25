@@ -38,4 +38,4 @@ Allow: /
 User-agent: *
 Allow: /
 
-Sitemap: https://www.thefivethrones.com/sitemap.xml
+Sitemap: https://www.thecasefiles.org/sitemap.xml

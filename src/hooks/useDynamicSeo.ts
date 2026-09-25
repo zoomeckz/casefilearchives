@@ -1,7 +1,7 @@
 import { useEffect } from "react";
 import { useLocation } from "react-router-dom";
 
-const SITE_URL = "https://www.thefivethrones.com";
+const SITE_URL = "https://www.thecasefiles.org";
 
 const META: Record<string, { title: string; description: string }> = {
   "/": {

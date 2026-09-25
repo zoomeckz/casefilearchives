@@ -4,7 +4,7 @@ const corsHeaders = {
     "authorization, x-client-info, apikey, content-type",
 };
 
-const SITE_HOST = "www.thefivethrones.com";
+const SITE_HOST = "www.thecasefiles.org";
 const SITE_URL = `https://${SITE_HOST}`;
 // IndexNow key — exposed publicly at /{key}.txt on your site, which is fine.
 // This is just an identifier so search engines can verify ownership.
