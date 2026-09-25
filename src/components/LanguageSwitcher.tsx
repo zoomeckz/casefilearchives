@@ -7,6 +7,7 @@ import {
   LANGUAGE_LABELS,
   detectLanguageFromPath,
   withLanguagePrefix,
+  LANGUAGE_STORAGE_KEY,
   type SupportedLanguage,
 } from "@/i18n";
 import { NAV_CHROME_KEYS } from "@/i18n/navKeys";
@@ -36,6 +37,7 @@ export const LanguageSwitcher: React.FC<Props> = ({ variant = "desktop" }) => {
 
   const switchTo = (lang: SupportedLanguage) => {
     const next = withLanguagePrefix(location.pathname, lang) + location.search + location.hash;
+    localStorage.setItem(LANGUAGE_STORAGE_KEY, lang);
     setOpen(false);
     navigate(next);
   };

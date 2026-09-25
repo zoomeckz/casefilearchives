@@ -4,7 +4,17 @@ import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { BrowserRouter, Routes, Route, Navigate, useLocation } from "react-router-dom";
+import { BrowserRouter, Routes, Route, Navigate, useLocation, useNavigate } from "react-router-dom";
+import i18n, {
+  SUPPORTED_LANGUAGES,
+  DEFAULT_LANGUAGE,
+  LOCALE_TAGS,
+  LANGUAGE_STORAGE_KEY,
+  detectLanguageFromPath,
+  stripLanguagePrefix,
+  withLanguagePrefix,
+  type SupportedLanguage,
+} from "./i18n";
 import Index from "./pages/Index";
 import NotFound from "./pages/NotFound";
 import SectionHeaderStory from "./pages/SectionHeaderStory";
@@ -25,20 +35,53 @@ const DynamicSeo = () => {
  */
 const LanguageSync = () => {
   const location = useLocation();
+  const navigate = useNavigate();
 
   useEffect(() => {
-    document.documentElement.setAttribute("lang", "en");
+    const seg = location.pathname.split("/").filter(Boolean)[0];
+    const hasPrefix = (SUPPORTED_LANGUAGES as readonly string[]).includes(seg ?? "");
+    const isAdmin = stripLanguagePrefix(location.pathname).startsWith("/admin");
+
+    let lang: SupportedLanguage = detectLanguageFromPath(location.pathname);
+    if (hasPrefix) {
+      localStorage.setItem(LANGUAGE_STORAGE_KEY, lang);
+    } else if (!isAdmin) {
+      // Un-prefixed URL: keep the reader in their remembered language, or on
+      // a first visit pick up the browser/system language if we support it.
+      let stored = localStorage.getItem(LANGUAGE_STORAGE_KEY) as SupportedLanguage | null;
+      if (!stored) {
+        const sys = (navigator.languages ?? [navigator.language])
+          .map((l) => l.toLowerCase().split("-")[0])
+          .find((l) => (SUPPORTED_LANGUAGES as readonly string[]).includes(l)) as SupportedLanguage | undefined;
+        stored = sys ?? DEFAULT_LANGUAGE;
+        localStorage.setItem(LANGUAGE_STORAGE_KEY, stored);
+      }
+      if ((SUPPORTED_LANGUAGES as readonly string[]).includes(stored) && stored !== DEFAULT_LANGUAGE) {
+        navigate(withLanguagePrefix(location.pathname, stored) + location.search + location.hash, { replace: true });
+        return;
+      }
+      lang = DEFAULT_LANGUAGE;
+    }
+
+    if (i18n.language !== lang) i18n.changeLanguage(lang);
+    document.documentElement.setAttribute("lang", LOCALE_TAGS[lang].split("-")[0]);
     document.documentElement.setAttribute("dir", "ltr");
+
     const origin = window.location.origin;
+    const clean = stripLanguagePrefix(location.pathname);
     document.head
       .querySelectorAll<HTMLLinkElement>('link[rel="alternate"][hreflang]')
       .forEach((el) => el.remove());
-    const el = document.createElement("link");
-    el.rel = "alternate";
-    el.hreflang = "x-default";
-    el.href = `${origin}${location.pathname}`;
-    document.head.appendChild(el);
-  }, [location.pathname]);
+    const add = (hreflang: string, href: string) => {
+      const el = document.createElement("link");
+      el.rel = "alternate";
+      el.hreflang = hreflang;
+      el.href = href;
+      document.head.appendChild(el);
+    };
+    SUPPORTED_LANGUAGES.forEach((l) => add(l, `${origin}${withLanguagePrefix(clean, l)}`));
+    add("x-default", `${origin}${clean}`);
+  }, [location.pathname, location.search, location.hash, navigate]);
 
   return null;
 };
@@ -121,6 +164,16 @@ const App = () => {
           {APP_ROUTES.map((r) => (
             <Route key={r.path} path={r.path} element={<Index />} />
           ))}
+          {/* Language-prefixed routes: /en/..., /bg/..., one set per language. */}
+          {SUPPORTED_LANGUAGES.flatMap((lang) =>
+            APP_ROUTES.map((r) => (
+              <Route
+                key={`${lang}${r.path}`}
+                path={r.path === "/" ? `/${lang}` : `/${lang}${r.path}`}
+                element={<Index />}
+              />
+            )),
+          )}
           {LEGACY_ROUTES.map((path) => (
             <Route key={path} path={path} element={<Navigate to="/" replace />} />
           ))}

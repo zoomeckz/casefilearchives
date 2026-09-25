@@ -34,7 +34,7 @@ describe("HomePage section alignment", () => {
     expect(HOMEPAGE).not.toMatch(inlineHeadingPattern);
   });
 
-  it("declares the Case File archive heading", () => {
+  it("declares the Case Files archive heading", () => {
     expect(HOMEPAGE).toContain("Latest Case Files");
   });
 

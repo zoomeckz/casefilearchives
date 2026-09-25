@@ -5,6 +5,7 @@ import { AuthUser } from "@/hooks/useAuth";
 import { NotificationBell } from "@/components/NotificationBell";
 import { useTranslation } from "react-i18next";
 import { ThemeToggle } from "@/components/ThemeToggle";
+import { LanguageSwitcher } from "@/components/LanguageSwitcher";
 import {
   NAV_GROUPS,
   NAV_CHROME_KEYS,
@@ -59,7 +60,7 @@ export const Navigation: React.FC<NavigationProps> = ({
           <button
             onClick={() => setCurrentPage("home")}
             className="brand-title md:hidden text-foreground text-xl leading-none"
-            aria-label="Case File home"
+            aria-label="Case Files home"
           >
             CF
           </button>
@@ -81,6 +82,7 @@ export const Navigation: React.FC<NavigationProps> = ({
               </button>
             ))}
 
+            <LanguageSwitcher variant="mobile" />
             {extraItems.map((item) => (
               <button
                 key={item.id}
@@ -98,6 +100,7 @@ export const Navigation: React.FC<NavigationProps> = ({
 
           {/* Right side - auth */}
           <div className="hidden md:flex items-center gap-3">
+            <LanguageSwitcher />
             <ThemeToggle />
             {user ? (
               <>

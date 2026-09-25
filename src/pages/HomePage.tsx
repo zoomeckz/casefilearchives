@@ -65,7 +65,7 @@ export const HomePage: React.FC<HomePageProps> = ({
                         className="w-full h-full text-left flex flex-col"
                       >
                         <span className="flex items-center justify-between w-full case-label text-[9px] mb-4">
-                          <span>Case File</span>
+                          <span>Case Files</span>
                           <span>{new Date(chapter.publishedAt).toLocaleDateString()}</span>
                         </span>
                         {chapter.coverImageUrl ? (

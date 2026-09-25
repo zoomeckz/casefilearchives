@@ -27,7 +27,7 @@ export async function downloadSingleChapter(chapterNumber: number, title: string
   const ch = data[0];
   const separator = "═".repeat(60);
   const lines = [
-    "CASE FILE",
+    "CASE FILES",
     separator,
     legacy ? `CHAPTER ${ch.chapter_number}: ${(ch.title || "").toUpperCase()}` : (ch.title || "UNTITLED STORY").toUpperCase(),
     !legacy && ch.published_at ? new Date(ch.published_at).toLocaleDateString("en-US", { year: "numeric", month: "long", day: "numeric" }) : "",
@@ -116,7 +116,7 @@ export async function downloadAllChapters() {
 
   const separator = "═".repeat(60);
   const lines: string[] = [
-    "CASE FILE",
+    "CASE FILES",
     "Standalone stories by AnyoneButSam",
     separator,
     `Generated: ${new Date().toLocaleDateString("en-US", { year: "numeric", month: "long", day: "numeric" })}`,

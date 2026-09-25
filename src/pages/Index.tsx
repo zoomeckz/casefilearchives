@@ -1,3 +1,4 @@
+import { detectLanguageFromPath, stripLanguagePrefix, withLanguagePrefix } from "@/i18n";
 import React, { useState, useEffect, useCallback } from "react";
 import { useNavigate, useLocation, useParams } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
@@ -27,8 +28,10 @@ const Index = () => {
   const [selectedChapter, setSelectedChapter] = useState<Chapter | null>(null);
 
   // Derive current page from URL
+  const lang = detectLanguageFromPath(location.pathname);
+  const barePath = stripLanguagePrefix(location.pathname);
   const currentPage = (() => {
-    const path = location.pathname;
+    const path = barePath;
     if (path.startsWith("/chapters/")) return "reader";
     if (path === "/chapters") return "chapters";
     if (path === "/rewards") return "rewards";
@@ -41,7 +44,7 @@ const Index = () => {
   })();
 
   const setCurrentPage = (page: string) => {
-    const go = (path: string) => navigate(path);
+    const go = (path: string) => navigate(withLanguagePrefix(path, lang));
     if (page === "home") go("/");
     else if (page === "chapters") go("/chapters");
     else if (page === "rewards") go("/rewards");
@@ -110,13 +113,13 @@ const Index = () => {
 
   // Resolve chapter from URL param
   useEffect(() => {
-    const match = location.pathname.match(/^\/chapters\/(\d+)$/);
+    const match = barePath.match(/^\/chapters\/(\d+)$/);
     if (match && chapters.length > 0) {
       const num = parseInt(match[1]);
       const ch = chapters.find(c => c.chapterNumber === num);
       if (ch) setSelectedChapter(ch);
     }
-  }, [location.pathname, chapters]);
+  }, [barePath, chapters]);
 
   const handleSelectChapter = (chapter: Chapter) => {
     setSelectedChapter(chapter);

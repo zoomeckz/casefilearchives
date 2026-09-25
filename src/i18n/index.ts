@@ -14,7 +14,7 @@ import en from "./locales/en.json";
  * The FIRST entry is always the default language (no URL prefix). Every other
  * language is served at `/<code>/...`.
  */
-export const SUPPORTED_LANGUAGES = ["en"] as const;
+export const SUPPORTED_LANGUAGES = ["en", "bg"] as const;
 export type SupportedLanguage = (typeof SUPPORTED_LANGUAGES)[number];
 
 export const DEFAULT_LANGUAGE: SupportedLanguage = SUPPORTED_LANGUAGES[0];
@@ -24,6 +24,7 @@ export const NON_DEFAULT_LANGUAGES: SupportedLanguage[] = SUPPORTED_LANGUAGES.fi
 
 export const LANGUAGE_LABELS: Record<SupportedLanguage, string> = {
   en: "English",
+  bg: "Български",
 };
 
 /**
@@ -40,21 +41,19 @@ export const LANGUAGE_LABELS: Record<SupportedLanguage, string> = {
  */
 export const LANGUAGE_FLAGS: Record<SupportedLanguage, string> = {
   en: "🇬🇧",
+  bg: "🇧🇬",
 };
 
 /** Locale tags used by `Intl` / `Date.toLocaleString` — keep one per supported lang. */
 export const LOCALE_TAGS: Record<SupportedLanguage, string> = {
   en: "en-US",
+  bg: "bg-BG",
 };
 
 /** Reads the URL's first path segment — does NOT touch localStorage on first paint. */
 export function detectLanguageFromPath(pathname: string): SupportedLanguage {
   const seg = pathname.split("/").filter(Boolean)[0];
-  if (
-    seg &&
-    seg !== DEFAULT_LANGUAGE &&
-    (SUPPORTED_LANGUAGES as readonly string[]).includes(seg)
-  ) {
+  if (seg && (SUPPORTED_LANGUAGES as readonly string[]).includes(seg)) {
     return seg as SupportedLanguage;
   }
   return DEFAULT_LANGUAGE;
@@ -62,9 +61,9 @@ export function detectLanguageFromPath(pathname: string): SupportedLanguage {
 
 /** Strips any non-default language prefix so the existing router stays language-agnostic. */
 export function stripLanguagePrefix(pathname: string): string {
-  const lang = detectLanguageFromPath(pathname);
-  if (lang === DEFAULT_LANGUAGE) return pathname;
-  const stripped = pathname.replace(new RegExp(`^/${lang}`), "");
+  const seg = pathname.split("/").filter(Boolean)[0];
+  if (!seg || !(SUPPORTED_LANGUAGES as readonly string[]).includes(seg)) return pathname;
+  const stripped = pathname.replace(new RegExp(`^/${seg}(?=/|$)`), "");
   return stripped || "/";
 }
 
@@ -83,6 +82,9 @@ const initialLang =
 i18n.use(initReactI18next).init({
   resources: {
     en: { translation: en },
+    // Bulgarian UI is not translated yet — it reuses English strings until a
+    // Case Files-era `bg.json` is written (the old bg.json is Sedorium-era).
+    bg: { translation: en },
   },
   lng: initialLang,
   fallbackLng: DEFAULT_LANGUAGE,
@@ -91,3 +93,6 @@ i18n.use(initReactI18next).init({
 });
 
 export default i18n;
+
+/** Remembered language choice so un-prefixed links keep the reader's language. */
+export const LANGUAGE_STORAGE_KEY = "casefiles-lang";
