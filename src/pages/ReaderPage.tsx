@@ -14,6 +14,9 @@ import { ChapterReactions } from "@/components/ChapterReactions";
 import { ChapterPoll } from "@/components/ChapterPoll";
 import { TextHighlightBookmark } from "@/components/TextHighlightBookmark";
 import { ReaderCardsView } from "@/components/ReaderCardsView";
+import { StoryLanguageToggle } from "@/components/StoryLanguageToggle";
+import { useChapterTranslation } from "@/hooks/useChapterTranslation";
+import { SUPPORTED_LANGUAGES, type SupportedLanguage } from "@/i18n";
 
 
 function estimateReadingTime(content: string): number {
@@ -38,7 +41,7 @@ interface ReaderPageProps {
 }
 
 export const ReaderPage: React.FC<ReaderPageProps> = ({
-  chapter,
+  chapter: sourceChapter,
   chapters,
   setSelectedChapter,
   setCurrentPage,
@@ -53,6 +56,15 @@ export const ReaderPage: React.FC<ReaderPageProps> = ({
   toggleBookmark,
 }) => {
   const { t } = useTranslation();
+  const translation = useChapterTranslation(sourceChapter);
+  // Swap in the chosen language's title/text; everything else stays the source row.
+  const chapter = useMemo(
+    () => ({ ...sourceChapter, title: translation.title, content: translation.content }),
+    [sourceChapter, translation.title, translation.content],
+  );
+  const languageOptions: SupportedLanguage[] = user?.isAdmin
+    ? [...SUPPORTED_LANGUAGES]
+    : translation.available;
   const discussionPrompts = [
     t("reader.prompt1", "What stayed with you after reading this story?"),
     t("reader.prompt2", "Which character stood out most in this story?"),
@@ -328,6 +340,15 @@ export const ReaderPage: React.FC<ReaderPageProps> = ({
               />
             )}
           </div>
+          {languageOptions.length > 1 && (
+            <StoryLanguageToggle
+              options={languageOptions}
+              available={translation.available}
+              active={translation.active}
+              onChange={translation.setActive}
+              showMissing={!!user?.isAdmin}
+            />
+          )}
         </header>
 
 
