@@ -15,7 +15,6 @@ import { ChapterPoll } from "@/components/ChapterPoll";
 import { TextHighlightBookmark } from "@/components/TextHighlightBookmark";
 import { ReaderCardsView } from "@/components/ReaderCardsView";
 import { useChapterTranslation } from "@/hooks/useChapterTranslation";
-import { SUPPORTED_LANGUAGES, type SupportedLanguage } from "@/i18n";
 
 
 function estimateReadingTime(content: string): number {
@@ -296,7 +295,7 @@ export const ReaderPage: React.FC<ReaderPageProps> = ({
             className="inline-flex items-center gap-2 px-3 py-1.5 border border-border text-muted-foreground hover:text-primary hover:border-primary transition-colors text-xs uppercase tracking-wider"
             title="Read in focused, swipeable cards — great on mobile"
           >
-            <Icons.BookOpen className="w-3.5 h-3.5" />
+            <Icons.Book className="w-3.5 h-3.5" />
             {t("reader.cardsMode")}
           </button>
         </div>
