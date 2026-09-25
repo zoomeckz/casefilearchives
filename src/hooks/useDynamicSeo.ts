@@ -6,16 +6,16 @@ const SITE_URL = "https://www.thecasefiles.org";
 
 const META: Record<string, { title: string; description: string }> = {
   "/": {
-    title: "Case File — Standalone Stories by AnyoneButSam",
+    title: "Case Files — Standalone Stories by AnyoneButSam",
     description: "Unrelated stories. Uncomfortable possibilities. Read standalone fiction by AnyoneButSam.",
   },
   "/chapters": {
-    title: "Stories — Case File",
-    description: "Browse the Case File archive of standalone stories by AnyoneButSam.",
+    title: "Stories — Case Files",
+    description: "Browse the Case Files archive of standalone stories by AnyoneButSam.",
   },
   "/about": {
-    title: "About — Case File",
-    description: "About Case File, a collection of standalone stories by AnyoneButSam.",
+    title: "About — Case Files",
+    description: "About Case Files, a collection of standalone stories by AnyoneButSam.",
   },
 };
 

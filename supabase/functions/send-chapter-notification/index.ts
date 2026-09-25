@@ -92,7 +92,7 @@ const handler = async (req: Request): Promise<Response> => {
      // Send emails to all subscribers
      const emailPromises = subscribers.map((subscriber) =>
        resend.emails.send({
-          from: "Case File <noreply@resend.dev>",
+          from: "Case Files <noreply@resend.dev>",
          to: [subscriber.email],
           subject: `New Story: ${chapterTitle}`,
          html: `
@@ -109,7 +109,7 @@ const handler = async (req: Request): Promise<Response> => {
                
                <div style="background-color: #292524; border: 1px solid #44403c; border-radius: 12px; padding: 24px; margin-bottom: 24px;">
                  <h2 style="color: #fef3c7; font-size: 24px; margin: 0 0 8px 0;">${chapterTitle}</h2>
-                  <p style="color: #a8a29e; margin: 0;">A new Case File story awaits you.</p>
+                  <p style="color: #a8a29e; margin: 0;">A new Case Files story awaits you.</p>
                </div>
                
                <a href="${siteUrl}" style="display: inline-block; background-color: #0284c7; color: white; padding: 12px 24px; border-radius: 8px; text-decoration: none; font-weight: 500;">
@@ -117,7 +117,7 @@ const handler = async (req: Request): Promise<Response> => {
                </a>
                
                <p style="color: #57534e; font-size: 12px; margin-top: 32px;">
-                  You're receiving this because you subscribed to story notifications from Case File.
+                  You're receiving this because you subscribed to story notifications from Case Files.
                  <br>
                  To unsubscribe, visit your profile settings.
                </p>

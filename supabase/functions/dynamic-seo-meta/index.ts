@@ -8,7 +8,7 @@ const corsHeaders = {
 
 const SITE_URL = "https://www.thecasefiles.org";
 const AUTHOR = "AnyoneButSam";
-const TITLE_BASE = "Case File";
+const TITLE_BASE = "Case Files";
 
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") {
@@ -36,13 +36,13 @@ Deno.serve(async (req) => {
     const latest = chapters[chapters.length - 1];
 
     const description = "Unrelated stories. Uncomfortable possibilities. Read standalone fiction by AnyoneButSam.";
-    const title = "Case File — Standalone Stories by AnyoneButSam";
+    const title = "Case Files — Standalone Stories by AnyoneButSam";
 
     const keywords = [
       "standalone stories",
       "short fiction",
       "AnyoneButSam",
-      "Case File",
+      "Case Files",
       "indie author",
     ];
 

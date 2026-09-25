@@ -11,7 +11,7 @@ export const AboutPage: React.FC = () => {
         <div className="space-y-6 text-foreground/80 leading-relaxed">
           <p>
             Hey — I'm <strong className="text-foreground">AnyoneButSam</strong>, 
-            the writer behind Case File. I draw from real-life experiences, anime,
+            the writer behind Case Files. I draw from real-life experiences, anime,
             music, and other mediums to create standalone situations that feel raw,
             unpredictable, and uncomfortably possible.
           </p>
