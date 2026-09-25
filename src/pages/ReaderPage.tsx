@@ -309,7 +309,7 @@ export const ReaderPage: React.FC<ReaderPageProps> = ({
 
         <header className="mb-12 border-l-4 border-primary pl-6 text-left">
           <span className="case-label text-[9px]">
-            {chapter.isArchived ? `${t("chapters.chapterLabel")} ${chapter.chapterNumber}` : chapter.tags.join(" · ")}
+            {chapter.isArchived ? `${t("chapters.chapterLabel")} ${chapter.chapterNumber}` : (chapter.tags ?? []).join(" · ")}
           </span>
           <h1 className="font-display text-4xl sm:text-6xl uppercase text-foreground mt-2 mb-4">
             {chapter.title}
