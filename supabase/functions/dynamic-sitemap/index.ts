@@ -1,4 +1,5 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+const slugify = (t: string) => (t || "").normalize("NFKD").replace(/[\u0300-\u036f]/g, "").toLowerCase().replace(/['’]/g, "").replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "");
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -44,7 +45,7 @@ Deno.serve(async (req) => {
     const nowIso = new Date().toISOString();
     const { data: chapters } = await supabase
       .from("chapters")
-      .select("chapter_number, updated_at, published_at, scheduled_at, is_archived")
+      .select("chapter_number, title, updated_at, published_at, scheduled_at, is_archived")
       .eq("is_archived", false)
       .lte("published_at", nowIso)
       .order("chapter_number", { ascending: true });
@@ -87,10 +88,10 @@ Deno.serve(async (req) => {
     };
 
     const renderChapter = (
-      c: { chapter_number: number; updated_at: string | null; published_at: string | null },
+      c: { chapter_number: number; title: string; updated_at: string | null; published_at: string | null },
       lang: Lang,
     ) => {
-      const path = `/chapters/${c.chapter_number}`;
+      const path = `/stories/${slugify(c.title)}`;
       const url = `${SITE_URL}${langPath(path, lang)}`;
       const lastmod = (c.updated_at || c.published_at || "").slice(0, 10);
       return (

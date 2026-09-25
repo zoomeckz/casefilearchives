@@ -8,6 +8,10 @@ import { swedishToUTC, utcToSwedishDateTimeLocal } from '@/lib/timezone';
 import { normalizeRichTextHtml } from '@/lib/contentFormatting';
 import { toast } from 'sonner';
 import { TagPicker } from '@/components/TagPicker';
+import { FlagIcon } from '@/components/FlagIcon';
+import { SUPPORTED_LANGUAGES, LANGUAGE_LABELS, DEFAULT_LANGUAGE, type SupportedLanguage } from '@/i18n';
+
+type LangBuffer = { id?: string; title: string; content: string };
 
 interface ChapterEditorProps {
   authToken?: string;
@@ -179,6 +183,19 @@ export const ChapterEditor: React.FC<ChapterEditorProps> = ({ authToken, userId,
   const [calendarOpen, setCalendarOpen] = useState(false);
   const [calYear, setCalYear] = useState(new Date().getFullYear());
   const [calMonth, setCalMonth] = useState(new Date().getMonth()); // 0-based
+  // Per-language editing: English lives on the story row, others in chapter_translations.
+  const [editLang, setEditLang] = useState<SupportedLanguage>(DEFAULT_LANGUAGE);
+  const langBuffers = useRef<Partial<Record<SupportedLanguage, LangBuffer>>>({});
+  const [filledLangs, setFilledLangs] = useState<SupportedLanguage[]>([DEFAULT_LANGUAGE]);
+
+  const switchEditLang = (next: SupportedLanguage) => {
+    if (next === editLang) return;
+    langBuffers.current[editLang] = { ...langBuffers.current[editLang], title, content };
+    const target = langBuffers.current[next];
+    setTitle(target?.title ?? '');
+    setContent(target?.content ?? '');
+    setEditLang(next);
+  };
 
   // Load all scheduled slots to prevent double-booking
   useEffect(() => {
@@ -216,6 +233,20 @@ export const ChapterEditor: React.FC<ChapterEditorProps> = ({ authToken, userId,
           setCoverImageUrl(data[0].cover_image_url || null);
           setIsLegacy(data[0].is_archived === true);
           setTags(Array.isArray(data[0].tags) ? data[0].tags : []);
+          langBuffers.current[DEFAULT_LANGUAGE] = { title: data[0].title, content: data[0].content };
+          const { data: tr } = await dbFetch<any[]>('chapter_translations', {
+            select: 'id,language_code,title,content',
+            filters: `chapter_id=eq.${editChapterId}`,
+            token: authToken,
+          });
+          const filled: SupportedLanguage[] = [DEFAULT_LANGUAGE];
+          for (const r of tr || []) {
+            if ((SUPPORTED_LANGUAGES as readonly string[]).includes(r.language_code)) {
+              langBuffers.current[r.language_code as SupportedLanguage] = { id: r.id, title: r.title, content: r.content };
+              filled.push(r.language_code);
+            }
+          }
+          setFilledLangs(filled);
           if (data[0].scheduled_at) {
             setScheduledAt(normalizeScheduledAt(utcToSwedishDateTimeLocal(data[0].scheduled_at)));
           }
@@ -303,11 +334,17 @@ export const ChapterEditor: React.FC<ChapterEditorProps> = ({ authToken, userId,
 
   // Publish a story or legacy chapter
   const handlePublish = async () => {
-    if (!title.trim()) {
+    langBuffers.current[editLang] = { ...langBuffers.current[editLang], title, content };
+    const en = editChapterId ? (langBuffers.current[DEFAULT_LANGUAGE] ?? { title, content }) : { title, content };
+    if (editChapterId && editLang !== DEFAULT_LANGUAGE && (!en.title.trim() || !en.content.trim())) {
+      toast.error('The English version needs a title and text.');
+      return;
+    }
+    if (!en.title.trim()) {
       toast.error(`Please enter a ${isLegacy ? 'chapter' : 'story'} title`);
       return;
     }
-    if (!content.trim()) {
+    if (!en.content.trim()) {
       toast.error('Please write some content');
       return;
     }
@@ -319,15 +356,11 @@ export const ChapterEditor: React.FC<ChapterEditorProps> = ({ authToken, userId,
     setPublishing(true);
     try {
       const normalizedScheduledAt = normalizeScheduledAt(scheduledAt);
-      const normalizedContent = normalizeRichTextHtml(content);
-
-      if (normalizedContent !== content) {
-        setContent(normalizedContent);
-      }
+      const normalizedContent = normalizeRichTextHtml(en.content);
 
       if (editChapterId) {
         const body: any = {
-          title: title.trim(),
+          title: en.title.trim(),
           content: normalizedContent,
           chapter_number: chapterNumber,
           scheduled_at: normalizedScheduledAt ? swedishToUTC(normalizedScheduledAt) : null,
@@ -341,6 +374,16 @@ export const ChapterEditor: React.FC<ChapterEditorProps> = ({ authToken, userId,
           token: authToken,
         });
         if (error) throw new Error(error);
+        for (const lang of SUPPORTED_LANGUAGES) {
+          if (lang === DEFAULT_LANGUAGE) continue;
+          const b = langBuffers.current[lang];
+          if (!b || !b.title.trim() || !b.content.replace(/<[^>]*>/g, '').trim()) continue;
+          const trBody = { title: b.title.trim(), content: normalizeRichTextHtml(b.content) };
+          const res = b.id
+            ? await dbFetch('chapter_translations', { method: 'PATCH', filters: `id=eq.${b.id}`, body: { ...trBody, updated_at: new Date().toISOString() }, token: authToken })
+            : await dbFetch('chapter_translations', { method: 'POST', body: { ...trBody, chapter_id: editChapterId, language_code: lang }, token: authToken });
+          if (res.error) throw new Error(`${LANGUAGE_LABELS[lang]}: ${res.error}`);
+        }
         toast.success(normalizedScheduledAt ? `${isLegacy ? 'Chapter' : 'Story'} scheduled for ${normalizedScheduledAt.replace('T', ' ')} (Swedish time)` : `${isLegacy ? 'Chapter' : 'Story'} updated!`);
       } else {
         // Always reserve a fresh internal number at save time — drafts can hold a stale one.
@@ -612,8 +655,37 @@ export const ChapterEditor: React.FC<ChapterEditorProps> = ({ authToken, userId,
         )}
       </div>}
 
+      {editChapterId && (
+        <div className="mb-3 flex flex-wrap items-center gap-2">
+          <span className="text-xs uppercase tracking-wider text-muted-foreground mr-1">Language</span>
+          {SUPPORTED_LANGUAGES.map((lang) => {
+            const active = lang === editLang;
+            const has = filledLangs.includes(lang);
+            return (
+              <button
+                key={lang}
+                type="button"
+                onClick={() => switchEditLang(lang)}
+                className={`inline-flex items-center gap-2 px-3 py-1.5 border text-sm transition-colors ${
+                  active ? 'border-primary text-primary bg-primary/10' : 'border-border text-muted-foreground hover:text-foreground hover:border-foreground/40'
+                }`}
+                title={has ? 'This version exists' : 'Not written yet — readers see English'}
+              >
+                <FlagIcon lang={lang} size={16} />
+                {LANGUAGE_LABELS[lang]}
+                {!has && <span className="text-[10px] uppercase opacity-70">new</span>}
+              </button>
+            );
+          })}
+          {editLang !== DEFAULT_LANGUAGE && (
+            <span className="text-xs text-muted-foreground">Leave empty to show English to these readers.</span>
+          )}
+        </div>
+      )}
+
       {/* Editor */}
       <RichTextEditor
+        key={editLang}
         content={content}
         onChange={setContent}
         glossaryTerms={isLegacy ? Object.keys(glossary) : []}

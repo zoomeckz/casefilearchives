@@ -14,9 +14,7 @@ import { ChapterReactions } from "@/components/ChapterReactions";
 import { ChapterPoll } from "@/components/ChapterPoll";
 import { TextHighlightBookmark } from "@/components/TextHighlightBookmark";
 import { ReaderCardsView } from "@/components/ReaderCardsView";
-import { StoryLanguageToggle } from "@/components/StoryLanguageToggle";
 import { useChapterTranslation } from "@/hooks/useChapterTranslation";
-import { SUPPORTED_LANGUAGES, type SupportedLanguage } from "@/i18n";
 
 
 function estimateReadingTime(content: string): number {
@@ -62,9 +60,6 @@ export const ReaderPage: React.FC<ReaderPageProps> = ({
     () => ({ ...sourceChapter, title: translation.title, content: translation.content }),
     [sourceChapter, translation.title, translation.content],
   );
-  const languageOptions: SupportedLanguage[] = user?.isAdmin
-    ? [...SUPPORTED_LANGUAGES]
-    : translation.available;
   const discussionPrompts = [
     t("reader.prompt1", "What stayed with you after reading this story?"),
     t("reader.prompt2", "Which character stood out most in this story?"),
@@ -297,13 +292,11 @@ export const ReaderPage: React.FC<ReaderPageProps> = ({
           <button
             type="button"
             onClick={() => setCardsMode(true)}
-            className="inline-flex items-center gap-2 px-4 py-2 rounded-none bg-foreground text-background border border-foreground transition-colors font-semibold text-sm"
+            className="inline-flex items-center gap-2 px-3 py-1.5 border border-border text-muted-foreground hover:text-primary hover:border-primary transition-colors text-xs uppercase tracking-wider"
             title="Read in focused, swipeable cards — great on mobile"
           >
-            📇 {t("reader.cardsMode")}
-            <span className="hidden sm:inline text-[10px] uppercase tracking-wider opacity-80 ml-1 px-1.5 py-0.5 rounded bg-accent-foreground/15">
-              New
-            </span>
+            <Icons.Book className="w-3.5 h-3.5" />
+            {t("reader.cardsMode")}
           </button>
         </div>
 
@@ -340,15 +333,6 @@ export const ReaderPage: React.FC<ReaderPageProps> = ({
               />
             )}
           </div>
-          {languageOptions.length > 1 && (
-            <StoryLanguageToggle
-              options={languageOptions}
-              available={translation.available}
-              active={translation.active}
-              onChange={translation.setActive}
-              showMissing={!!user?.isAdmin}
-            />
-          )}
         </header>
 
 

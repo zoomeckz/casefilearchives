@@ -8,7 +8,7 @@ const getInitialTheme = (): Theme => {
   if (typeof window === "undefined") return "dark";
   const saved = window.localStorage.getItem("case-file-theme");
   if (saved === "light" || saved === "dark") return saved;
-  return window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light";
+  return "dark";
 };
 
 export const ThemeToggle: React.FC = () => {

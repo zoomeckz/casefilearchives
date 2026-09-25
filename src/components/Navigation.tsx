@@ -82,7 +82,6 @@ export const Navigation: React.FC<NavigationProps> = ({
               </button>
             ))}
 
-            <LanguageSwitcher variant="mobile" />
             {extraItems.map((item) => (
               <button
                 key={item.id}
