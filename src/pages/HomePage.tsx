@@ -23,7 +23,7 @@ export const HomePage: React.FC<HomePageProps> = ({
         <div className="max-w-6xl mx-auto border-l-4 border-primary pl-6 sm:pl-10 py-4">
           <p className="case-label text-[10px] mb-6">Classification: Independent Fiction / Access: Public</p>
           <h1 className="brand-title text-6xl sm:text-8xl md:text-9xl text-foreground leading-none mb-5">
-            CASE FILE
+            CASE FILES
           </h1>
           <p className="case-label text-xs sm:text-sm text-foreground/65 max-w-2xl">
             {t("hero.tagline")}
