@@ -6,7 +6,7 @@ const corsHeaders = {
     "authorization, x-client-info, apikey, content-type",
 };
 
-const SITE_URL = "https://www.thefivethrones.com";
+const SITE_URL = "https://www.thecasefiles.org";
 const AUTHOR = "AnyoneButSam";
 const TITLE_BASE = "Case File";
 
