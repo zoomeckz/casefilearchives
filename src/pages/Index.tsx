@@ -19,6 +19,7 @@ import { RewardsPage } from "@/pages/RewardsPage";
 import { PublicProfilePage } from "@/pages/PublicProfilePage";
 import { AboutPage } from "@/pages/AboutPage";
 import { ForumPage } from "@/pages/ForumPage";
+import { slugify, storyPath } from "@/lib/slug";
 import { usePageTracking } from "@/hooks/usePageTracking";
 
 const Index = () => {
@@ -32,7 +33,7 @@ const Index = () => {
   const barePath = stripLanguagePrefix(location.pathname);
   const currentPage = (() => {
     const path = barePath;
-    if (path.startsWith("/chapters/")) return "reader";
+    if (path.startsWith("/chapters/") || path.startsWith("/stories/")) return "reader";
     if (path === "/chapters") return "chapters";
     if (path === "/rewards") return "rewards";
     if (path.startsWith("/user/")) return "public-profile";
@@ -53,7 +54,7 @@ const Index = () => {
     else if (page === "about") go("/about");
     else if (page === "forum") go("/forum");
     else if (page === "reader" && selectedChapter) {
-      go(`/chapters/${selectedChapter.chapterNumber}`);
+      go(storyPath(selectedChapter));
     }
   };
 
@@ -113,17 +114,22 @@ const Index = () => {
 
   // Resolve chapter from URL param
   useEffect(() => {
-    const match = barePath.match(/^\/chapters\/(\d+)$/);
-    if (match && chapters.length > 0) {
-      const num = parseInt(match[1]);
-      const ch = chapters.find(c => c.chapterNumber === num);
-      if (ch) setSelectedChapter(ch);
-    }
+    if (chapters.length === 0) return;
+    const numMatch = barePath.match(/^\/chapters\/(\d+)$/);
+    const slugMatch = barePath.match(/^\/stories\/([^/]+)$/);
+    let ch: Chapter | undefined;
+    if (numMatch) ch = chapters.find(c => c.chapterNumber === parseInt(numMatch[1]));
+    else if (slugMatch) ch = chapters.find(c => slugify(c.title) === decodeURIComponent(slugMatch[1]));
+    if (!ch) return;
+    setSelectedChapter(ch);
+    // Old numeric links and renamed titles move to the current title-based address.
+    const canonical = storyPath(ch);
+    if (canonical !== barePath) navigate(withLanguagePrefix(canonical, lang) + location.search, { replace: true });
   }, [barePath, chapters]);
 
   const handleSelectChapter = (chapter: Chapter) => {
     setSelectedChapter(chapter);
-    navigate(`/chapters/${chapter.chapterNumber}`);
+    navigate(withLanguagePrefix(storyPath(chapter), lang));
   };
 
   const handleSignOut = async () => {

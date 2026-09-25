@@ -96,6 +96,7 @@ const APP_ROUTES: { path: string }[] = [
   { path: "/" },
   { path: "/chapters" },
   { path: "/chapters/:chapterNumber" },
+  { path: "/stories/:slug" },
   { path: "/user/:userId" },
   { path: "/profile" },
   { path: "/admin" },
