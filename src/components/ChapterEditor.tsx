@@ -477,7 +477,10 @@ export const ChapterEditor: React.FC<ChapterEditorProps> = ({ authToken, userId,
                 onClick={() => setCalendarOpen(false)}
                 aria-hidden="true"
               />
-              <div className="absolute z-50 mt-2 p-4 rounded-lg border border-border bg-card shadow-xl w-[280px]">
+              <div
+                data-lenis-prevent
+                className="fixed left-1/2 top-1/2 z-50 max-h-[calc(100dvh-2rem)] w-[calc(100vw-2rem)] max-w-[280px] -translate-x-1/2 -translate-y-1/2 overflow-y-auto rounded-lg border border-border bg-card p-4 shadow-xl md:absolute md:left-auto md:right-0 md:top-full md:mt-2 md:max-h-[calc(100dvh-6rem)] md:w-[280px] md:translate-x-0 md:translate-y-0"
+              >
                 <div className="flex items-center justify-between mb-3">
                   <button
                     type="button"
