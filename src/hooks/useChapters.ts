@@ -160,6 +160,7 @@ export function useChapters(isAdmin = false) {
 
   const incrementViews = useCallback(
     async (chapterId: string) => {
+      if (!chapterId) return;
       const url = import.meta.env.VITE_SUPABASE_URL;
       const key = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY;
 
