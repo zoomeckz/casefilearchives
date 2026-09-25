@@ -1,3 +1,4 @@
+import { storyPath } from "@/lib/slug";
 import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate, useParams, useSearchParams } from "react-router-dom";
 import { AuthUser } from "@/hooks/useAuth";
@@ -264,7 +265,7 @@ export const ForumPage: React.FC<ForumPageProps> = ({ user, authToken, stories, 
                   <div className="flex flex-wrap items-center gap-2 mb-3">
                     <span className="case-label text-[9px] border border-border px-2 py-0.5">{catLabel(active.category)}</span>
                     {active.storyId && storyMap[active.storyId] && (
-                      <button onClick={() => navigate(`/chapters/${storyMap[active.storyId!].chapterNumber}`)}
+                      <button onClick={() => navigate(storyPath(storyMap[active.storyId!]))}
                         className="case-label text-[9px] border border-primary text-primary px-2 py-0.5">Case: {storyMap[active.storyId].title}</button>
                     )}
                     {active.isPinned && <span className="case-label text-[9px] bg-primary !text-primary-foreground px-2 py-0.5">Pinned</span>}
