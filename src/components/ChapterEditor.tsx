@@ -343,10 +343,21 @@ export const ChapterEditor: React.FC<ChapterEditorProps> = ({ authToken, userId,
         if (error) throw new Error(error);
         toast.success(normalizedScheduledAt ? `${isLegacy ? 'Chapter' : 'Story'} scheduled for ${normalizedScheduledAt.replace('T', ' ')} (Swedish time)` : `${isLegacy ? 'Chapter' : 'Story'} updated!`);
       } else {
+        // Always reserve a fresh internal number at save time — drafts can hold a stale one.
+        let insertNumber = chapterNumber;
+        if (!isLegacy) {
+          const { data: maxRows } = await dbFetch<any[]>('chapters', {
+            select: 'chapter_number',
+            order: 'chapter_number.desc',
+            filters: 'limit=1',
+            token: authToken,
+          });
+          insertNumber = (maxRows?.[0]?.chapter_number || 0) + 1;
+        }
         const body: any = {
           title: title.trim(),
           content: normalizedContent,
-          chapter_number: chapterNumber,
+          chapter_number: insertNumber,
           scheduled_at: normalizedScheduledAt ? swedishToUTC(normalizedScheduledAt) : null,
           cover_image_url: coverImageUrl,
           is_archived: isLegacy,
