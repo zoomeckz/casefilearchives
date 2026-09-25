@@ -1,3 +1,4 @@
+import { stripLanguagePrefix } from "@/i18n";
 import { useEffect } from "react";
 import { useLocation } from "react-router-dom";
 
@@ -33,7 +34,7 @@ export function useDynamicSeo() {
   const location = useLocation();
 
   useEffect(() => {
-    const meta = META[location.pathname] ?? META["/"];
+    const meta = META[stripLanguagePrefix(location.pathname)] ?? META["/"];
     const canonical = `${SITE_URL}${location.pathname}`;
     document.title = meta.title;
     setMeta("description", meta.description);

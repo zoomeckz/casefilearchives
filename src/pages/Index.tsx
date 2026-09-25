@@ -1,4 +1,4 @@
-import { detectLanguageFromPath, stripLanguagePrefix, withLanguagePrefix, DEFAULT_LANGUAGE, LANGUAGE_STORAGE_KEY } from "@/i18n";
+import { detectLanguageFromPath, stripLanguagePrefix, withLanguagePrefix } from "@/i18n";
 import React, { useState, useEffect, useCallback } from "react";
 import { useNavigate, useLocation, useParams } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
@@ -44,10 +44,7 @@ const Index = () => {
   })();
 
   const setCurrentPage = (page: string) => {
-    const go = (path: string) =>
-      navigate(localStorage.getItem(LANGUAGE_STORAGE_KEY) === DEFAULT_LANGUAGE && lang === DEFAULT_LANGUAGE
-        ? path
-        : withLanguagePrefix(path, lang));
+    const go = (path: string) => navigate(withLanguagePrefix(path, lang));
     if (page === "home") go("/");
     else if (page === "chapters") go("/chapters");
     else if (page === "rewards") go("/rewards");
