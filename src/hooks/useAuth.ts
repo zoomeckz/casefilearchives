@@ -87,54 +87,93 @@ async function fetchUserProfile(userId: string, email: string, token: string): P
   };
 }
 
+// ---------------------------------------------------------------------------
+// Shared, de-duplicated refresh path.
+// Several components mount useAuth at the same time; without a shared lock
+// each one fires its own refresh with the same refresh_token, and every call
+// after the first is rejected with refresh_token_already_used. All callers
+// now share a single in-flight refresh promise.
+// ---------------------------------------------------------------------------
+
+let inFlightRefresh: Promise<StoredSession | null> | null = null;
+
+function isDefinitiveAuthError(error: string | null): boolean {
+  if (!error) return false;
+  return /invalid_grant|already.?used|invalid refresh|refresh token/i.test(error);
+}
+
+async function tryAdoptSupabaseSession(): Promise<StoredSession | null> {
+  // The auth client may already have rotated the token (e.g. after OAuth).
+  // If it holds a fresh session, adopt it instead of logging the user out.
+  try {
+    const { supabase } = await import('@/integrations/supabase/client');
+    const res = await Promise.race([
+      supabase.auth.getSession(),
+      new Promise<null>((r) => setTimeout(() => r(null), 4000)),
+    ]);
+    const s = (res as any)?.data?.session;
+    if (s?.access_token && s?.user) return storeSession(s);
+  } catch (e) {
+    console.warn('OAuth session bridge failed:', e);
+  }
+  return null;
+}
+
+async function performRefresh(stored: StoredSession): Promise<StoredSession | null> {
+  try {
+    const { data, error } = await dbRefreshToken(stored.refresh_token);
+    if (error || !data?.access_token) {
+      if (isDefinitiveAuthError(error)) {
+        // Token was rotated elsewhere or is truly invalid — try to adopt the
+        // auth client's session before giving up.
+        const adopted = await tryAdoptSupabaseSession();
+        if (adopted) return adopted;
+        console.warn('Token refresh failed definitively:', error);
+        clearSession();
+        return null;
+      }
+      // Transient failure (timeout, 500, network) — keep the session and
+      // let the next interval/focus retry instead of forcing a logout.
+      console.warn('Token refresh failed transiently, keeping session:', error);
+      return stored;
+    }
+    return storeSession(data);
+  } catch (err) {
+    console.warn('Token refresh error (transient), keeping session:', err);
+    return stored;
+  }
+}
+
+function refreshSessionShared(stored: StoredSession): Promise<StoredSession | null> {
+  if (!inFlightRefresh) {
+    inFlightRefresh = performRefresh(stored).finally(() => {
+      inFlightRefresh = null;
+    });
+  }
+  return inFlightRefresh;
+}
+
 export function useAuth() {
   const [user, setUser] = useState<AuthUser | null>(null);
   const [session, setSession] = useState<StoredSession | null>(null);
   const [loading, setLoading] = useState(true);
 
-  // Refresh token helper
+  // Refresh token helper — returns null only on definitive auth failure
   const refreshSession = useCallback(async (stored: StoredSession): Promise<StoredSession | null> => {
-    try {
-      const { data, error } = await dbRefreshToken(stored.refresh_token);
-      if (error || !data?.access_token) {
-        console.warn('Token refresh failed:', error);
-        clearSession();
-        setUser(null);
-        setSession(null);
-        return null;
-      }
-      const newStored = storeSession(data);
-      setSession(newStored);
-      return newStored;
-    } catch (err) {
-      console.error('Token refresh error:', err);
-      clearSession();
+    const result = await refreshSessionShared(stored);
+    if (result === null) {
       setUser(null);
       setSession(null);
       return null;
     }
+    setSession(result);
+    return result;
   }, []);
 
   // Initialize from localStorage on mount
   useEffect(() => {
-    const adoptOAuthSession = async (): Promise<StoredSession | null> => {
-      // Google sign-in stores its session via the auth client; bridge it into our store.
-      try {
-        const { supabase } = await import('@/integrations/supabase/client');
-        const res = await Promise.race([
-          supabase.auth.getSession(),
-          new Promise<null>((r) => setTimeout(() => r(null), 4000)),
-        ]);
-        const s = (res as any)?.data?.session;
-        if (s?.access_token && s?.user) return storeSession(s);
-      } catch (e) {
-        console.warn('OAuth session bridge failed:', e);
-      }
-      return null;
-    };
-
     const init = async () => {
-      let stored = getStoredSession() || (await adoptOAuthSession());
+      let stored = getStoredSession() || (await tryAdoptSupabaseSession());
       if (!stored) {
         setLoading(false);
         return;
@@ -190,13 +229,14 @@ export function useAuth() {
         await refreshSession(stored);
       }
     };
-    window.addEventListener('focus', handleFocus);
-    document.addEventListener('visibilitychange', () => {
+    const handleVisibility = () => {
       if (document.visibilityState === 'visible') handleFocus();
-    });
+    };
+    window.addEventListener('focus', handleFocus);
+    document.addEventListener('visibilitychange', handleVisibility);
     return () => {
       window.removeEventListener('focus', handleFocus);
-      document.removeEventListener('visibilitychange', handleFocus);
+      document.removeEventListener('visibilitychange', handleVisibility);
     };
   }, [refreshSession]);
 
