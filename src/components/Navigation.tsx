@@ -65,7 +65,7 @@ export const Navigation: React.FC<NavigationProps> = ({
           </button>
 
           {/* Centered Nav */}
-          <button onClick={() => setCurrentPage("home")} className="hidden md:block brand-title text-xl text-foreground mr-10">CASE FILE</button>
+           <button onClick={() => setCurrentPage("home")} className="hidden md:block brand-title text-xl text-foreground mr-10">CASE FILES</button>
           <div className="hidden md:flex items-center gap-7 flex-1">
             {navItems.map((item) => (
               <button
