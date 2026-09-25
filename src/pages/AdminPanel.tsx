@@ -812,7 +812,17 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ glossary, authToken, use
                   {filteredDashboardStats.map(ch => (
                      <div key={ch.id} className="flex items-center justify-between p-3 md:p-4 bg-card/50 rounded-lg border border-border/50">
                        <span className="text-foreground text-sm md:text-base truncate mr-2">{ch.title}</span>
-                      <span className="text-muted-foreground text-xs md:text-sm whitespace-nowrap">{ch.views} views</span>
+                      <div className="flex items-center gap-3 shrink-0">
+                        <span className="text-muted-foreground text-xs md:text-sm whitespace-nowrap">{ch.views} views</span>
+                        <button
+                          onClick={() => downloadSingleChapter(ch.chapter_number, ch.title, false)}
+                          title={`Download "${ch.title}"`}
+                          aria-label={`Download ${ch.title}`}
+                          className="p-2 rounded-md text-muted-foreground hover:text-primary hover:bg-primary/10 transition-colors"
+                        >
+                          <Download className="w-4 h-4" />
+                        </button>
+                      </div>
                     </div>
                   ))}
                 </div>
