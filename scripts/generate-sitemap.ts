@@ -3,7 +3,7 @@
 import { writeFileSync } from "fs";
 import { resolve } from "path";
 
-const BASE_URL = "https://www.thecasefiles.org";
+const BASE_URL = "https://thecasefiles.org";
 
 interface SitemapEntry {
   path: string;

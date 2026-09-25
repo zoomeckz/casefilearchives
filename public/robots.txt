@@ -38,4 +38,4 @@ Allow: /
 User-agent: *
 Allow: /
 
-Sitemap: https://www.thecasefiles.org/sitemap.xml
+Sitemap: https://thecasefiles.org/sitemap.xml

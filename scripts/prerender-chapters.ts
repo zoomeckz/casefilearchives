@@ -6,7 +6,7 @@
 import { mkdirSync, readFileSync, writeFileSync, existsSync } from "fs";
 import { resolve } from "path";
 
-const BASE_URL = "https://www.thecasefiles.org";
+const BASE_URL = "https://thecasefiles.org";
 const SUPABASE_URL = "https://iiezbdlmikvgxjlozwlc.supabase.co";
 const ANON_KEY =
   "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImlpZXpiZGxtaWt2Z3hqbG96d2xjIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzAxNTg5NjcsImV4cCI6MjA4NTczNDk2N30.y344r25H1VH0f2RBvfEt_RHWBWb0yjGAvKqLE5qLFGU";

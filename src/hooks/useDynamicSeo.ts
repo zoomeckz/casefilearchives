@@ -2,7 +2,7 @@ import { stripLanguagePrefix } from "@/i18n";
 import { useEffect } from "react";
 import { useLocation } from "react-router-dom";
 
-const SITE_URL = "https://www.thecasefiles.org";
+const SITE_URL = "https://thecasefiles.org";
 
 const META: Record<string, { title: string; description: string }> = {
   "/": {
