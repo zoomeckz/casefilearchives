@@ -14,7 +14,6 @@ import { ChapterReactions } from "@/components/ChapterReactions";
 import { ChapterPoll } from "@/components/ChapterPoll";
 import { TextHighlightBookmark } from "@/components/TextHighlightBookmark";
 import { ReaderCardsView } from "@/components/ReaderCardsView";
-import { StoryLanguageToggle } from "@/components/StoryLanguageToggle";
 import { useChapterTranslation } from "@/hooks/useChapterTranslation";
 import { SUPPORTED_LANGUAGES, type SupportedLanguage } from "@/i18n";
 
@@ -62,9 +61,6 @@ export const ReaderPage: React.FC<ReaderPageProps> = ({
     () => ({ ...sourceChapter, title: translation.title, content: translation.content }),
     [sourceChapter, translation.title, translation.content],
   );
-  const languageOptions: SupportedLanguage[] = user?.isAdmin
-    ? [...SUPPORTED_LANGUAGES]
-    : translation.available;
   const discussionPrompts = [
     t("reader.prompt1", "What stayed with you after reading this story?"),
     t("reader.prompt2", "Which character stood out most in this story?"),
