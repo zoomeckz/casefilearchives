@@ -5,6 +5,7 @@
 
 import { mkdirSync, readFileSync, writeFileSync, existsSync } from "fs";
 import { resolve } from "path";
+const slugify = (t: string) => (t || "").normalize("NFKD").replace(/[\u0300-\u036f]/g, "").toLowerCase().replace(/['’]/g, "").replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "");
 
 const BASE_URL = "https://thecasefiles.org";
 const SUPABASE_URL = "https://iiezbdlmikvgxjlozwlc.supabase.co";
@@ -128,7 +129,7 @@ async function main() {
     const c = chapters[i];
     const prev = chapters[i - 1];
     const next = chapters[i + 1];
-    const canonical = `${BASE_URL}/chapters/${c.chapter_number}`;
+    const canonical = `${BASE_URL}/stories/${slugify(c.title)}`;
     const body = sanitize(c.content ?? "");
     const plain = stripTags(body);
     const description =
@@ -144,9 +145,9 @@ async function main() {
         : "",
       body,
       `<nav>`,
-      prev ? `<a href="/chapters/${prev.chapter_number}">Newer: ${esc(prev.title)}</a>` : "",
+      prev ? `<a href="/stories/${slugify(prev.title)}">Newer: ${esc(prev.title)}</a>` : "",
       `<a href="/chapters">All stories</a>`,
-      next ? `<a href="/chapters/${next.chapter_number}">Older: ${esc(next.title)}</a>` : "",
+      next ? `<a href="/stories/${slugify(next.title)}">Older: ${esc(next.title)}</a>` : "",
       `</nav>`,
       `</article>`,
     ].join("\n");
@@ -171,7 +172,7 @@ async function main() {
       renderHead(shell, { title, description, canonical, image: c.cover_image_url, jsonLd }),
       markup,
     );
-    const dir = resolve(`dist/chapters/${c.chapter_number}`);
+    const dir = resolve(`dist/stories/${slugify(c.title)}`);
     mkdirSync(dir, { recursive: true });
     writeFileSync(resolve(dir, "index.html"), page);
   }
@@ -182,7 +183,7 @@ async function main() {
     `<ul>`,
     ...chapters.map(
       (c) =>
-        `<li><a href="/chapters/${c.chapter_number}">${esc(c.title)}</a></li>`,
+        `<li><a href="/stories/${slugify(c.title)}">${esc(c.title)}</a></li>`,
     ),
     `</ul>`,
   ].join("\n");
@@ -194,7 +195,7 @@ async function main() {
       "@type": "ListItem",
       position: i + 1,
       name: c.title,
-      url: `${BASE_URL}/chapters/${c.chapter_number}`,
+      url: `${BASE_URL}/stories/${slugify(c.title)}`,
     })),
   };
   const listPage = injectBody(

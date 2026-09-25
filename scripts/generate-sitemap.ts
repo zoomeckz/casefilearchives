@@ -2,6 +2,7 @@
 
 import { writeFileSync } from "fs";
 import { resolve } from "path";
+const slugify = (t: string) => (t || "").normalize("NFKD").replace(/[\u0300-\u036f]/g, "").toLowerCase().replace(/['’]/g, "").replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "");
 
 const BASE_URL = "https://thecasefiles.org";
 
@@ -49,16 +50,16 @@ const ANON_KEY =
 async function storyEntries(): Promise<SitemapEntry[]> {
   try {
     const res = await fetch(
-      `${SUPABASE_URL}/rest/v1/chapters?select=chapter_number,published_at,scheduled_at,updated_at&is_archived=eq.false&order=published_at.desc`,
+      `${SUPABASE_URL}/rest/v1/chapters?select=chapter_number,title,published_at,scheduled_at,updated_at&is_archived=eq.false&order=published_at.desc`,
       { headers: { apikey: ANON_KEY, Authorization: `Bearer ${ANON_KEY}` } },
     );
     if (!res.ok) return [];
     const now = Date.now();
-    const rows = (await res.json()) as { chapter_number: number; published_at: string | null; scheduled_at: string | null; updated_at: string | null }[];
+    const rows = (await res.json()) as { chapter_number: number; title: string; published_at: string | null; scheduled_at: string | null; updated_at: string | null }[];
     return rows
       .filter((r) => r.published_at && new Date(r.published_at).getTime() <= now && (!r.scheduled_at || new Date(r.scheduled_at).getTime() <= now))
       .map((r) => ({
-        path: `/chapters/${r.chapter_number}`,
+        path: `/stories/${slugify(r.title)}`,
         lastmod: (r.updated_at || r.published_at || "").slice(0, 10) || undefined,
         changefreq: "monthly" as const,
         priority: "0.8",

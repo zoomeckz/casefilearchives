@@ -1,4 +1,5 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+const slugify = (t: string) => (t || "").normalize("NFKD").replace(/[\u0300-\u036f]/g, "").toLowerCase().replace(/['’]/g, "").replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "");
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -61,7 +62,7 @@ Deno.serve(async (req) => {
       hasPart: chapters.map((ch) => ({
         "@type": "ShortStory",
         name: ch.title,
-        url: `${SITE_URL}/chapters/${ch.chapter_number}`,
+        url: `${SITE_URL}/stories/${slugify(ch.title)}`,
         datePublished: ch.published_at,
       })),
     };
@@ -101,7 +102,7 @@ Deno.serve(async (req) => {
         chapters: chapters.map((ch) => ({
           number: ch.chapter_number,
           title: ch.title,
-          url: `${SITE_URL}/chapters/${ch.chapter_number}`,
+          url: `${SITE_URL}/stories/${slugify(ch.title)}`,
           publishedAt: ch.published_at,
         })),
         schemas: {
