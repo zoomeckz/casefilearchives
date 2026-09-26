@@ -56,8 +56,10 @@ export const ReaderPage: React.FC<ReaderPageProps> = ({
   const { t } = useTranslation();
   const translation = useChapterTranslation(sourceChapter);
   // Swap in the chosen language's title/text; everything else stays the source row.
+  // Guard against a null sourceChapter — spreading null would yield a truthy
+  // empty object and bypass the `if (!chapter)` check below.
   const chapter = useMemo(
-    () => ({ ...sourceChapter, title: translation.title, content: translation.content }),
+    () => (sourceChapter ? { ...sourceChapter, title: translation.title, content: translation.content } : null),
     [sourceChapter, translation.title, translation.content],
   );
   const discussionPrompts = [

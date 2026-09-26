@@ -62,7 +62,7 @@ const Index = () => {
   const { user, session, loading: authLoading, signIn, signUp, signOut, refreshUser } = useAuth();
 
   // Chapters from database
-  const { chapters: allChapters, publishedChapters, incrementViews } = useChapters(user?.isAdmin);
+  const { chapters: allChapters, publishedChapters, incrementViews, loading: chaptersLoading } = useChapters(user?.isAdmin);
   // Legacy/archived chapters are admin-panel only — never shown on public pages, even to admins.
   const chapters = React.useMemo(() => allChapters.filter((c) => !c.isArchived), [allChapters]);
 
@@ -120,7 +120,12 @@ const Index = () => {
     let ch: Chapter | undefined;
     if (numMatch) ch = chapters.find(c => c.chapterNumber === parseInt(numMatch[1]));
     else if (slugMatch) ch = chapters.find(c => slugify(c.title) === decodeURIComponent(slugMatch[1]));
-    if (!ch) return;
+    if (!ch) {
+      // Dead, renamed, or still-unknown link: drop any previously selected
+      // story so the reader shows the not-found fallback instead of stale text.
+      setSelectedChapter(null);
+      return;
+    }
     setSelectedChapter(ch);
     // Old numeric links and renamed titles move to the current title-based address.
     const canonical = storyPath(ch);
@@ -171,7 +176,7 @@ const Index = () => {
           />
         )}
 
-        {currentPage === "reader" && (
+        {currentPage === "reader" && (selectedChapter ? (
           <ReaderPage
             chapter={selectedChapter}
             chapters={chapters}
@@ -187,7 +192,23 @@ const Index = () => {
             isBookmarked={isBookmarked}
             toggleBookmark={toggleBookmark}
           />
-        )}
+        ) : chaptersLoading ? null : (
+          <div className="flex-1 flex flex-col items-center justify-center text-center px-6 py-24">
+            <p className="case-label text-[10px] mb-3">CASE FILES</p>
+            <h1 className="font-display text-3xl sm:text-4xl uppercase text-foreground mb-4">
+              Story not found
+            </h1>
+            <p className="text-muted-foreground mb-8 max-w-md">
+              This link doesn't match any published story. It may have been renamed or removed.
+            </p>
+            <button
+              onClick={() => setCurrentPage("chapters")}
+              className="px-6 py-2 border border-border text-muted-foreground hover:text-primary hover:border-primary transition-colors text-xs uppercase tracking-wider"
+            >
+              Browse all stories
+            </button>
+          </div>
+        ))}
 
         {currentPage === "profile" && user && (
           <ProfilePage
