@@ -20,3 +20,8 @@
 - [x] thecasefiles.org active and primary; thefivethrones.com redirects to it
 - [ ] Publish to ship the updated sitemap/SEO (live sitemap still shows old domain)
 - [ ] Add thecasefiles.org in Google Search Console and submit sitemap
+
+## Language practice
+- [x] Rename translation tool to "Language practice"; fix background scrolling
+- [x] Translation counts re-check actual saved languages
+- [ ] Later: translation/spelling tips, target-language keyboard toggle, shorter practice sentences
