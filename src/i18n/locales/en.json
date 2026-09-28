@@ -140,6 +140,17 @@
   },
   "language": {
     "english": "English",
-    "bulgarian": "Български"
+    "bulgarian": "Български",
+    "japanese": "日本語"
+  },
+  "caseFiles": {
+    "classification": "Classification: Independent Fiction / Access: Public",
+    "evidenceArchive": "Evidence archive",
+    "latest": "Latest Case Files",
+    "viewArchive": "View archive",
+    "noFiles": "No active files yet.",
+    "declassified": "Declassified index / all active files",
+    "storyArchive": "Story Archive",
+    "fictionArchive": "Independent fiction archive"
   }
 }

@@ -2,6 +2,8 @@ import i18n from "i18next";
 import { initReactI18next } from "react-i18next";
 
 import en from "./locales/en.json";
+import bg from "./locales/bg.json";
+import ja from "./locales/ja.json";
 
 /**
  * Add a new language by:
@@ -14,7 +16,7 @@ import en from "./locales/en.json";
  * The FIRST entry is always the default language (no URL prefix). Every other
  * language is served at `/<code>/...`.
  */
-export const SUPPORTED_LANGUAGES = ["en", "bg"] as const;
+export const SUPPORTED_LANGUAGES = ["en", "bg", "ja"] as const;
 export type SupportedLanguage = (typeof SUPPORTED_LANGUAGES)[number];
 
 export const DEFAULT_LANGUAGE: SupportedLanguage = SUPPORTED_LANGUAGES[0];
@@ -25,6 +27,7 @@ export const NON_DEFAULT_LANGUAGES: SupportedLanguage[] = SUPPORTED_LANGUAGES.fi
 export const LANGUAGE_LABELS: Record<SupportedLanguage, string> = {
   en: "English",
   bg: "Български",
+  ja: "日本語",
 };
 
 /**
@@ -42,12 +45,14 @@ export const LANGUAGE_LABELS: Record<SupportedLanguage, string> = {
 export const LANGUAGE_FLAGS: Record<SupportedLanguage, string> = {
   en: "🇬🇧",
   bg: "🇧🇬",
+  ja: "🇯🇵",
 };
 
 /** Locale tags used by `Intl` / `Date.toLocaleString` — keep one per supported lang. */
 export const LOCALE_TAGS: Record<SupportedLanguage, string> = {
   en: "en-US",
   bg: "bg-BG",
+  ja: "ja-JP",
 };
 
 /** Reads the URL's first path segment — does NOT touch localStorage on first paint. */
@@ -81,10 +86,10 @@ const initialLang =
 
 i18n.use(initReactI18next).init({
   resources: {
+    // Missing keys in any language fall back to English automatically.
     en: { translation: en },
-    // Bulgarian UI is not translated yet — it reuses English strings until a
-    // Case Files-era `bg.json` is written (the old bg.json is Sedorium-era).
-    bg: { translation: en },
+    bg: { translation: bg },
+    ja: { translation: ja },
   },
   lng: initialLang,
   fallbackLng: DEFAULT_LANGUAGE,
