@@ -21,7 +21,7 @@ export const HomePage: React.FC<HomePageProps> = ({
     <div className="min-h-screen">
       <section className="border-b border-border px-4 sm:px-6 py-16 sm:py-24">
         <div className="max-w-6xl mx-auto border-l-4 border-primary pl-6 sm:pl-10 py-4">
-          <p className="case-label text-[10px] mb-6">Classification: Independent Fiction / Access: Public</p>
+          <p className="case-label text-[10px] mb-6">{t("caseFiles.classification")}</p>
           <h1 className="brand-title text-6xl sm:text-8xl md:text-9xl text-foreground leading-none mb-5">
             CASE FILES
           </h1>
@@ -45,14 +45,14 @@ export const HomePage: React.FC<HomePageProps> = ({
         <div className="max-w-6xl mx-auto">
           <div className="flex items-end justify-between border-b border-border pb-4 mb-10">
             <div>
-              <p className="case-label text-[10px] mb-2">Evidence archive</p>
-              <h2 className="font-display text-2xl sm:text-3xl text-foreground uppercase">Latest Case Files</h2>
+              <p className="case-label text-[10px] mb-2">{t("caseFiles.evidenceArchive")}</p>
+              <h2 className="font-display text-2xl sm:text-3xl text-foreground uppercase">{t("caseFiles.latest")}</h2>
             </div>
-            <button onClick={() => setCurrentPage("chapters")} className="case-label text-[10px] hover:text-primary">View archive →</button>
+            <button onClick={() => setCurrentPage("chapters")} className="case-label text-[10px] hover:text-primary">{t("caseFiles.viewArchive")} →</button>
           </div>
 
             {chapters.length === 0 ? (
-              <p className="text-muted-foreground">No active files yet.</p>
+              <p className="text-muted-foreground">{t("caseFiles.noFiles")}</p>
             ) : (
               <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-x-6 gap-y-10">
                 {chapters.slice().reverse().slice(0, 6).map((chapter) => {
