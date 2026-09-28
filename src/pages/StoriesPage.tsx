@@ -63,9 +63,9 @@ export const StoriesPage: React.FC<StoriesPageProps> = ({
     <div className="min-h-screen py-10 sm:py-16 px-4 sm:px-6">
       <div className="max-w-6xl mx-auto">
         <div className="border-l-4 border-primary pl-6 mb-10">
-          <p className="case-label text-[9px] mb-2">Declassified index / all active files</p>
+          <p className="case-label text-[9px] mb-2">{t("caseFiles.declassified")}</p>
           <h1 className="font-display text-4xl sm:text-5xl text-foreground uppercase">
-            Story Archive
+            {t("caseFiles.storyArchive")}
           </h1>
         </div>
 

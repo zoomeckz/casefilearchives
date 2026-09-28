@@ -65,9 +65,9 @@ export const Footer: React.FC<FooterProps> = ({ setCurrentPage }) => {
       <div className="max-w-6xl mx-auto">
         <div className="flex flex-col items-center text-center">
           <p className="brand-title text-foreground text-2xl mb-2">CASE FILES</p>
-          <p className="case-label text-[9px] mb-3">Independent fiction archive</p>
+          <p className="case-label text-[9px] mb-3">{t("caseFiles.fictionArchive")}</p>
           <p className="text-muted-foreground text-sm mb-6">
-            Written by AnyoneButSam
+            {t("footer.writtenBy")}
           </p>
 
           {/* Subscribe form */}
@@ -89,7 +89,7 @@ export const Footer: React.FC<FooterProps> = ({ setCurrentPage }) => {
               disabled={submitting}
               className="px-6 py-2 bg-primary text-primary-foreground border border-primary rounded-none text-sm uppercase tracking-widest transition-colors disabled:opacity-50"
             >
-              {submitting ? "…" : "Subscribe"}
+              {submitting ? "…" : t("footer.subscribe")}
             </button>
           </form>
           {showAuthHint && (
