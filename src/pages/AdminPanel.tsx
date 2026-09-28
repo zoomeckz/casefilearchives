@@ -117,8 +117,16 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ glossary, authToken, use
     });
     setTranslationCounts(counts);
   }, [authToken]);
+  // Re-check which languages actually exist whenever the admin view changes
+  // (e.g. returning from the editor) or the tab regains focus.
+  const viewKey = searchParams.toString();
   useEffect(() => {
     refreshTranslationCounts();
+  }, [refreshTranslationCounts, viewKey]);
+  useEffect(() => {
+    const onFocus = () => refreshTranslationCounts();
+    window.addEventListener('focus', onFocus);
+    return () => window.removeEventListener('focus', onFocus);
   }, [refreshTranslationCounts]);
   const totalTranslationLanguages = NON_DEFAULT_LANGUAGES.length;
 

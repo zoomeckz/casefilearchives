@@ -403,7 +403,8 @@ export const ChapterTranslationsManager: React.FC<ChapterTranslationsManagerProp
 
   return (
     <div
-      className="fixed inset-0 z-50 flex items-center justify-center bg-background/80 backdrop-blur-sm p-2 md:p-6"
+      data-lenis-prevent
+      className="fixed inset-0 z-50 flex items-center justify-center bg-background/80 backdrop-blur-sm p-2 md:p-6 overscroll-contain"
       onClick={handleClose}
     >
       <div
@@ -414,7 +415,7 @@ export const ChapterTranslationsManager: React.FC<ChapterTranslationsManagerProp
         <div className="flex items-center justify-between gap-3 px-4 md:px-6 py-3 border-b border-border">
           <div className="min-w-0">
             <h2 className="text-lg md:text-xl font-bold text-foreground truncate">
-              Translations · {legacy ? `Ch. ${chapterNumber}` : englishTitle}
+              Language practice · {legacy ? `Ch. ${chapterNumber}` : englishTitle}
               {queueRemaining > 0 && (
                 <span className="ml-2 align-middle text-[11px] uppercase tracking-wider text-primary/80">
                   {queueRemaining} more queued
