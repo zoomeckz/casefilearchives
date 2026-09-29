@@ -151,6 +151,7 @@
     "noFiles": "No active files yet.",
     "declassified": "Declassified index / all active files",
     "storyArchive": "Story Archive",
-    "fictionArchive": "Independent fiction archive"
+    "fictionArchive": "Independent fiction archive",
+    "activeFiles": "{{count}} active files / updated continuously"
   }
 }

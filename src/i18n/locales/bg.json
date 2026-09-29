@@ -93,7 +93,8 @@
     "noFiles": "Все още няма активни досиета.",
     "declassified": "Разсекретен индекс / всички активни досиета",
     "storyArchive": "Архив с истории",
-    "fictionArchive": "Архив на независима проза"
+    "fictionArchive": "Архив на независима проза",
+    "activeFiles": "{{count}} активни досиета / постоянно обновявани"
   },
   "language": {
     "english": "English",
