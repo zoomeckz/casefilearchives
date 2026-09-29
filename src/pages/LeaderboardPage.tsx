@@ -28,7 +28,7 @@ export const LeaderboardPage: React.FC = () => {
     const fetch = async () => {
       setLoading(true);
       // Get all profiles
-      const { data: profiles } = await supabase.from("public_profiles" as any).select("user_id, name, avatar_url, selected_frame");
+      const { data: profiles } = await supabase.rpc("get_public_profiles" as any, {}).select("user_id, name, avatar_url, selected_frame");
       if (!profiles) { setLoading(false); return; }
 
       const userIds = profiles.map(p => p.user_id);
