@@ -1670,7 +1670,14 @@ const ChapterTable: React.FC<ChapterTableProps> = ({
                   </td>
                    {legacy && <td className="px-3 md:px-4 py-3 text-muted-foreground tabular-nums">{ch.chapter_number}</td>}
                   <td className="px-3 md:px-4 py-3 min-w-0">
-                    <div className="text-foreground font-medium truncate">{ch.title}</div>
+                    <button
+                      type="button"
+                      onClick={() => onEdit(ch.id)}
+                      className="text-foreground font-medium truncate text-left hover:text-primary transition-colors cursor-pointer"
+                      title="Edit story"
+                    >
+                      {ch.title}
+                    </button>
                     <div className="md:hidden text-xs text-muted-foreground mt-0.5">
                       {ch.views} views · {ch.published_at ? new Date(ch.published_at).toLocaleDateString() : 'No date'}
                     </div>
