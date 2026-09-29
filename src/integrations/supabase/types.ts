@@ -1052,29 +1052,18 @@ export type Database = {
       }
     }
     Views: {
-      public_profiles: {
-        Row: {
-          avatar_url: string | null
-          name: string | null
-          selected_frame: string | null
-          user_id: string | null
-        }
-        Insert: {
-          avatar_url?: string | null
-          name?: string | null
-          selected_frame?: string | null
-          user_id?: string | null
-        }
-        Update: {
-          avatar_url?: string | null
-          name?: string | null
-          selected_frame?: string | null
-          user_id?: string | null
-        }
-        Relationships: []
-      }
+      [_ in never]: never
     }
     Functions: {
+      get_public_profiles: {
+        Args: { _user_ids?: string[] }
+        Returns: {
+          avatar_url: string
+          name: string
+          selected_frame: string
+          user_id: string
+        }[]
+      }
       get_seo_cron_status: { Args: never; Returns: Json }
       has_role: {
         Args: {
