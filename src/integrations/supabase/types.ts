@@ -1055,6 +1055,15 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      get_public_profiles: {
+        Args: { _user_ids?: string[] }
+        Returns: {
+          avatar_url: string
+          name: string
+          selected_frame: string
+          user_id: string
+        }[]
+      }
       get_seo_cron_status: { Args: never; Returns: Json }
       has_role: {
         Args: {

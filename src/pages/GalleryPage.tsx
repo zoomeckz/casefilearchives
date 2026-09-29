@@ -42,7 +42,7 @@ export const GalleryPage: React.FC<GalleryPageProps> = ({ user, setShowAuthModal
 
       const userIds = [...new Set(artData.map(a => a.user_id))];
       const profilePromises = userIds.map(uid =>
-        supabase.from("profiles").select("user_id, name, avatar_url, selected_frame").eq("user_id", uid).maybeSingle()
+        supabase.rpc("get_public_profiles", {}).select("user_id, name, avatar_url, selected_frame").eq("user_id", uid).maybeSingle()
       );
       const profiles = await Promise.all(profilePromises);
       const profileMap: Record<string, any> = {};
