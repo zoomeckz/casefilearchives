@@ -69,6 +69,8 @@ async function storyEntries(): Promise<SitemapEntry[]> {
   }
 }
 
-const entries = [...staticEntries, ...(await storyEntries())];
+const base = [...staticEntries, ...(await storyEntries())];
+const LANGS = ["bg", "ja"];
+const entries = [...base, ...LANGS.flatMap((l) => base.map((e) => ({ ...e, path: `/${l}${e.path === "/" ? "" : e.path}` })))];
 writeFileSync(resolve("public/sitemap.xml"), generateSitemap(entries));
 console.log(`sitemap.xml written (${entries.length} entries)`);
