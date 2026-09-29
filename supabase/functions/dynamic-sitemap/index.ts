@@ -7,7 +7,7 @@ const corsHeaders = {
     "authorization, x-client-info, apikey, content-type",
 };
 
-const SITE_URL = "https://www.thecasefiles.org";
+const SITE_URL = "https://thecasefiles.org";
 
 /**
  * Single source of truth for languages this sitemap covers.
@@ -21,7 +21,7 @@ const SITE_URL = "https://www.thecasefiles.org";
  * pointing at every other language plus an `x-default`), which is the
  * canonical way to tell search engines about translated content.
  */
-const SUPPORTED_LANGUAGES = ["en"] as const;
+const SUPPORTED_LANGUAGES = ["en", "bg", "ja"] as const;
 type Lang = (typeof SUPPORTED_LANGUAGES)[number];
 const DEFAULT_LANG: Lang = SUPPORTED_LANGUAGES[0];
 const langPath = (path: string, lang: Lang) =>

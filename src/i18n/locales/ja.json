@@ -93,7 +93,8 @@
     "noFiles": "まだ公開中のファイルはありません。",
     "declassified": "機密解除索引 / 公開中の全ファイル",
     "storyArchive": "物語アーカイブ",
-    "fictionArchive": "独立系フィクション・アーカイブ"
+    "fictionArchive": "独立系フィクション・アーカイブ",
+    "activeFiles": "公開中のファイル {{count}} 件 / 随時更新"
   },
   "language": {
     "english": "English",

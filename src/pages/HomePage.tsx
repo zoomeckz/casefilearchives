@@ -36,7 +36,7 @@ export const HomePage: React.FC<HomePageProps> = ({
             >
               {t("hero.startReading")} <ArrowRight />
             </Button>
-            <span className="case-label text-[10px]">{chapters.length} active files / updated continuously</span>
+            <span className="case-label text-[10px]">{t("caseFiles.activeFiles", { count: chapters.length, defaultValue: "{{count}} active files / updated continuously" })}</span>
           </div>
         </div>
       </section>
