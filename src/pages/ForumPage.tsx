@@ -70,7 +70,7 @@ export const ForumPage: React.FC<ForumPageProps> = ({ user, authToken, stories, 
   const loadNames = useCallback(async (ids: string[]) => {
     const missing = Array.from(new Set(ids)).filter((id) => id && !names[id]);
     if (!missing.length) return;
-    const { data } = await dbFetch<any[]>("profiles", { select: "user_id,name", filters: `user_id=in.(${missing.join(",")})` });
+    const { data } = await dbFetch<any[]>("public_profiles", { select: "user_id,name", filters: `user_id=in.(${missing.join(",")})` });
     if (data) setNames((p) => ({ ...p, ...Object.fromEntries(data.map((r) => [r.user_id, r.name])) }));
   }, [names]);
 

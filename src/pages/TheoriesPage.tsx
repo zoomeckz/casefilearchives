@@ -43,7 +43,7 @@ export const TheoriesPage: React.FC<TheoriesPageProps> = ({ user, setShowAuthMod
 
       const userIds = [...new Set(theoriesData.map(t => t.user_id))];
       const profilePromises = userIds.map(uid =>
-        supabase.from("profiles").select("user_id, name, avatar_url, selected_frame").eq("user_id", uid).maybeSingle()
+        supabase.from("public_profiles" as any).select("user_id, name, avatar_url, selected_frame").eq("user_id", uid).maybeSingle()
       );
       const profiles = await Promise.all(profilePromises);
       const profileMap: Record<string, any> = {};
