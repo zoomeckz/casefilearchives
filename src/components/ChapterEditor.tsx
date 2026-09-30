@@ -358,7 +358,13 @@ export const ChapterEditor: React.FC<ChapterEditorProps> = ({ authToken, userId,
 
     setPublishing(true);
     try {
-      const normalizedScheduledAt = normalizeScheduledAt(scheduledAt);
+      let normalizedScheduledAt = normalizeScheduledAt(scheduledAt);
+      // Editing an existing story with a past date: clear the schedule gate so
+      // the story stays simply published instead of being hidden until a time
+      // that has already passed.
+      if (editChapterId && normalizedScheduledAt && new Date(swedishToUTC(normalizedScheduledAt)).getTime() < Date.now()) {
+        normalizedScheduledAt = '';
+      }
       const normalizedContent = normalizeRichTextHtml(en.content);
 
       if (editChapterId) {
