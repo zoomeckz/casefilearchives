@@ -598,8 +598,27 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ glossary, authToken, use
       case 'number-desc': return list.sort((a, b) => b.chapter_number - a.chapter_number);
       case 'views-desc': return list.sort((a, b) => b.views - a.views);
       case 'views-asc': return list.sort((a, b) => a.views - b.views);
-      case 'newest': return list.sort((a, b) => new Date(b.published_at).getTime() - new Date(a.published_at).getTime());
-      case 'oldest': return list.sort((a, b) => new Date(a.published_at).getTime() - new Date(b.published_at).getTime());
+      // Sort by the story's effective date: a future scheduled_at counts as
+      // the publish date; missing/unparseable dates sort last (newest) or
+      // first (oldest) instead of breaking the comparison with NaN.
+      case 'newest':
+      case 'oldest': {
+        const effectiveMs = (ch: ChapterRow) => {
+          const sched = ch.scheduled_at ? Date.parse(ch.scheduled_at) : NaN;
+          if (!Number.isNaN(sched) && sched > Date.now()) return sched;
+          const pub = ch.published_at ? Date.parse(ch.published_at) : NaN;
+          return Number.isNaN(pub) ? null : pub;
+        };
+        const newest = chapterSort === 'newest';
+        return list.sort((a, b) => {
+          const am = effectiveMs(a);
+          const bm = effectiveMs(b);
+          if (am === null && bm === null) return 0;
+          if (am === null) return newest ? 1 : -1;
+          if (bm === null) return newest ? -1 : 1;
+          return newest ? bm - am : am - bm;
+        });
+      }
       default: return list;
     }
   }, [chapters, chapterSearch, chapterSort]);

@@ -25,3 +25,7 @@
 - [x] Rename translation tool to "Language practice"; fix background scrolling
 - [x] Translation counts re-check actual saved languages
 - [ ] Later: translation/spelling tips, target-language keyboard toggle, shorter practice sentences
+
+## Admin fixes (Sep 30)
+- [x] Published column sorting: effective date (future schedule counts, missing dates sort safely)
+- [x] Editing an already-published story with a past date no longer blocked; schedule gate cleared instead
