@@ -348,7 +348,10 @@ export const ChapterEditor: React.FC<ChapterEditorProps> = ({ authToken, userId,
       toast.error('Please write some content');
       return;
     }
-    if (scheduledAt && new Date(swedishToUTC(normalizeScheduledAt(scheduledAt))).getTime() < Date.now()) {
+    // Past dates only make sense for brand-new stories. When editing an
+    // already-published story, a past date just means "already live" — the
+    // schedule gate is cleared below instead of blocking the update.
+    if (!editChapterId && scheduledAt && new Date(swedishToUTC(normalizeScheduledAt(scheduledAt))).getTime() < Date.now()) {
       toast.error('The scheduled time is in the past. Pick a future time or clear it to publish now.');
       return;
     }
