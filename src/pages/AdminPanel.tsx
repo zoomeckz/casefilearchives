@@ -609,14 +609,14 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ glossary, authToken, use
           const pub = ch.published_at ? Date.parse(ch.published_at) : NaN;
           return Number.isNaN(pub) ? null : pub;
         };
-        const dir = chapterSort === 'newest' ? -1 : 1;
+        const newest = chapterSort === 'newest';
         return list.sort((a, b) => {
           const am = effectiveMs(a);
           const bm = effectiveMs(b);
           if (am === null && bm === null) return 0;
-          if (am === null) return -dir;
-          if (bm === null) return dir;
-          return dir * (bm - am) * -1 === 0 ? 0 : (chapterSort === 'newest' ? bm - am : am - bm);
+          if (am === null) return newest ? 1 : -1;
+          if (bm === null) return newest ? -1 : 1;
+          return newest ? bm - am : am - bm;
         });
       }
       default: return list;
