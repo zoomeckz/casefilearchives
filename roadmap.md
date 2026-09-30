@@ -29,3 +29,6 @@
 ## Admin fixes (Sep 30)
 - [x] Published column sorting: effective date (future schedule counts, missing dates sort safely)
 - [x] Editing an already-published story with a past date no longer blocked; schedule gate cleared instead
+- [ ] Admin: Edit button inside the story reader page
+- [ ] Default site language English unless visitor language is supported
+- [ ] Browser-verify admin sort + past-date edit fixes
