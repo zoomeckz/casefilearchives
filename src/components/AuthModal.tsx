@@ -1,6 +1,9 @@
 import React, { useState } from "react";
 import { Icons } from "@/lib/icons";
 import { lovable } from "@/integrations/lovable/index";
+import i18n from "i18next";
+const t = (k: string) => i18n.t(`ui.${k}`);
+
 
 interface AuthModalProps {
   isOpen: boolean;
@@ -87,7 +90,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({
           <Icons.Close />
         </button>
 
-        <p className="case-label text-[9px] mb-2">Identity verification</p>
+        <p className="case-label text-[9px] mb-2">{t('identity')}</p>
         <h2 className="font-display text-2xl text-foreground mb-2 uppercase">
           {mode === "login" ? "Welcome Back" : "Join the Community"}
         </h2>
@@ -118,7 +121,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({
         <form onSubmit={handleSubmit} className="space-y-4">
           {mode === "register" && (
             <div>
-              <label className="block text-foreground text-sm mb-2">Name</label>
+              <label className="block text-foreground text-sm mb-2">{t('name')}</label>
               <input
                 type="text"
                 value={formData.name}
@@ -126,14 +129,14 @@ export const AuthModal: React.FC<AuthModalProps> = ({
                   setFormData({ ...formData, name: e.target.value })
                 }
                 className="w-full px-4 py-3 bg-background border border-border rounded-none text-foreground focus:outline-none focus:border-primary transition-colors"
-                placeholder="Your name"
+                placeholder={t('yourName')}
                 disabled={loading}
               />
             </div>
           )}
 
           <div>
-            <label className="block text-foreground text-sm mb-2">Email</label>
+            <label className="block text-foreground text-sm mb-2">{t('email')}</label>
             <input
               type="email"
               value={formData.email}
