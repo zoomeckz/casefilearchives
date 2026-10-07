@@ -16,6 +16,12 @@
     <priority>0.7</priority>
   </url>
   <url>
+    <loc>https://thecasefiles.org/stories/the-held-state</loc>
+    <lastmod>2026-09-25</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.8</priority>
+  </url>
+  <url>
     <loc>https://thecasefiles.org/stories/in-transit</loc>
     <lastmod>2026-09-25</lastmod>
     <changefreq>monthly</changefreq>
@@ -91,6 +97,12 @@
     <priority>0.7</priority>
   </url>
   <url>
+    <loc>https://thecasefiles.org/bg/stories/the-held-state</loc>
+    <lastmod>2026-09-25</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.8</priority>
+  </url>
+  <url>
     <loc>https://thecasefiles.org/bg/stories/in-transit</loc>
     <lastmod>2026-09-25</lastmod>
     <changefreq>monthly</changefreq>
@@ -164,6 +176,12 @@
     <loc>https://thecasefiles.org/ja/about</loc>
     <changefreq>monthly</changefreq>
     <priority>0.7</priority>
+  </url>
+  <url>
+    <loc>https://thecasefiles.org/ja/stories/the-held-state</loc>
+    <lastmod>2026-09-25</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.8</priority>
   </url>
   <url>
     <loc>https://thecasefiles.org/ja/stories/in-transit</loc>
