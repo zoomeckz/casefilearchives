@@ -21,6 +21,9 @@ import { AboutPage } from "@/pages/AboutPage";
 import { ForumPage } from "@/pages/ForumPage";
 import { slugify, storyPath } from "@/lib/slug";
 import { usePageTracking } from "@/hooks/usePageTracking";
+import i18n from "i18next";
+const t = (k: string) => i18n.t(`ui.${k}`);
+
 
 const Index = () => {
   const navigate = useNavigate();
@@ -196,16 +199,16 @@ const Index = () => {
           <div className="flex-1 flex flex-col items-center justify-center text-center px-6 py-24">
             <p className="case-label text-[10px] mb-3">CASE FILES</p>
             <h1 className="font-display text-3xl sm:text-4xl uppercase text-foreground mb-4">
-              Story not found
+              {t('notFoundTitle')}
             </h1>
             <p className="text-muted-foreground mb-8 max-w-md">
-              This link doesn't match any published story. It may have been renamed or removed.
+              {t('notFoundBody')}
             </p>
             <button
               onClick={() => setCurrentPage("chapters")}
               className="px-6 py-2 border border-border text-muted-foreground hover:text-primary hover:border-primary transition-colors text-xs uppercase tracking-wider"
             >
-              Browse all stories
+              {t('browseAll')}
             </button>
           </div>
         ))}

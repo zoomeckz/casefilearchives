@@ -1,5 +1,8 @@
 import React from 'react';
 import { Progress } from '@/components/ui/progress';
+import i18n from "i18next";
+const t = (k: string) => i18n.t(`ui.${k}`);
+
 
 interface ReadingStatsProps {
   readCount: number;
@@ -14,16 +17,16 @@ export const ReadingStats: React.FC<ReadingStatsProps> = ({ readCount, totalCoun
   return (
     <div className="bg-card border border-border rounded-lg p-4 mb-8">
       <div className="flex items-center justify-between mb-2">
-        <span className="text-muted-foreground text-sm">Your Progress</span>
+        <span className="text-muted-foreground text-sm">{t('yourProgress')}</span>
         <span className="text-primary text-sm font-medium">
-          {readCount} / {totalCount} stories
+          {readCount} / {totalCount} {t('storiesWord')}
         </span>
       </div>
       <Progress value={percentage} className="h-2 bg-muted" />
       <p className="text-muted-foreground text-xs mt-2">
         {percentage === 100 
-          ? "You've read all available stories!" 
-          : `${percentage}% complete`}
+          ? t('allRead') 
+          : `${percentage}% ${t('complete')}`}
       </p>
     </div>
   );
