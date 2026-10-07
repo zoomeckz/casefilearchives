@@ -7,7 +7,7 @@ import { dbFetch } from "@/lib/dbFetch";
 import { FormatToolbar } from "@/components/FormatToolbar";
 import { normalizePlainTextFormatting, renderFormattedContent } from "@/lib/contentFormatting";
 import i18n from "i18next";
-const t = (k: string) => i18n.t(`ui.${k}`);
+const tr = (k: string) => i18n.t(`ui.${k}`);
 
 
 function renderFormatted(text: string): string {
@@ -197,8 +197,8 @@ export const ForumPage: React.FC<ForumPageProps> = ({ user, authToken, stories, 
       <div className="max-w-6xl mx-auto">
         <div className="border-l-4 border-primary pl-6 mb-10 flex flex-wrap items-end justify-between gap-4">
           <div>
-            <p className="case-label text-[9px] mb-2">{t('forumKicker')}</p>
-            <h1 className="font-display text-4xl sm:text-5xl text-foreground uppercase">{t('caseDiscussions')}</h1>
+            <p className="case-label text-[9px] mb-2">{tr('forumKicker')}</p>
+            <h1 className="font-display text-4xl sm:text-5xl text-foreground uppercase">{tr('caseDiscussions')}</h1>
           </div>
           <button onClick={openComposer} className="px-4 py-2 bg-primary text-primary-foreground case-label !text-primary-foreground text-[10px] hover:bg-primary/85">
             + Open a thread
@@ -208,16 +208,16 @@ export const ForumPage: React.FC<ForumPageProps> = ({ user, authToken, stories, 
         <div className="grid lg:grid-cols-[260px_1fr] gap-8">
           <aside className="space-y-6 lg:sticky lg:top-24 self-start" data-lenis-prevent>
             <div className="case-file p-4">
-              <p className="case-label text-[9px] mb-3">{t('filedUnder')}</p>
-              <button className={sideBtn(!catFilter)} onClick={() => setFilter("cat", null)}>{t('allCategories')}</button>
+              <p className="case-label text-[9px] mb-3">{tr('filedUnder')}</p>
+              <button className={sideBtn(!catFilter)} onClick={() => setFilter("cat", null)}>{tr('allCategories')}</button>
               {CATEGORIES.map((c) => (
                 <button key={c.id} className={sideBtn(catFilter === c.id)} onClick={() => setFilter("cat", c.id)}>{c.label}</button>
               ))}
             </div>
             <div className="case-file p-4">
-              <p className="case-label text-[9px] mb-3">{t('byCase')}</p>
+              <p className="case-label text-[9px] mb-3">{tr('byCase')}</p>
               <div className="max-h-80 overflow-y-auto">
-                <button className={sideBtn(!caseFilter)} onClick={() => setFilter("case", null)}>{t('allCases')}</button>
+                <button className={sideBtn(!caseFilter)} onClick={() => setFilter("case", null)}>{tr('allCases')}</button>
                 {stories.map((s) => (
                   <button key={s.id} className={`${sideBtn(caseFilter === s.id)} flex justify-between gap-2`} onClick={() => setFilter("case", s.id)}>
                     <span className="truncate">{s.title}</span>
@@ -229,7 +229,7 @@ export const ForumPage: React.FC<ForumPageProps> = ({ user, authToken, stories, 
             {!user && (
               <div className="case-file p-4 text-sm text-muted-foreground">
                 Register to open threads and leave testimony.
-                <button onClick={() => setShowAuthModal(true)} className="block mt-3 case-label text-[9px] text-primary">{t('signInArrow')}</button>
+                <button onClick={() => setShowAuthModal(true)} className="block mt-3 case-label text-[9px] text-primary">{tr('signInArrow')}</button>
               </div>
             )}
           </aside>
@@ -237,26 +237,26 @@ export const ForumPage: React.FC<ForumPageProps> = ({ user, authToken, stories, 
           <section className="min-w-0">
             {composing && !active && (
               <form onSubmit={submitThread} className="case-file p-5 mb-8 space-y-3">
-                <p className="case-label text-[9px]">{t('newThread')}</p>
-                <input value={title} onChange={(e) => setTitle(e.target.value)} maxLength={140} placeholder={t('threadTitle')}
+                <p className="case-label text-[9px]">{tr('newThread')}</p>
+                <input value={title} onChange={(e) => setTitle(e.target.value)} maxLength={140} placeholder={tr('threadTitle')}
                   className="w-full px-3 py-2 bg-background border border-border text-foreground focus:outline-none focus:border-primary" />
                 <div className="grid sm:grid-cols-2 gap-3">
                   <select value={category} onChange={(e) => setCategory(e.target.value)} className="px-3 py-2 bg-background border border-border text-foreground">
                     {CATEGORIES.map((c) => <option key={c.id} value={c.id}>{c.label}</option>)}
                   </select>
                   <select value={storyId} onChange={(e) => setStoryId(e.target.value)} className="px-3 py-2 bg-background border border-border text-foreground">
-                    <option value="">{t('noCase')}</option>
+                    <option value="">{tr('noCase')}</option>
                     {stories.map((s) => <option key={s.id} value={s.id}>{s.title}</option>)}
                   </select>
                 </div>
                 <FormatToolbar textareaRef={bodyRef} value={body} onChange={setBody} />
-                <textarea ref={bodyRef} value={body} onChange={(e) => setBody(e.target.value)} rows={6} placeholder={t('mind')}
+                <textarea ref={bodyRef} value={body} onChange={(e) => setBody(e.target.value)} rows={6} placeholder={tr('mind')}
                   className="w-full px-3 py-2 bg-background border border-border text-foreground focus:outline-none focus:border-primary resize-y" />
                 <div className="flex gap-3">
                   <button disabled={busy || !title.trim() || !body.trim()} className="px-4 py-2 bg-primary text-primary-foreground text-sm disabled:opacity-50">
                     {busy ? "Filing..." : "Post thread"}
                   </button>
-                  <button type="button" onClick={() => setComposing(false)} className="px-4 py-2 text-sm text-muted-foreground hover:text-foreground">{t('cancel')}</button>
+                  <button type="button" onClick={() => setComposing(false)} className="px-4 py-2 text-sm text-muted-foreground hover:text-foreground">{tr('cancel')}</button>
                 </div>
               </form>
             )}
@@ -271,7 +271,7 @@ export const ForumPage: React.FC<ForumPageProps> = ({ user, authToken, stories, 
                       <button onClick={() => navigate(storyPath(storyMap[active.storyId!]))}
                         className="case-label text-[9px] border border-primary text-primary px-2 py-0.5">Case: {storyMap[active.storyId].title}</button>
                     )}
-                    {active.isPinned && <span className="case-label text-[9px] bg-primary !text-primary-foreground px-2 py-0.5">{t('pinned')}</span>}
+                    {active.isPinned && <span className="case-label text-[9px] bg-primary !text-primary-foreground px-2 py-0.5">{tr('pinned')}</span>}
                   </div>
                   <h2 className="font-display text-3xl text-foreground mb-2">{active.title}</h2>
                   <p className="case-label text-[9px] mb-5">
@@ -281,7 +281,7 @@ export const ForumPage: React.FC<ForumPageProps> = ({ user, authToken, stories, 
                   {canModerate(active.userId) && (
                     <div className="flex gap-4 mt-5 pt-4 border-t border-border">
                       {user?.isAdmin && <button onClick={() => togglePin(active)} className="case-label text-[9px] hover:text-foreground">{active.isPinned ? "Unpin" : "Pin"}</button>}
-                      <button onClick={() => deleteThread(active)} className="case-label text-[9px] hover:text-destructive">{t('delete')}</button>
+                      <button onClick={() => deleteThread(active)} className="case-label text-[9px] hover:text-destructive">{tr('delete')}</button>
                     </div>
                   )}
                 </article>
@@ -295,15 +295,15 @@ export const ForumPage: React.FC<ForumPageProps> = ({ user, authToken, stories, 
                       </p>
                       <div className="text-foreground/80 break-words" dangerouslySetInnerHTML={{ __html: renderFormatted(r.content) }} />
                       {canModerate(r.userId) && (
-                        <button onClick={() => deleteReply(r)} className="case-label text-[9px] mt-2 hover:text-destructive">{t('delete')}</button>
+                        <button onClick={() => deleteReply(r)} className="case-label text-[9px] mt-2 hover:text-destructive">{tr('delete')}</button>
                       )}
                     </div>
                   ))}
-                  {replies.length === 0 && <p className="text-muted-foreground text-sm">{t('noReplies')}</p>}
+                  {replies.length === 0 && <p className="text-muted-foreground text-sm">{tr('noReplies')}</p>}
                 </div>
 
                 <form onSubmit={submitReply} className="case-file p-5 space-y-3">
-                  <p className="case-label text-[9px]">{t('addReply')}</p>
+                  <p className="case-label text-[9px]">{tr('addReply')}</p>
                   <FormatToolbar textareaRef={replyRef} value={replyText} onChange={setReplyText} />
                   <textarea ref={replyRef} value={replyText} onChange={(e) => setReplyText(e.target.value)} rows={4}
                     onFocus={() => { if (!user) setShowAuthModal(true); }}
@@ -315,17 +315,17 @@ export const ForumPage: React.FC<ForumPageProps> = ({ user, authToken, stories, 
                 </form>
               </div>
             ) : postId && !loading ? (
-              <p className="text-muted-foreground">{t('threadMissing')}</p>
+              <p className="text-muted-foreground">{tr('threadMissing')}</p>
             ) : (
               <div className="space-y-4">
-                {loading && <p className="text-muted-foreground text-sm">{t('loadingThreads')}</p>}
+                {loading && <p className="text-muted-foreground text-sm">{tr('loadingThreads')}</p>}
                 {!loading && filtered.length === 0 && (
-                  <div className="case-file p-8 text-center text-muted-foreground">{t('noThreads')}</div>
+                  <div className="case-file p-8 text-center text-muted-foreground">{tr('noThreads')}</div>
                 )}
                 {filtered.map((t) => (
                   <button key={t.id} onClick={() => navigate(threadUrl(t))} className="case-file w-full text-left p-5 hover:border-primary transition-colors block">
                     <div className="flex flex-wrap items-center gap-2 mb-2">
-                      {t.isPinned && <span className="case-label text-[9px] bg-primary !text-primary-foreground px-2 py-0.5">{t('pinned')}</span>}
+                      {t.isPinned && <span className="case-label text-[9px] bg-primary !text-primary-foreground px-2 py-0.5">{tr('pinned')}</span>}
                       <span className="case-label text-[9px] border border-border px-2 py-0.5">{catLabel(t.category)}</span>
                       {t.storyId && storyMap[t.storyId] && (
                         <span className="case-label text-[9px] border border-primary text-primary px-2 py-0.5 truncate max-w-[220px]">{storyMap[t.storyId].title}</span>
