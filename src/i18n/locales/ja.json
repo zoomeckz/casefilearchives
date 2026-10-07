@@ -135,6 +135,11 @@
     "allRead": "すべての物語を読みました！",
     "complete": "完了",
     "markUnread": "未読にする",
-    "read": "既読"
+    "read": "既読",
+    "openThread": "+ スレッドを立てる",
+    "cat_case-discussion": "ケースの議論",
+    "cat_theories": "考察",
+    "cat_general": "一般",
+    "cat_feedback": "フィードバック"
   }
 }

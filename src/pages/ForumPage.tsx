@@ -201,7 +201,7 @@ export const ForumPage: React.FC<ForumPageProps> = ({ user, authToken, stories, 
             <h1 className="font-display text-4xl sm:text-5xl text-foreground uppercase">{tr('caseDiscussions')}</h1>
           </div>
           <button onClick={openComposer} className="px-4 py-2 bg-primary text-primary-foreground case-label !text-primary-foreground text-[10px] hover:bg-primary/85">
-            + Open a thread
+            {tr('openThread')}
           </button>
         </div>
 

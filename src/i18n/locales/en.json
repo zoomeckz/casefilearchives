@@ -188,6 +188,11 @@
     "allRead": "You've read all available stories!",
     "complete": "complete",
     "markUnread": "Mark as unread",
-    "read": "Read"
+    "read": "Read",
+    "openThread": "+ Open a thread",
+    "cat_case-discussion": "Case discussion",
+    "cat_theories": "Theories",
+    "cat_general": "General",
+    "cat_feedback": "Feedback"
   }
 }
