@@ -186,7 +186,7 @@ export const ForumPage: React.FC<ForumPageProps> = ({ user, authToken, stories, 
     loadThreads();
   };
 
-  const catLabel = (id: string) => CATEGORIES.find((c) => c.id === id)?.label || id;
+  const catLabel = (id: string) => (CATEGORIES.find((c) => c.id === id) ? tr(`cat_${id}`) : id);
   const name = (id: string) => names[id] || "Reader";
 
   const sideBtn = (on: boolean) =>
@@ -211,7 +211,7 @@ export const ForumPage: React.FC<ForumPageProps> = ({ user, authToken, stories, 
               <p className="case-label text-[9px] mb-3">{tr('filedUnder')}</p>
               <button className={sideBtn(!catFilter)} onClick={() => setFilter("cat", null)}>{tr('allCategories')}</button>
               {CATEGORIES.map((c) => (
-                <button key={c.id} className={sideBtn(catFilter === c.id)} onClick={() => setFilter("cat", c.id)}>{c.label}</button>
+                <button key={c.id} className={sideBtn(catFilter === c.id)} onClick={() => setFilter("cat", c.id)}>{tr(`cat_${c.id}`)}</button>
               ))}
             </div>
             <div className="case-file p-4">
@@ -242,7 +242,7 @@ export const ForumPage: React.FC<ForumPageProps> = ({ user, authToken, stories, 
                   className="w-full px-3 py-2 bg-background border border-border text-foreground focus:outline-none focus:border-primary" />
                 <div className="grid sm:grid-cols-2 gap-3">
                   <select value={category} onChange={(e) => setCategory(e.target.value)} className="px-3 py-2 bg-background border border-border text-foreground">
-                    {CATEGORIES.map((c) => <option key={c.id} value={c.id}>{c.label}</option>)}
+                    {CATEGORIES.map((c) => <option key={c.id} value={c.id}>{tr(`cat_${c.id}`)}</option>)}
                   </select>
                   <select value={storyId} onChange={(e) => setStoryId(e.target.value)} className="px-3 py-2 bg-background border border-border text-foreground">
                     <option value="">{tr('noCase')}</option>
