@@ -290,9 +290,11 @@ export type Database = {
           cover_image_url: string | null
           created_at: string
           id: string
+          interactive_graph: Json | null
           is_archived: boolean
           published_at: string
           scheduled_at: string | null
+          story_format: string
           tags: string[]
           title: string
           updated_at: string
@@ -304,9 +306,11 @@ export type Database = {
           cover_image_url?: string | null
           created_at?: string
           id?: string
+          interactive_graph?: Json | null
           is_archived?: boolean
           published_at?: string
           scheduled_at?: string | null
+          story_format?: string
           tags?: string[]
           title: string
           updated_at?: string
@@ -318,9 +322,11 @@ export type Database = {
           cover_image_url?: string | null
           created_at?: string
           id?: string
+          interactive_graph?: Json | null
           is_archived?: boolean
           published_at?: string
           scheduled_at?: string | null
+          story_format?: string
           tags?: string[]
           title?: string
           updated_at?: string
@@ -563,6 +569,107 @@ export type Database = {
           type?: string
         }
         Relationships: []
+      }
+      interactive_decisions: {
+        Row: {
+          chapter_id: string
+          created_at: string
+          id: string
+          node_id: string
+          option_id: string
+          option_label: string | null
+          playthrough_id: string
+          user_id: string
+        }
+        Insert: {
+          chapter_id: string
+          created_at?: string
+          id?: string
+          node_id: string
+          option_id: string
+          option_label?: string | null
+          playthrough_id: string
+          user_id: string
+        }
+        Update: {
+          chapter_id?: string
+          created_at?: string
+          id?: string
+          node_id?: string
+          option_id?: string
+          option_label?: string | null
+          playthrough_id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "interactive_decisions_chapter_id_fkey"
+            columns: ["chapter_id"]
+            isOneToOne: false
+            referencedRelation: "chapters"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "interactive_decisions_playthrough_id_fkey"
+            columns: ["playthrough_id"]
+            isOneToOne: false
+            referencedRelation: "interactive_playthroughs"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      interactive_playthroughs: {
+        Row: {
+          attempt: number
+          chapter_id: string
+          completed_at: string | null
+          current_node: string | null
+          ending_node: string | null
+          id: string
+          started_at: string
+          status: string
+          updated_at: string
+          user_id: string
+          variables: Json
+          visited: Json
+        }
+        Insert: {
+          attempt?: number
+          chapter_id: string
+          completed_at?: string | null
+          current_node?: string | null
+          ending_node?: string | null
+          id?: string
+          started_at?: string
+          status?: string
+          updated_at?: string
+          user_id: string
+          variables?: Json
+          visited?: Json
+        }
+        Update: {
+          attempt?: number
+          chapter_id?: string
+          completed_at?: string | null
+          current_node?: string | null
+          ending_node?: string | null
+          id?: string
+          started_at?: string
+          status?: string
+          updated_at?: string
+          user_id?: string
+          variables?: Json
+          visited?: Json
+        }
+        Relationships: [
+          {
+            foreignKeyName: "interactive_playthroughs_chapter_id_fkey"
+            columns: ["chapter_id"]
+            isOneToOne: false
+            referencedRelation: "chapters"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       manga_panels: {
         Row: {
@@ -1072,6 +1179,21 @@ export type Database = {
         }
         Returns: boolean
       }
+      ic_choose: {
+        Args: { _chapter_id: string; _node_id: string; _option_id: string }
+        Returns: Json
+      }
+      ic_eval_conds: { Args: { _conds: Json; _vars: Json }; Returns: boolean }
+      ic_find_node: { Args: { _graph: Json; _id: string }; Returns: Json }
+      ic_resolve: {
+        Args: { _graph: Json; _start: string; _vars: Json }
+        Returns: Json
+      }
+      ic_start: {
+        Args: { _chapter_id: string; _replay?: boolean }
+        Returns: Json
+      }
+      ic_state: { Args: { _pt_id: string }; Returns: Json }
       increment_chapter_views: {
         Args: { chapter_id: string }
         Returns: undefined
