@@ -337,14 +337,14 @@ export const InteractiveEditor: React.FC<Props> = ({ graph, onChange, title, pub
             <select value={graph.settings.replay} onChange={(e) => setSettings({ replay: e.target.value as ReplayPolicy })} className={field}>
               <option value="disabled">Disabled — the record is permanent</option>
               <option value="after_completion">Allowed after completion</option>
-              <option value="after_wait">Allowed after a waiting period</option>
+              <option value="after_wait">Allowed after a waiting period (default: one week)</option>
               <option value="admin_only">Admin testing only</option>
             </select>
             {graph.settings.replay === "after_wait" && (
               <div className="mt-2 flex items-center gap-2">
-                <input type="number" min={1} value={graph.settings.replayWaitHours ?? 24}
-                  onChange={(e) => setSettings({ replayWaitHours: Math.max(1, parseInt(e.target.value) || 24) })} className={`${field} w-24`} />
-                <span className="text-xs text-muted-foreground">hours after completion</span>
+                <input type="number" min={1} value={graph.settings.replayWaitHours ?? 168}
+                  onChange={(e) => setSettings({ replayWaitHours: Math.max(1, parseInt(e.target.value) || 168) })} className={`${field} w-24`} />
+                <span className="text-xs text-muted-foreground">hours after completion (168 = one week)</span>
               </div>
             )}
           </div>
@@ -364,6 +364,11 @@ export const InteractiveEditor: React.FC<Props> = ({ graph, onChange, title, pub
               <option value="index">The full ending index</option>
             </select>
           </div>
+        </div>
+        <div className="mt-4">
+          <label className={label}>Closing question — readers type an answer after the ending (leave empty for none)</label>
+          <textarea value={graph.settings.conclusionPrompt ?? ""} onChange={(e) => setSettings({ conclusionPrompt: e.target.value })}
+            rows={2} className={field} placeholder="What do you believe really happened?" />
         </div>
         {showJson && (
           <div className="mt-4">
