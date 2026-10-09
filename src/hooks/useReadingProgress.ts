@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import type { AuthUser } from './useAuth';
+import { notifyActivity } from '@/lib/commendations';
 
 export function useReadingProgress(user: AuthUser | null) {
   const [readChapterIds, setReadChapterIds] = useState<Set<string>>(new Set());
@@ -51,6 +52,8 @@ export function useReadingProgress(user: AuthUser | null) {
         next.delete(chapterId);
         return next;
       });
+    } else {
+      notifyActivity();
     }
   }, [user?.id]);
 
