@@ -35,6 +35,8 @@ export interface StoryNode {
   context?: string;
   options?: DecisionOption[];
   warning?: string;
+  /** Seconds to decide; when time runs out a random available option is filed. */
+  timeLimit?: number;
   // ending
   endingTitle?: string;
   endingText?: string;
@@ -67,6 +69,8 @@ export interface PlayState {
   ending_node: string | null;
   completed_at?: string | null;
   attempt?: number;
+  /** When the current decision was reached (ISO); starts the clock on timed decisions. */
+  reached_at?: string | null;
   decisions: Decision[];
 }
 
@@ -178,6 +182,7 @@ export function startLocal(g: InteractiveGraph): PlayState {
     visited: r.visited,
     ending_node: r.ending,
     completed_at: r.terminal ? new Date().toISOString() : null,
+    reached_at: new Date().toISOString(),
     decisions: [],
   };
 }
@@ -201,6 +206,7 @@ export function chooseLocal(g: InteractiveGraph, s: PlayState, nodeId: string, o
     status: r.terminal ? "completed" : "in_progress",
     ending_node: r.ending,
     completed_at: r.terminal ? new Date().toISOString() : null,
+    reached_at: new Date().toISOString(),
     decisions: [...s.decisions, { node_id: nodeId, option_id: optionId, option_label: o.label, created_at: new Date().toISOString() }],
   };
 }
@@ -216,6 +222,7 @@ export function parseServerState(raw: any): PlayState | null {
     ending_node: p.ending_node,
     completed_at: p.completed_at,
     attempt: p.attempt,
+    reached_at: p.updated_at ?? null,
     decisions: Array.isArray(raw.decisions) ? raw.decisions : [],
   };
 }
@@ -248,6 +255,9 @@ export function validateGraph(g: InteractiveGraph): ValidationIssue[] {
     if (n.type === "decision") {
       const opts = n.options || [];
       if (opts.length < 2) issues.push({ level: "error", nodeId: n.id, message: "Decision needs at least two options." });
+      if (n.timeLimit != null && n.timeLimit > 0 && n.timeLimit < 5) {
+        issues.push({ level: "warning", nodeId: n.id, message: "A time limit under 5 seconds leaves little time to read the options." });
+      }
       opts.forEach((o, i) => {
         if (!o.label?.trim()) issues.push({ level: "error", nodeId: n.id, message: `Option ${i + 1} has no label.` });
         if (!o.next) issues.push({ level: "error", nodeId: n.id, message: `Option "${o.label || i + 1}" does not lead anywhere.` });
