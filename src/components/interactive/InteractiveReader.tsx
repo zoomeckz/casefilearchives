@@ -412,6 +412,16 @@ export const InteractiveReader: React.FC<Props> = ({ chapterId, title, graph, us
                   <p className="case-label text-[9px] mt-2">
                     {tr("conclusionFiled", "Filed")}{state.answered_at ? ` ${new Date(state.answered_at).toLocaleDateString()}` : ""} · {tr("recordLocked", "Record locked")}
                   </p>
+                  {state.admin_feedback ? (
+                    <div className="mt-5 border border-border border-l-4 border-l-accent bg-card/40 px-4 py-3">
+                      <p className="case-label text-[9px] !text-accent">
+                        {tr("archivistResponse", "The archivist’s response")}{state.feedback_at ? ` · ${new Date(state.feedback_at).toLocaleDateString()}` : ""}
+                      </p>
+                      <p className="mt-2 text-foreground/90 whitespace-pre-line break-words">{state.admin_feedback}</p>
+                    </div>
+                  ) : !preview && (
+                    <p className="text-xs text-muted-foreground mt-4">{tr("awaitingReview", "Your report is with the archivist. You’ll be notified when it has been reviewed.")}</p>
+                  )}
                 </>
               ) : isGuest ? (
                 <div className="mt-3 text-sm">
