@@ -10,8 +10,16 @@ import { toast } from 'sonner';
 import { TagPicker } from '@/components/TagPicker';
 import { FlagIcon } from '@/components/FlagIcon';
 import { SUPPORTED_LANGUAGES, LANGUAGE_LABELS, DEFAULT_LANGUAGE, type SupportedLanguage } from '@/i18n';
+import { InteractiveEditor } from '@/components/interactive/InteractiveEditor';
+import { InteractiveReader } from '@/components/interactive/InteractiveReader';
+import { type InteractiveGraph, emptyGraph, normalizeGraph, validateGraph, removedNodeIds, openingContent } from '@/lib/interactive';
 
 type LangBuffer = { id?: string; title: string; content: string };
+type StoryFormat = 'linear' | 'interactive';
+
+// The drafts table only stores title/content, so an unpublished interactive
+// case structure is backed up in this browser until it is published.
+const IC_BACKUP_KEY = 'ic-editor-backup:new';
 
 interface ChapterEditorProps {
   authToken?: string;
@@ -187,6 +195,12 @@ export const ChapterEditor: React.FC<ChapterEditorProps> = ({ authToken, userId,
   const [editLang, setEditLang] = useState<SupportedLanguage>(DEFAULT_LANGUAGE);
   const langBuffers = useRef<Partial<Record<SupportedLanguage, LangBuffer>>>({});
   const [filledLangs, setFilledLangs] = useState<SupportedLanguage[]>([DEFAULT_LANGUAGE]);
+  // Interactive Case Files: branching structure stored in chapters.interactive_graph.
+  const [storyFormat, setStoryFormat] = useState<StoryFormat>('linear');
+  const [graph, setGraph] = useState<InteractiveGraph>(() => emptyGraph());
+  const [publishedGraph, setPublishedGraph] = useState<InteractiveGraph | null>(null);
+  const [publishedFormat, setPublishedFormat] = useState<StoryFormat>('linear');
+  const isInteractive = storyFormat === 'interactive' && !isLegacy;
 
   const switchEditLang = (next: SupportedLanguage) => {
     if (next === editLang) return;
@@ -195,6 +209,23 @@ export const ChapterEditor: React.FC<ChapterEditorProps> = ({ authToken, userId,
     setTitle(target?.title ?? '');
     setContent(target?.content ?? '');
     setEditLang(next);
+  };
+
+  const changeStoryFormat = (next: StoryFormat) => {
+    if (next === storyFormat) return;
+    if (next === 'linear' && publishedFormat === 'interactive' &&
+      !window.confirm('This case is published as interactive. Switching to linear hides the branches and readers’ saved routes until you switch back. Continue?')) {
+      return;
+    }
+    if (next === 'interactive') {
+      if (editLang !== DEFAULT_LANGUAGE) switchEditLang(DEFAULT_LANGUAGE);
+      // Carry already-written prose into the opening section of an empty case.
+      const opening = graph.nodes.find((n) => n.id === graph.startNodeId);
+      if (opening && !opening.content.replace(/<[^>]*>/g, '').trim() && content.replace(/<[^>]*>/g, '').trim()) {
+        setGraph({ ...graph, nodes: graph.nodes.map((n) => (n.id === opening.id ? { ...n, content } : n)) });
+      }
+    }
+    setStoryFormat(next);
   };
 
   // Load all scheduled slots to prevent double-booking
@@ -222,7 +253,7 @@ export const ChapterEditor: React.FC<ChapterEditorProps> = ({ authToken, userId,
     if (editChapterId) {
       const loadChapter = async () => {
         const { data } = await dbFetch<any[]>('chapters', {
-          select: 'title,content,chapter_number,scheduled_at,cover_image_url,is_archived,tags',
+          select: 'title,content,chapter_number,scheduled_at,cover_image_url,is_archived,tags,story_format,interactive_graph',
           filters: `id=eq.${editChapterId}`,
           token: authToken,
         });
@@ -233,6 +264,15 @@ export const ChapterEditor: React.FC<ChapterEditorProps> = ({ authToken, userId,
           setCoverImageUrl(data[0].cover_image_url || null);
           setIsLegacy(data[0].is_archived === true);
           setTags(Array.isArray(data[0].tags) ? data[0].tags : []);
+          if (data[0].interactive_graph) {
+            const g = normalizeGraph(data[0].interactive_graph);
+            setGraph(g);
+            setPublishedGraph(g);
+          }
+          if (data[0].story_format === 'interactive') {
+            setStoryFormat('interactive');
+            setPublishedFormat('interactive');
+          }
           langBuffers.current[DEFAULT_LANGUAGE] = { title: data[0].title, content: data[0].content };
           const { data: tr } = await dbFetch<any[]>('chapter_translations', {
             select: 'id,language_code,title,content',
@@ -255,6 +295,15 @@ export const ChapterEditor: React.FC<ChapterEditorProps> = ({ authToken, userId,
       };
       loadChapter();
     } else {
+      // Restore an unpublished interactive case kept in this browser.
+      try {
+        const backup = localStorage.getItem(IC_BACKUP_KEY);
+        if (backup) {
+          setGraph(normalizeGraph(JSON.parse(backup)));
+          setStoryFormat('interactive');
+          toast.info('Restored an unpublished interactive case from this browser.');
+        }
+      } catch { /* ignore */ }
       // Load a draft or reserve the internal compatibility number.
       const loadDraftOrNext = async () => {
         if (resumeDraftId) {
@@ -279,6 +328,12 @@ export const ChapterEditor: React.FC<ChapterEditorProps> = ({ authToken, userId,
       loadDraftOrNext();
     }
   }, [editChapterId, authToken, resumeDraftId]);
+
+  // Back up an unpublished interactive case structure in this browser.
+  useEffect(() => {
+    if (editChapterId || !isInteractive) return;
+    try { localStorage.setItem(IC_BACKUP_KEY, JSON.stringify(graph)); } catch { /* ignore */ }
+  }, [graph, isInteractive, editChapterId]);
 
   // Auto-save draft every 10 seconds when content changes
   const autoSave = useCallback(async () => {
@@ -309,7 +364,7 @@ export const ChapterEditor: React.FC<ChapterEditorProps> = ({ authToken, userId,
       }
       const savedId = await upsertDraft({ id: draftIdRef.current, title, content: normalizedContent, chapterNumber, lastSaved: new Date().toISOString() }, userId, authToken);
       draftIdRef.current = savedId;
-      toast.success('Draft saved');
+      toast.success(isInteractive ? 'Draft saved — the case structure is kept in this browser until you publish' : 'Draft saved');
       onBack();
     } catch {
       toast.error('Failed to save draft');
@@ -344,9 +399,22 @@ export const ChapterEditor: React.FC<ChapterEditorProps> = ({ authToken, userId,
       toast.error(`Please enter a ${isLegacy ? 'chapter' : 'story'} title`);
       return;
     }
-    if (!en.content.trim()) {
-      toast.error('Please write some content');
+    // Interactive cases use the opening route as their searchable/SEO body.
+    const storyContent = isInteractive ? openingContent(graph) : en.content;
+    if (!storyContent.replace(/<[^>]*>/g, '').trim()) {
+      toast.error(isInteractive ? 'The opening section needs some text.' : 'Please write some content');
       return;
+    }
+    if (isInteractive) {
+      const errors = validateGraph(graph).filter((i) => i.level === 'error');
+      if (errors.length) {
+        toast.error(`Fix ${errors.length} structure error${errors.length === 1 ? '' : 's'} before publishing: ${errors[0].nodeId ? `${errors[0].nodeId}: ` : ''}${errors[0].message}`);
+        return;
+      }
+      const removed = removedNodeIds(publishedGraph, graph);
+      if (removed.length && !window.confirm(`These published sections were removed or renamed: ${removed.join(', ')}.\n\nReaders currently positioned on them will be stranded until they are restored. Publish anyway?`)) {
+        return;
+      }
     }
     // Past dates only make sense for brand-new stories. When editing an
     // already-published story, a past date just means "already live" — the
@@ -365,7 +433,12 @@ export const ChapterEditor: React.FC<ChapterEditorProps> = ({ authToken, userId,
       if (editChapterId && normalizedScheduledAt && new Date(swedishToUTC(normalizedScheduledAt)).getTime() < Date.now()) {
         normalizedScheduledAt = '';
       }
-      const normalizedContent = normalizeRichTextHtml(en.content);
+      const normalizedContent = normalizeRichTextHtml(storyContent);
+      // Switching an interactive case back to linear keeps its graph so it can be restored.
+      const formatFields = isLegacy ? {} : {
+        story_format: isInteractive ? 'interactive' : 'linear',
+        interactive_graph: isInteractive ? graph : (publishedGraph ?? null),
+      };
 
       if (editChapterId) {
         const body: any = {
@@ -375,6 +448,7 @@ export const ChapterEditor: React.FC<ChapterEditorProps> = ({ authToken, userId,
           scheduled_at: normalizedScheduledAt ? swedishToUTC(normalizedScheduledAt) : null,
           cover_image_url: coverImageUrl,
           ...(isLegacy ? {} : { tags }),
+          ...formatFields,
         };
         const { error } = await dbFetch('chapters', {
           method: 'PATCH',
@@ -383,7 +457,8 @@ export const ChapterEditor: React.FC<ChapterEditorProps> = ({ authToken, userId,
           token: authToken,
         });
         if (error) throw new Error(error);
-        for (const lang of SUPPORTED_LANGUAGES) {
+        // Interactive cases are English-only for now; translations apply to linear stories.
+        for (const lang of isInteractive ? [] : SUPPORTED_LANGUAGES) {
           if (lang === DEFAULT_LANGUAGE) continue;
           const b = langBuffers.current[lang];
           if (!b || !b.title.trim() || !b.content.replace(/<[^>]*>/g, '').trim()) continue;
@@ -414,6 +489,7 @@ export const ChapterEditor: React.FC<ChapterEditorProps> = ({ authToken, userId,
           cover_image_url: coverImageUrl,
           is_archived: isLegacy,
           tags: isLegacy ? [] : tags,
+          ...formatFields,
         };
         const { error } = await dbFetch('chapters', {
           method: 'POST',
@@ -422,6 +498,7 @@ export const ChapterEditor: React.FC<ChapterEditorProps> = ({ authToken, userId,
         });
         if (error) throw new Error(error);
         await deleteDraft(draftIdRef.current, authToken);
+        try { localStorage.removeItem(IC_BACKUP_KEY); } catch { /* ignore */ }
         toast.success(normalizedScheduledAt ? `${isLegacy ? 'Chapter' : 'Story'} scheduled for ${normalizedScheduledAt.replace('T', ' ')} (Swedish time)` : `${isLegacy ? 'Chapter' : 'Story'} published!`);
       }
       onBack();
@@ -643,6 +720,35 @@ export const ChapterEditor: React.FC<ChapterEditorProps> = ({ authToken, userId,
         </div>
       )}
 
+      {/* Story format: linear Case File or branching Interactive Case File. */}
+      {!isLegacy && (
+        <div className="mb-6 p-4 rounded-lg border border-border/60 bg-card/30">
+          <span className="block text-sm text-muted-foreground mb-2">Story format</span>
+          <div className="flex flex-wrap gap-2">
+            {([
+              ['linear', 'Linear Case File'],
+              ['interactive', 'Interactive Case File'],
+            ] as const).map(([f, label]) => (
+              <button
+                key={f}
+                type="button"
+                onClick={() => changeStoryFormat(f)}
+                className={`px-3 py-1.5 border text-sm transition-colors ${
+                  storyFormat === f ? 'border-primary text-primary bg-primary/10' : 'border-border text-muted-foreground hover:text-foreground hover:border-foreground/40'
+                }`}
+              >
+                {label}
+              </button>
+            ))}
+          </div>
+          <p className="text-xs text-muted-foreground mt-2">
+            {isInteractive
+              ? 'Readers make decisions that change the scenes, options and ending they receive. Registered readers’ choices are locked to their account.'
+              : 'A normal story with no reader decisions.'}
+          </p>
+        </div>
+      )}
+
       {/* Cover image (optional) */}
       <div className="mb-6 p-4 rounded-lg border border-border/60 bg-card/30">
         <ImageUploadField
@@ -664,7 +770,7 @@ export const ChapterEditor: React.FC<ChapterEditorProps> = ({ authToken, userId,
         )}
       </div>}
 
-      {editChapterId && (
+      {editChapterId && !isInteractive && (
         <div className="mb-3 flex flex-wrap items-center gap-2">
           <span className="text-xs uppercase tracking-wider text-muted-foreground mr-1">Language</span>
           {SUPPORTED_LANGUAGES.map((lang) => {
@@ -693,20 +799,26 @@ export const ChapterEditor: React.FC<ChapterEditorProps> = ({ authToken, userId,
       )}
 
       {/* Editor */}
-      <RichTextEditor
-        key={editLang}
-        content={content}
-        onChange={setContent}
-        glossaryTerms={isLegacy ? Object.keys(glossary) : []}
-        onMarkGlossary={isLegacy ? handleMarkGlossary : undefined}
-        searchHighlight={searchHighlight || undefined}
-        searchSentence={searchSentence || undefined}
-      />
+      {isInteractive ? (
+        <InteractiveEditor graph={graph} onChange={setGraph} title={title} publishedGraph={publishedFormat === 'interactive' ? publishedGraph : null} />
+      ) : (
+        <>
+          <RichTextEditor
+            key={editLang}
+            content={content}
+            onChange={setContent}
+            glossaryTerms={isLegacy ? Object.keys(glossary) : []}
+            onMarkGlossary={isLegacy ? handleMarkGlossary : undefined}
+            searchHighlight={searchHighlight || undefined}
+            searchSentence={searchSentence || undefined}
+          />
 
-      {/* Word count */}
-      <div className="mt-3 text-xs text-muted-foreground">
-        {content.replace(/<[^>]*>/g, '').trim().split(/\s+/).filter(Boolean).length} words
-      </div>
+          {/* Word count */}
+          <div className="mt-3 text-xs text-muted-foreground">
+            {content.replace(/<[^>]*>/g, '').trim().split(/\s+/).filter(Boolean).length} words
+          </div>
+        </>
+      )}
 
       {/* Inline Preview Modal */}
       {showPreview && (
@@ -726,10 +838,14 @@ export const ChapterEditor: React.FC<ChapterEditorProps> = ({ authToken, userId,
               <h1 className="font-display text-3xl sm:text-4xl text-primary mt-2 mb-3" style={{ lineHeight: 1.2 }}>{title || 'Untitled'}</h1>
               <div className="text-muted-foreground text-sm px-4 py-2 bg-card/30 rounded-lg inline-block">Preview — Not yet published</div>
             </header>
-            <article
-              className="prose prose-stone dark:prose-invert max-w-none [&_p]:mb-5 [&_p]:text-foreground [&_strong]:text-foreground [&_em]:text-muted-foreground [&_h2]:font-display [&_h2]:text-primary [&_h3]:font-display [&_h3]:text-primary [&_blockquote]:border-l-accent [&_blockquote]:text-muted-foreground [&_blockquote]:italic [&_blockquote]:bg-card/30 [&_blockquote]:rounded-r-lg [&_a]:text-accent"
-              dangerouslySetInnerHTML={{ __html: content || '<p>No content yet.</p>' }}
-            />
+            {isInteractive ? (
+              <InteractiveReader chapterId="preview" title={title || 'Untitled'} graph={graph} user={null} mode="preview" />
+            ) : (
+              <article
+                className="prose prose-stone dark:prose-invert max-w-none [&_p]:mb-5 [&_p]:text-foreground [&_strong]:text-foreground [&_em]:text-muted-foreground [&_h2]:font-display [&_h2]:text-primary [&_h3]:font-display [&_h3]:text-primary [&_blockquote]:border-l-accent [&_blockquote]:text-muted-foreground [&_blockquote]:italic [&_blockquote]:bg-card/30 [&_blockquote]:rounded-r-lg [&_a]:text-accent"
+                dangerouslySetInnerHTML={{ __html: content || '<p>No content yet.</p>' }}
+              />
+            )}
           </div>
         </div>
       )}
