@@ -3,13 +3,15 @@ import { useTranslation } from "react-i18next";
 import DOMPurify from "dompurify";
 import type { AuthUser } from "@/hooks/useAuth";
 import {
-  InteractiveGraph, PlayState, StoryNode, DecisionOption, GUEST_CHOICE_LIMIT,
+  InteractiveGraph, PlayState, StoryNode, DecisionOption, GUEST_CHOICE_LIMIT, DEFAULT_SETTINGS,
   findNode, isOptionLocked, isOptionVisible, startLocal, chooseLocal, parseServerState,
 } from "@/lib/interactive";
 import { notifyActivity } from "@/lib/commendations";
+import { CaseReport, CaseReports } from "@/components/interactive/CaseReport";
 
 const SUPA_URL = import.meta.env.VITE_SUPABASE_URL;
 const ANON = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY;
+const ANSWER_MAX = 2000;
 
 function getToken(): string | null {
   try { return JSON.parse(localStorage.getItem("app-auth-session") || "null")?.access_token || null; } catch { return null; }
@@ -56,6 +58,7 @@ export const InteractiveReader: React.FC<Props> = ({ chapterId, title, graph, us
   // Callers often rebuild the graph object on every render (e.g. the 30s
   // chapter poll); only reload the file when its content actually changes.
   const graphKey = useMemo(() => JSON.stringify(graph), [graph]);
+  const conclusionPrompt = (graph.settings.conclusionPrompt ?? DEFAULT_SETTINGS.conclusionPrompt ?? "").trim();
 
   const [state, setState] = useState<PlayState | null>(null);
   const [loading, setLoading] = useState(true);
@@ -63,6 +66,9 @@ export const InteractiveReader: React.FC<Props> = ({ chapterId, title, graph, us
   const [pending, setPending] = useState<DecisionOption | null>(null);
   const [submitting, setSubmitting] = useState(false);
   const [lastConsequence, setLastConsequence] = useState<string | null>(null);
+  const [answer, setAnswer] = useState("");
+  const [confirmAnswer, setConfirmAnswer] = useState(false);
+  const [showHistory, setShowHistory] = useState(false);
 
   const readGuest = (): PlayState | null => {
     if (guestAccess === "full_nosave") return null;
@@ -156,24 +162,49 @@ export const InteractiveReader: React.FC<Props> = ({ chapterId, title, graph, us
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [timeLimit, state]);
 
+  /** The written conclusion: filed once per attempt, locked afterwards. */
+  const fileAnswer = async () => {
+    const text = answer.trim().slice(0, ANSWER_MAX);
+    if (!text || !state) return;
+    setSubmitting(true); setError(null);
+    try {
+      if (preview) {
+        setState({ ...state, final_answer: text, answered_at: new Date().toISOString() });
+      } else {
+        const next = parseServerState(await rpc("ic_answer", { _chapter_id: chapterId, _answer: text }));
+        if (next) setState(next);
+        notifyActivity();
+      }
+      setConfirmAnswer(false);
+      setAnswer("");
+    } catch (e: any) {
+      setError(e.message);
+      setConfirmAnswer(false);
+    } finally { setSubmitting(false); }
+  };
+
   const replay = async () => {
     setLastConsequence(null);
+    setShowHistory(false);
     if (preview) { setState(startLocal(graph)); return; }
     try { setState(parseServerState(await rpc("ic_start", { _chapter_id: chapterId, _replay: true }))); }
     catch (e: any) { setError(e.message); }
   };
 
+  const replayPolicy = graph.settings.replay || DEFAULT_SETTINGS.replay;
+  const waitHours = graph.settings.replayWaitHours || DEFAULT_SETTINGS.replayWaitHours || 168;
+  const reopensAt = replayPolicy === "after_wait" && state?.completed_at
+    ? Date.parse(state.completed_at) + waitHours * 3600_000
+    : null;
+
   const canReplay = useMemo(() => {
     if (preview) return true;
-    const p = graph.settings.replay;
     if (!user || !state || state.status !== "completed") return false;
-    if (p === "after_completion") return true;
-    if (p === "admin_only") return !!user.isAdmin;
-    if (p === "after_wait" && state.completed_at) {
-      return Date.parse(state.completed_at) + (graph.settings.replayWaitHours || 24) * 3600_000 <= Date.now();
-    }
+    if (replayPolicy === "after_completion") return true;
+    if (replayPolicy === "admin_only") return !!user.isAdmin;
+    if (replayPolicy === "after_wait" && reopensAt) return reopensAt <= Date.now();
     return false;
-  }, [preview, graph.settings, user, state]);
+  }, [preview, replayPolicy, reopensAt, user, state]);
 
   if (loading) return <p className="text-muted-foreground text-sm py-8">{tr("loading", "Retrieving file…")}</p>;
   if (!state) {
@@ -216,6 +247,7 @@ export const InteractiveReader: React.FC<Props> = ({ chapterId, title, graph, us
 
   const endingNode = state.status === "completed" ? findNode(graph, state.ending_node) : undefined;
   const allEndings = graph.nodes.filter((n) => n.type === "ending");
+  const fmtDate = (ms: number) => new Date(ms).toLocaleString(undefined, { dateStyle: "long", timeStyle: "short" });
 
   return (
     <div>
@@ -301,36 +333,87 @@ export const InteractiveReader: React.FC<Props> = ({ chapterId, title, graph, us
       )}
 
       {state.status === "completed" && (
-        <section className="my-10 border-2 border-primary/70 p-6 sm:p-8 text-center">
-          <p className="case-label text-[10px] text-primary">{tr("outcome", "Case outcome")}</p>
-          <h3 className="font-display text-3xl uppercase mt-2">{endingNode?.endingTitle || tr("fileClosed", "File closed")}</h3>
-          {endingNode?.endingText && <p className="text-foreground/80 mt-3 max-w-prose mx-auto">{endingNode.endingText}</p>}
-          {state.completed_at && <p className="text-xs text-muted-foreground mt-4">{tr("completed", "Completed")} {new Date(state.completed_at).toLocaleDateString()}</p>}
+        <section className="my-10 border-2 border-primary/70 p-5 sm:p-8">
+          <div className="text-center">
+            <p className="case-label text-[10px] text-primary">{tr("outcome", "Case outcome")}</p>
+            <h3 className="font-display text-3xl uppercase mt-2">{endingNode?.endingTitle || tr("fileClosed", "File closed")}</h3>
+            {endingNode?.endingText && <p className="text-foreground/80 mt-3 max-w-prose mx-auto">{endingNode.endingText}</p>}
+            {state.completed_at && <p className="text-xs text-muted-foreground mt-4">{tr("completed", "Completed")} {new Date(state.completed_at).toLocaleDateString()}</p>}
 
-          {state.decisions.length > 0 && (
-            <div className="mt-6 text-left max-w-md mx-auto">
-              <p className="text-[10px] uppercase tracking-wider text-muted-foreground mb-2">{tr("decisionsMade", "Decisions on record")}</p>
-              <ol className="text-sm list-decimal pl-5 space-y-1">{state.decisions.map((d) => <li key={d.node_id}>{d.option_label}</li>)}</ol>
+            {graph.settings.endingVisibility === "count" && allEndings.length > 0 && (
+              <p className="text-xs text-muted-foreground mt-4">{tr("endingCount", "This file has {{n}} possible outcomes.", { n: allEndings.length })}</p>
+            )}
+            {graph.settings.endingVisibility === "index" && (
+              <ul className="mt-6 text-sm space-y-1">
+                {allEndings.map((e) => (
+                  <li key={e.id} className={e.id === state.ending_node ? "text-primary" : "text-muted-foreground"}>
+                    {e.id === state.ending_node ? "■ " : "□ "}{e.endingTitle || e.id}
+                  </li>
+                ))}
+              </ul>
+            )}
+          </div>
+
+          {/* Written conclusion */}
+          {conclusionPrompt && (
+            <div className="mt-8 border-t border-border pt-6">
+              <p className="case-label text-[10px] text-primary">{tr("conclusionKicker", "Your conclusion")}</p>
+              <p className="font-display text-lg text-foreground mt-1">{conclusionPrompt}</p>
+              {state.final_answer ? (
+                <>
+                  <blockquote className="mt-3 border-l-4 border-primary pl-4 italic text-foreground/85 whitespace-pre-line break-words">{state.final_answer}</blockquote>
+                  <p className="case-label text-[9px] mt-2">
+                    {tr("conclusionFiled", "Filed")}{state.answered_at ? ` ${new Date(state.answered_at).toLocaleDateString()}` : ""} · {tr("recordLocked", "Record locked")}
+                  </p>
+                </>
+              ) : isGuest ? (
+                <div className="mt-3 text-sm">
+                  <p className="text-muted-foreground">{tr("conclusionSignIn", "Register or sign in to file your conclusion.")}</p>
+                  <button onClick={() => setShowAuthModal?.(true)} className="mt-3 px-4 py-2 bg-primary text-primary-foreground text-xs uppercase tracking-wider">
+                    {tr("signIn", "Register or sign in")}
+                  </button>
+                </div>
+              ) : (
+                <>
+                  <textarea
+                    value={answer}
+                    onChange={(e) => setAnswer(e.target.value.slice(0, ANSWER_MAX))}
+                    rows={5}
+                    placeholder={tr("conclusionPlaceholder", "Write what you believe happened…")}
+                    className="mt-3 w-full px-3 py-2 bg-background border border-border text-foreground focus:outline-none focus:border-primary resize-y"
+                  />
+                  <div className="flex flex-wrap items-center justify-between gap-3 mt-2">
+                    <span className="case-label text-[9px] tabular-nums">{answer.length}/{ANSWER_MAX}</span>
+                    <button
+                      type="button"
+                      disabled={!answer.trim() || submitting}
+                      onClick={() => setConfirmAnswer(true)}
+                      className="px-4 py-2 bg-primary text-primary-foreground text-xs uppercase tracking-wider disabled:opacity-50"
+                    >
+                      {tr("fileConclusion", "File conclusion")}
+                    </button>
+                  </div>
+                </>
+              )}
             </div>
           )}
 
-          {graph.settings.endingVisibility === "count" && allEndings.length > 0 && (
-            <p className="text-xs text-muted-foreground mt-6">{tr("endingCount", "This file has {{n}} possible outcomes.", { n: allEndings.length })}</p>
-          )}
-          {graph.settings.endingVisibility === "index" && (
-            <ul className="mt-6 text-sm space-y-1">
-              {allEndings.map((e) => (
-                <li key={e.id} className={e.id === state.ending_node ? "text-primary" : "text-muted-foreground"}>
-                  {e.id === state.ending_node ? "■ " : "□ "}{e.endingTitle || e.id}
-                </li>
-              ))}
-            </ul>
-          )}
+          {/* Summary of this attempt */}
+          <div className="mt-8 border-t border-border pt-6">
+            <CaseReport graph={graph} decisions={state.decisions} attempt={state.attempt} completedAt={state.completed_at} />
+          </div>
 
-          <div className="mt-6 flex flex-wrap justify-center gap-3">
+          {error && <p className="text-xs text-destructive mt-4">{tr("errorGeneric", "Something went wrong.")} ({error})</p>}
+
+          <div className="mt-8 flex flex-wrap justify-center gap-3">
             {canReplay && (
               <button onClick={replay} className="px-4 py-2 border border-primary text-primary text-xs uppercase tracking-wider">
-                {tr("replay", "Reopen case (new playthrough)")}
+                {tr("replay", "Reopen case (new attempt)")}
+              </button>
+            )}
+            {user && !preview && (state.attempt ?? 1) > 1 && (
+              <button onClick={() => setShowHistory((v) => !v)} className="px-4 py-2 border border-border text-xs uppercase tracking-wider">
+                {showHistory ? tr("hideHistory", "Hide earlier attempts") : tr("showHistory", "Earlier attempts")}
               </button>
             )}
             {onDiscuss && !preview && (
@@ -339,8 +422,19 @@ export const InteractiveReader: React.FC<Props> = ({ chapterId, title, graph, us
               </button>
             )}
           </div>
-          {!canReplay && !preview && graph.settings.replay === "disabled" && (
-            <p className="text-xs text-muted-foreground mt-4">{tr("noReplay", "This record is permanent. Replay is not permitted for this file.")}</p>
+          {!canReplay && !preview && reopensAt && (
+            <p className="text-xs text-muted-foreground mt-4 text-center">
+              {tr("reopens", "This record is locked. The case reopens for another attempt on {{date}}.", { date: fmtDate(reopensAt) })}
+            </p>
+          )}
+          {!canReplay && !preview && replayPolicy === "disabled" && (
+            <p className="text-xs text-muted-foreground mt-4 text-center">{tr("noReplay", "This record is permanent. Replay is not permitted for this file.")}</p>
+          )}
+
+          {showHistory && user && (
+            <div className="mt-8 border-t border-border pt-6">
+              <CaseReports chapterId={chapterId} userId={user.id} graph={graph} excludeAttempt={state.attempt} />
+            </div>
           )}
         </section>
       )}
@@ -366,6 +460,28 @@ export const InteractiveReader: React.FC<Props> = ({ chapterId, title, graph, us
               </button>
               <button onClick={confirm} disabled={submitting} className="px-4 py-2 bg-primary text-primary-foreground text-xs uppercase tracking-wider">
                 {submitting ? "…" : tr("confirm", "Confirm decision")}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {confirmAnswer && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-background/80 p-4" role="dialog" aria-modal="true" aria-labelledby="ic-answer-confirm">
+          <div className="w-full max-w-md border-2 border-primary bg-card p-6">
+            <p className="case-label text-[10px] text-primary">{tr("confirmConclusion", "File your conclusion")}</p>
+            <p id="ic-answer-confirm" className="text-sm text-muted-foreground mt-3">
+              {preview
+                ? "Preview only — this conclusion is not saved."
+                : tr("conclusionIrreversible", "Your conclusion will be saved to your account and cannot be changed for this attempt.")}
+            </p>
+            <blockquote className="mt-4 border-l-4 border-primary pl-3 italic text-foreground/85 max-h-48 overflow-y-auto whitespace-pre-line break-words">{answer.trim()}</blockquote>
+            <div className="mt-6 flex gap-3 justify-end">
+              <button onClick={() => setConfirmAnswer(false)} disabled={submitting} className="px-4 py-2 border border-border text-xs uppercase tracking-wider">
+                {tr("goBack", "Go back")}
+              </button>
+              <button onClick={fileAnswer} disabled={submitting} className="px-4 py-2 bg-primary text-primary-foreground text-xs uppercase tracking-wider">
+                {submitting ? "…" : tr("fileConclusion", "File conclusion")}
               </button>
             </div>
           </div>
