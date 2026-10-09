@@ -8,6 +8,8 @@ import {
   getConclusionQuestions, formatConclusion, heldItems, findItem,
 } from "@/lib/interactive";
 import { itemStyle } from "@/lib/itemColors";
+import { startTracking, type Tracker } from "@/lib/icTracking";
+import { CaseMap } from "@/components/interactive/CaseMap";
 import { notifyActivity } from "@/lib/commendations";
 import { CaseReport, CaseReports } from "@/components/interactive/CaseReport";
 
@@ -115,6 +117,25 @@ export const InteractiveReader: React.FC<Props> = ({ chapterId, title, graph, us
   }, [chapterId, user?.id, preview, graphKey]);
 
   useEffect(() => { void load(); }, [load]);
+
+  // Reading analytics (Admin → Case analytics). Admin route previews are not
+  // tracked; tester links are, under "test:<id>".
+  const tracker = useRef<Tracker | null>(null);
+  const trackKey = preview ? (testKey ? `test:${testKey.replace(/^ic-test:/, "")}` : null) : chapterId;
+  const stateReady = !!state;
+  useEffect(() => {
+    if (!trackKey || !stateReady) return;
+    const t = startTracking({
+      caseKey: trackKey,
+      userId: user?.id ?? null,
+      attempt: state?.attempt ?? null,
+      currentNode: state?.current_node ?? null,
+      resumed: (state?.decisions.length ?? 0) > 0,
+    });
+    tracker.current = t;
+    return () => { t.dispose(); if (tracker.current === t) tracker.current = null; };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [trackKey, user?.id, stateReady]);
   useEffect(() => {
     if (!preview || !testKey || !state) return;
     try { localStorage.setItem(testKey, JSON.stringify(state)); } catch { /* ignore */ }
@@ -128,6 +149,22 @@ export const InteractiveReader: React.FC<Props> = ({ chapterId, title, graph, us
   const currentNode = state?.status === "in_progress" ? findNode(graph, state.current_node) : undefined;
   const timeLimit = currentNode?.type === "decision" && !guestBlocked ? Number(currentNode.timeLimit) || 0 : 0;
   const [remaining, setRemaining] = useState<number | null>(null);
+  const viewKey = state?.status === "in_progress" && currentNode?.type === "decision" && !guestBlocked ? `${currentNode.id}#${state.decisions.length}` : "";
+  useEffect(() => {
+    if (viewKey && currentNode) tracker.current?.view(currentNode.id);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [viewKey, tracker.current]);
+  const endKey = state?.status === "completed" ? `${state.ending_node}#${state.attempt ?? 1}#${state.decisions.length}` : "";
+  const endedFor = useRef<string>("");
+  useEffect(() => {
+    if (!endKey || !state?.ending_node || !tracker.current || endedFor.current === endKey) return;
+    // Only count endings reached in this visit, not ones loaded from an earlier session.
+    if (state.completed_at && Date.now() - Date.parse(state.completed_at) > 60_000) { endedFor.current = endKey; return; }
+    endedFor.current = endKey;
+    tracker.current.ending(state.ending_node);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [endKey, tracker.current]);
+  useEffect(() => { tracker.current?.setAttempt(state?.attempt); }, [state?.attempt]);
   const autoFiled = useRef<string | null>(null);
 
   const fileDecision = async (option: DecisionOption, timedOut = false) => {
@@ -149,6 +186,7 @@ export const InteractiveReader: React.FC<Props> = ({ chapterId, title, graph, us
         : filed.consequence || null);
       setState(next);
       setPending(null);
+      tracker.current?.choose(state.current_node, option.id, { timedOut, filedOptionId: filed.id });
       if (!preview) notifyActivity();
     } catch (e: any) {
       setError(e.message);
@@ -193,6 +231,7 @@ export const InteractiveReader: React.FC<Props> = ({ chapterId, title, graph, us
         notifyActivity();
       }
       setConfirmAnswer(false);
+      tracker.current?.answer(text.length, questions.length);
       setAnswers([]);
     } catch (e: any) {
       setError(e.message);
@@ -201,6 +240,7 @@ export const InteractiveReader: React.FC<Props> = ({ chapterId, title, graph, us
   };
 
   const replay = async () => {
+    tracker.current?.replay();
     setLastConsequence(null);
     setShowHistory(false);
     if (preview) { setState(startLocal(graph)); return; }
@@ -409,7 +449,7 @@ export const InteractiveReader: React.FC<Props> = ({ chapterId, title, graph, us
                     <button
                       type="button"
                       disabled={submitting || remaining === 0}
-                      onClick={() => setPending(o)}
+                      onClick={() => { setPending(o); if (state.current_node) tracker.current?.confirmOpen(state.current_node, o.id); }}
                       className={`w-full text-left border px-4 py-3 transition-colors disabled:opacity-40 disabled:cursor-not-allowed ${ist ? `${ist.border} ${ist.bg} ${ist.hover}` : "border-border hover:border-primary focus-visible:border-primary"}`}
                     >
                       {item && (
@@ -524,6 +564,11 @@ export const InteractiveReader: React.FC<Props> = ({ chapterId, title, graph, us
           {/* Summary of this attempt */}
           <div className="mt-8 border-t border-border pt-6">
             <CaseReport graph={graph} decisions={state.decisions} attempt={state.attempt} completedAt={state.completed_at} />
+            <details className="mt-6 group">
+              <summary className="cursor-pointer select-none case-label text-[10px] !text-primary">{tr("yourRoute", "Your route through the file")}</summary>
+              <p className="text-xs text-muted-foreground mt-2 mb-3">{tr("yourRouteHint", "Lit lines are the choices you made. Dark shapes are paths you never took.")}</p>
+              <CaseMap graph={graph} decisions={state.decisions} endingNode={state.ending_node} mode="reader" />
+            </details>
           </div>
 
           {error && <p className="text-xs text-destructive mt-4">{tr("errorGeneric", "Something went wrong.")} ({error})</p>}
@@ -583,7 +628,7 @@ export const InteractiveReader: React.FC<Props> = ({ chapterId, title, graph, us
                   : tr("irreversibleGuest", "This decision will be saved on this device and cannot be changed."))}
             </p>
             <div className="mt-6 flex gap-3 justify-end">
-              <button onClick={() => setPending(null)} disabled={submitting} className="px-4 py-2 border border-border text-xs uppercase tracking-wider">
+              <button onClick={() => { if (pending && state?.current_node) tracker.current?.confirmCancel(state.current_node, pending.id); setPending(null); }} disabled={submitting} className="px-4 py-2 border border-border text-xs uppercase tracking-wider">
                 {tr("goBack", "Go back")}
               </button>
               <button onClick={confirm} disabled={submitting} className="px-4 py-2 bg-primary text-primary-foreground text-xs uppercase tracking-wider">
