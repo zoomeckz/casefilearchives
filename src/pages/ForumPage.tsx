@@ -71,6 +71,11 @@ export const ForumPage: React.FC<ForumPageProps> = ({ user, authToken, stories, 
   const replyRef = useRef<HTMLTextAreaElement>(null);
 
   const storyMap = useMemo(() => Object.fromEntries(stories.map((s) => [s.id, s])), [stories]);
+  // Every published story can be discussed; the lists keep Case Files and Interactive Case Files apart.
+  const storyGroups = useMemo(() => ([
+    { key: "linear", label: "Case Files", items: stories.filter((s) => s.storyFormat !== "interactive") },
+    { key: "interactive", label: "Interactive Case Files", items: stories.filter((s) => s.storyFormat === "interactive") },
+  ]).filter((g) => g.items.length > 0), [stories]);
 
   const loadNames = useCallback(async (ids: string[]) => {
     const missing = Array.from(new Set(ids)).filter((id) => id && !names[id]);
@@ -219,13 +224,18 @@ export const ForumPage: React.FC<ForumPageProps> = ({ user, authToken, stories, 
             </div>
             <div className="case-file p-4">
               <p className="case-label text-[9px] mb-3">{tr('byCase')}</p>
-              <div className="max-h-80 overflow-y-auto">
+              <div className="max-h-80 overflow-y-auto overscroll-contain" data-lenis-prevent>
                 <button className={sideBtn(!caseFilter)} onClick={() => setFilter("case", null)}>{tr('allCases')}</button>
-                {stories.map((s) => (
-                  <button key={s.id} className={`${sideBtn(caseFilter === s.id)} flex justify-between gap-2`} onClick={() => setFilter("case", s.id)}>
-                    <span className="truncate">{s.title}</span>
-                    <span className="case-label text-[9px] shrink-0">{caseCounts[s.id] || 0}</span>
-                  </button>
+                {storyGroups.map((g) => (
+                  <div key={g.key} className="mt-3">
+                    <p className="case-label text-[8px] mb-1 opacity-80">{g.label}</p>
+                    {g.items.map((s) => (
+                      <button key={s.id} className={`${sideBtn(caseFilter === s.id)} flex justify-between gap-2`} onClick={() => setFilter("case", s.id)}>
+                        <span className="truncate">{s.title}</span>
+                        <span className="case-label text-[9px] shrink-0">{caseCounts[s.id] || 0}</span>
+                      </button>
+                    ))}
+                  </div>
                 ))}
               </div>
             </div>
@@ -252,7 +262,11 @@ export const ForumPage: React.FC<ForumPageProps> = ({ user, authToken, stories, 
               <select value={caseFilter || ""} onChange={(e) => setFilter("case", e.target.value || null)}
                 className="w-full px-3 py-2.5 bg-card border border-border text-foreground text-sm">
                 <option value="">{tr('allCases')}</option>
-                {stories.map((s) => <option key={s.id} value={s.id}>{s.title} ({caseCounts[s.id] || 0})</option>)}
+                {storyGroups.map((g) => (
+                  <optgroup key={g.key} label={g.label}>
+                    {g.items.map((s) => <option key={s.id} value={s.id}>{s.title} ({caseCounts[s.id] || 0})</option>)}
+                  </optgroup>
+                ))}
               </select>
             </label>
           </div>
@@ -269,7 +283,11 @@ export const ForumPage: React.FC<ForumPageProps> = ({ user, authToken, stories, 
                   </select>
                   <select value={storyId} onChange={(e) => setStoryId(e.target.value)} className="px-3 py-2 bg-background border border-border text-foreground">
                     <option value="">{tr('noCase')}</option>
-                    {stories.map((s) => <option key={s.id} value={s.id}>{s.title}</option>)}
+                    {storyGroups.map((g) => (
+                      <optgroup key={g.key} label={g.label}>
+                        {g.items.map((s) => <option key={s.id} value={s.id}>{s.title}</option>)}
+                      </optgroup>
+                    ))}
                   </select>
                 </div>
                 <FormatToolbar textareaRef={bodyRef} value={body} onChange={setBody} />
