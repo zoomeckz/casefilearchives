@@ -413,6 +413,21 @@
 .nav-active-underline {
   position: relative;
 }
+/* Phones: keep the smallest mono labels legible, and stop iOS from zooming
+   into form fields (it does that for text under 16px). */
+@media (max-width: 639px) {
+  .case-label.text-\[7px\],
+  .case-label.text-\[8px\],
+  .case-label.text-\[9px\] {
+    font-size: 10px;
+  }
+  input:not([type="range"]):not([type="checkbox"]):not([type="radio"]),
+  select,
+  textarea {
+    font-size: 16px !important;
+  }
+}
+
 .nav-active-underline::after {
   content: "";
   position: absolute;
