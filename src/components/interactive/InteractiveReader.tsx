@@ -6,6 +6,7 @@ import {
   InteractiveGraph, PlayState, StoryNode, DecisionOption, GUEST_CHOICE_LIMIT,
   findNode, isOptionLocked, isOptionVisible, startLocal, chooseLocal, parseServerState,
 } from "@/lib/interactive";
+import { notifyActivity } from "@/lib/commendations";
 
 const SUPA_URL = import.meta.env.VITE_SUPABASE_URL;
 const ANON = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY;
@@ -107,6 +108,7 @@ export const InteractiveReader: React.FC<Props> = ({ chapterId, title, graph, us
       setLastConsequence(pending.consequence || null);
       setState(next);
       setPending(null);
+      if (!preview) notifyActivity();
     } catch (e: any) {
       setError(e.message);
       if (user && !preview) void load();
