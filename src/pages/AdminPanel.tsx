@@ -10,6 +10,7 @@ import { AnalyticsDashboard } from "@/components/AnalyticsDashboard";
 import { ContentSearch } from "@/components/ContentSearch";
 import { EditAuditPanel } from "@/components/EditAuditPanel";
 import { ChapterTranslationsManager } from "@/components/ChapterTranslationsManager";
+import { CaseReportsInbox } from "@/components/interactive/CaseReportsInbox";
 import { toast } from "sonner";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { Input } from "@/components/ui/input";
@@ -503,6 +504,7 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ glossary, authToken, use
       label: "Content",
       items: [
         { id: "chapters", label: "Stories", icon: BookOpen },
+        { id: "reports", label: "Case reports", icon: FileText },
         { id: "search", label: "Search & replace", icon: Search },
       ],
     },
@@ -552,7 +554,7 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ glossary, authToken, use
 
   useEffect(() => {
     const tabParam = searchParams.get('tab');
-    const nextTab = ['dashboard', 'chapters', 'search', 'analytics', 'legacy', 'glossary', 'seo', 'audit'].includes(tabParam || '')
+    const nextTab = ['dashboard', 'chapters', 'reports', 'search', 'analytics', 'legacy', 'glossary', 'seo', 'audit'].includes(tabParam || '')
       ? (tabParam as string)
       : 'dashboard';
     const nextSubTab = searchParams.get('subtab') === 'drafts' ? 'drafts' : 'published';
@@ -1114,6 +1116,10 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ glossary, authToken, use
 
             {activeTab === "analytics" && (
               <AnalyticsDashboard authToken={authToken} />
+            )}
+
+            {activeTab === "reports" && (
+              <CaseReportsInbox authToken={authToken} />
             )}
 
             {activeTab === "glossary" && (
