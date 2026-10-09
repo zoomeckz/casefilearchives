@@ -320,54 +320,62 @@ export function openingContent(g: InteractiveGraph): string {
     .join("\n");
 }
 
-export interface ValidationIssue { level: "error" | "warning"; nodeId?: string; message: string }
+export interface ValidationIssue {
+  level: "error" | "warning";
+  nodeId?: string;
+  message: string;
+  /** Where in the section the problem is, in words (e.g. "Choice A › Choice text"). */
+  where?: string;
+  /** Which field to jump to: "next", "endingTitle", "timer", "choices", "opt:0:label",
+   *  "opt:0:next", "opt:0:item", "route:0", "notebook:0", "settings:items", "add:ending". */
+  loc?: string;
+}
 
 /** Pre-publish checks: broken links, dead decisions, unreachable nodes/endings. */
 export function validateGraph(g: InteractiveGraph): ValidationIssue[] {
   const issues: ValidationIssue[] = [];
   const ids = new Set<string>();
   for (const n of g.nodes) {
-    if (!n.id) issues.push({ level: "error", message: "A node has no ID." });
-    else if (ids.has(n.id)) issues.push({ level: "error", nodeId: n.id, message: `Duplicate node ID "${n.id}".` });
+    if (!n.id) issues.push({ level: "error", message: "A section has no ID." });
+    else if (ids.has(n.id)) issues.push({ level: "error", nodeId: n.id, where: "Section ID", loc: "id", message: `Two sections are called "${n.id}". Rename one of them.` });
     ids.add(n.id);
   }
-  if (!findNode(g, g.startNodeId)) issues.push({ level: "error", message: "The opening node is missing." });
+  if (!findNode(g, g.startNodeId)) issues.push({ level: "error", message: "The opening section is missing. Pick a section and press “Set as opening”." });
 
-  const link = (from: string, to: string | undefined, what: string) => {
-    if (to && !ids.has(to)) issues.push({ level: "error", nodeId: from, message: `${what} points to missing node "${to}".` });
-  };
+  const missing = (to: string | undefined) => !!to && !ids.has(to);
+  const letter = (i: number) => String.fromCharCode(65 + i);
 
   for (const n of g.nodes) {
     if (n.type === "decision") {
       const opts = n.options || [];
-      if (opts.length < 2) issues.push({ level: "error", nodeId: n.id, message: "Decision needs at least two options." });
+      if (opts.length < 2) issues.push({ level: "error", nodeId: n.id, where: "Choices", loc: "choices", message: "Needs at least two choices. Press “+ Add choice”." });
       if (n.timeLimit != null && n.timeLimit > 0 && n.timeLimit < 5) {
-        issues.push({ level: "warning", nodeId: n.id, message: "A time limit under 5 seconds leaves little time to read the options." });
+        issues.push({ level: "warning", nodeId: n.id, where: "Choices › Timer", loc: "timer", message: "Under 5 seconds leaves little time to read the choices." });
       }
       opts.forEach((o, i) => {
-        const name = `Choice ${String.fromCharCode(65 + i)}`;
-        if (!o.label?.trim()) issues.push({ level: "error", nodeId: n.id, message: `${name} has no text yet.` });
-        if (!o.next) issues.push({ level: "error", nodeId: n.id, message: `${name} does not lead anywhere yet.` });
-        link(n.id, o.next, name);
-      });
-      opts.forEach((o, i) => {
+        const name = `Choice ${letter(i)}`;
+        if (!o.label?.trim()) issues.push({ level: "error", nodeId: n.id, where: `${name} › Choice text`, loc: `opt:${i}:label`, message: "Empty. Type what the reader can pick." });
+        if (!o.next) issues.push({ level: "error", nodeId: n.id, where: `${name} › Leads to`, loc: `opt:${i}:next`, message: "Not set. Pick the section this choice leads to." });
+        else if (missing(o.next)) issues.push({ level: "error", nodeId: n.id, where: `${name} › Leads to`, loc: `opt:${i}:next`, message: `Points to "${o.next}", which no longer exists.` });
         if (o.requiresItem && !findItem(g, o.requiresItem)) {
-          issues.push({ level: "error", nodeId: n.id, message: `Choice ${String.fromCharCode(65 + i)} needs an item that no longer exists.` });
+          issues.push({ level: "error", nodeId: n.id, where: `${name} › Item choice`, loc: `opt:${i}:item`, message: "Needs an item that was removed. Pick another item or none." });
         }
       });
       if (opts.length > 0 && opts.every((o) => (o.visibleIf?.length || 0) > 0 || (o.lockedIf?.length || 0) > 0)) {
-        issues.push({ level: "warning", nodeId: n.id, message: "Every option has conditions — some readers may have no valid option." });
+        issues.push({ level: "warning", nodeId: n.id, where: "Choices", loc: "choices", message: "Every choice has conditions, so some readers may have nothing to pick." });
       }
     } else if (n.type === "ending") {
-      if (!n.endingTitle?.trim()) issues.push({ level: "warning", nodeId: n.id, message: "Ending has no title." });
+      if (!n.endingTitle?.trim()) issues.push({ level: "warning", nodeId: n.id, where: "Ending title", loc: "endingTitle", message: "Empty. Readers see “File closed” instead." });
     } else {
-      link(n.id, n.next, "Next");
-      (n.routes || []).forEach((r) => link(n.id, r.to, "Conditional route"));
+      if (missing(n.next)) issues.push({ level: "error", nodeId: n.id, where: "Next section", loc: "next", message: `Points to "${n.next}", which no longer exists.` });
+      (n.routes || []).forEach((r, i) => {
+        if (missing(r.to)) issues.push({ level: "error", nodeId: n.id, where: `Conditional route ${i + 1}`, loc: `route:${i}`, message: `Points to "${r.to}", which no longer exists.` });
+      });
       if (!n.next && !(n.routes || []).length) {
-        issues.push({ level: "warning", nodeId: n.id, message: "Scene has no next node — the file ends here without an ending." });
+        issues.push({ level: "warning", nodeId: n.id, where: "Next section", loc: "next", message: "Not set, so the story stops here without an ending. Pick the next section." });
       }
       (n.notebook || []).forEach((e, i) => {
-        if (!e.text?.trim()) issues.push({ level: "warning", nodeId: n.id, message: `Notebook entry ${i + 1} is empty and will not be shown.` });
+        if (!e.text?.trim()) issues.push({ level: "warning", nodeId: n.id, where: `Notebook entry ${i + 1}`, loc: `notebook:${i}`, message: "Empty, so it will not be shown." });
       });
     }
   }
@@ -387,13 +395,15 @@ export function validateGraph(g: InteractiveGraph): ValidationIssue[] {
   }
   for (const n of g.nodes) {
     if (!reach.has(n.id)) {
-      issues.push({ level: "warning", nodeId: n.id, message: n.type === "ending" ? "This ending can never be reached." : "Node is unreachable." });
+      issues.push({ level: "warning", nodeId: n.id, message: n.type === "ending"
+        ? "Nothing leads to this ending yet. Pick it in a choice’s “Leads to” or a scene’s “Next section”."
+        : "Nothing leads here yet, so readers can never see it. Pick it in a choice’s “Leads to” or a scene’s “Next section”." });
     }
   }
-  if (!g.nodes.some((n) => n.type === "ending")) issues.push({ level: "warning", message: "The case has no ending nodes." });
+  if (!g.nodes.some((n) => n.type === "ending")) issues.push({ level: "warning", loc: "add:ending", message: "The case has no ending yet. Press “+ Ending” in the Structure panel." });
   for (const it of g.settings.items || []) {
     const given = g.nodes.some((n) => (n.options || []).some((o) => (o.effects || []).some((e) => e.var === itemVar(it.id) && !isFalsy(e.value))));
-    if (!given) issues.push({ level: "warning", message: `Item "${it.name || it.id}" is never given by any choice.` });
+    if (!given) issues.push({ level: "warning", loc: "settings:items", where: "Inventory items", message: `“${it.name || it.id}” is never given by any choice, so nobody can carry it.` });
   }
   return issues;
 }
