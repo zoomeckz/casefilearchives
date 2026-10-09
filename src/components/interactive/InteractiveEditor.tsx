@@ -63,6 +63,24 @@ function blankOption(): DecisionOption {
 
 // ── Small building blocks ──
 
+/** Open/closed state for an editor panel, remembered in this browser. */
+function usePanelOpen(key: string, initial = true): [boolean, () => void] {
+  const [open, setOpen] = useState<boolean>(() => {
+    try { const v = localStorage.getItem(key); return v == null ? initial : v === "1"; } catch { return initial; }
+  });
+  const toggle = () => setOpen((o) => {
+    try { localStorage.setItem(key, o ? "0" : "1"); } catch { /* ignore */ }
+    return !o;
+  });
+  return [open, toggle];
+}
+
+const CollapseToggle: React.FC<{ open: boolean; onToggle: () => void; what: string }> = ({ open, onToggle, what }) => (
+  <button type="button" onClick={onToggle} aria-expanded={open} className={smallBtn} title={`${open ? "Collapse" : "Expand"} ${what}`}>
+    {open ? "▾ Collapse" : "▸ Expand"}
+  </button>
+);
+
 const ConditionList: React.FC<{ value?: Condition[]; onChange: (c: Condition[]) => void; empty: string }> = ({ value, onChange, empty }) => {
   const list = value || [];
   const set = (i: number, patch: Partial<Condition>) => onChange(list.map((c, j) => (j === i ? { ...c, ...patch } : c)));
@@ -176,6 +194,8 @@ export const InteractiveEditor: React.FC<Props> = ({ graph, onChange, title, pub
   const [showJson, setShowJson] = useState(false);
   const [jsonDraft, setJsonDraft] = useState("");
   const [jsonError, setJsonError] = useState<string | null>(null);
+  const [settingsOpen, toggleSettings] = usePanelOpen("ic-editor:settings-open");
+  const [structureOpen, toggleStructure] = usePanelOpen("ic-editor:structure-open");
 
   const issues = useMemo(() => validateGraph(graph), [graph]);
   const errors = issues.filter((i) => i.level === "error");
@@ -357,8 +377,11 @@ export const InteractiveEditor: React.FC<Props> = ({ graph, onChange, title, pub
 
       {/* Settings */}
       <div className={panel}>
-        <div className="flex flex-wrap items-center justify-between gap-2 mb-3">
-          <h3 className="text-sm font-medium text-foreground">Interactive case settings</h3>
+        <div className={`flex flex-wrap items-center justify-between gap-2 ${settingsOpen || showJson ? "mb-3" : ""}`}>
+          <div className="flex items-center gap-2">
+            <CollapseToggle open={settingsOpen} onToggle={toggleSettings} what="case settings" />
+            <h3 className="text-sm font-medium text-foreground">Interactive case settings</h3>
+          </div>
           <div className="flex flex-wrap gap-2">
             <select value="" onChange={(e) => loadTemplate(e.target.value)} className={`${smallBtn} bg-transparent [color-scheme:dark]`} aria-label="Load a template">
               <option value="">Load a template…</option>
@@ -369,7 +392,8 @@ export const InteractiveEditor: React.FC<Props> = ({ graph, onChange, title, pub
             </button>
           </div>
         </div>
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        {settingsOpen && (<>
+        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-4">
           <div>
             <label className={label}>Replay</label>
             <select value={graph.settings.replay} onChange={(e) => setSettings({ replay: e.target.value as ReplayPolicy })} className={field}>
@@ -385,6 +409,17 @@ export const InteractiveEditor: React.FC<Props> = ({ graph, onChange, title, pub
                 <span className="text-xs text-muted-foreground">hours after completion (168 = one week)</span>
               </div>
             )}
+          </div>
+          <div>
+            <label className={label}>Attempts per account</label>
+            <input type="number" min={1} max={99} value={graph.settings.maxAttempts ?? ""} placeholder="No limit"
+              onChange={(e) => { const v = parseInt(e.target.value, 10); setSettings({ maxAttempts: Number.isFinite(v) && v > 0 ? v : undefined }); }}
+              className={`${field} w-32`} />
+            <p className="text-[11px] text-muted-foreground mt-1">
+              {graph.settings.replay === "disabled"
+                ? "Replay is disabled, so every account gets exactly one attempt."
+                : "Total playthroughs each registered reader may start. Empty = no limit. Admins are never limited."}
+            </p>
           </div>
           <div>
             <label className={label}>Unregistered visitors may</label>
@@ -413,6 +448,7 @@ export const InteractiveEditor: React.FC<Props> = ({ graph, onChange, title, pub
             Variables in this case: <span className="font-mono">{varNames.join(", ")}</span>
           </p>
         )}
+        </>)}
         {showJson && (
           <div className="mt-4">
             <p className="text-xs text-muted-foreground mb-2">Copy this to back up the case, or paste a saved case and apply it.</p>
@@ -460,15 +496,20 @@ export const InteractiveEditor: React.FC<Props> = ({ graph, onChange, title, pub
         {errors.length > 0 && <p className="text-[11px] text-muted-foreground mt-2">Errors must be fixed before the case can be published.</p>}
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-[18rem_1fr] gap-6">
-        {/* Node list */}
-        <aside className={`${panel} lg:max-h-[80vh] lg:overflow-y-auto`}>
+      <div className={`grid grid-cols-1 gap-6 ${structureOpen ? "lg:grid-cols-[18rem_1fr]" : ""}`}>
+        {/* Node list — scrolls on its own so the page stays put */}
+        {structureOpen && (
+        <aside className={`${panel} flex flex-col max-h-[75vh] lg:self-start lg:sticky lg:top-20`}>
+          <div className="flex items-center justify-between gap-2 mb-3">
+            <h3 className="text-xs uppercase tracking-wider text-muted-foreground">Structure · {graph.nodes.length}</h3>
+            <CollapseToggle open onToggle={toggleStructure} what="structure" />
+          </div>
           <div className="flex flex-wrap gap-2 mb-3">
             <button type="button" onClick={() => addNode("narrative")} className={smallBtn}>+ Scene</button>
             <button type="button" onClick={() => addNode("decision")} className={smallBtn}>+ Decision</button>
             <button type="button" onClick={() => addNode("ending")} className={smallBtn}>+ Ending</button>
           </div>
-          <ol className="space-y-1">
+          <ol className="space-y-1 flex-1 min-h-0 overflow-y-auto overscroll-contain pr-1">
             {graph.nodes.map((n) => {
               const active = n.id === sel.id;
               const errs = errorCountFor(n.id);
@@ -491,10 +532,14 @@ export const InteractiveEditor: React.FC<Props> = ({ graph, onChange, title, pub
             })}
           </ol>
         </aside>
+        )}
 
         {/* Node form */}
         <section className={`${panel} space-y-5 min-w-0`}>
           <div className="flex flex-wrap items-center gap-2">
+            {!structureOpen && (
+              <button type="button" onClick={toggleStructure} aria-expanded={false} className={smallBtn}>▸ Structure ({graph.nodes.length})</button>
+            )}
             <button type="button" onClick={() => moveNode(-1)} disabled={selIndex <= 0} className={smallBtn}>↑ Up</button>
             <button type="button" onClick={() => moveNode(1)} disabled={selIndex >= graph.nodes.length - 1} className={smallBtn}>↓ Down</button>
             <button type="button" onClick={duplicateNode} className={smallBtn}>Duplicate</button>
