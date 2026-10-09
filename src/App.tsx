@@ -18,6 +18,7 @@ import i18n, {
 import Index from "./pages/Index";
 import NotFound from "./pages/NotFound";
 import SectionHeaderStory from "./pages/SectionHeaderStory";
+import TestCasePage from "./pages/TestCasePage";
 import { useDynamicSeo } from "./hooks/useDynamicSeo";
 
 const queryClient = new QueryClient();
@@ -183,6 +184,8 @@ const App = () => {
               APP_ROUTES because it intentionally bypasses navigation, i18n,
               and the SPA shell — it's a flat preview surface. */}
           <Route path="/dev/section-header" element={<SectionHeaderStory />} />
+          {/* Tester links for unpublished Interactive Case Files (snapshot from the editor). */}
+          <Route path="/test-case/:id" element={<TestCasePage />} />
           {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
           <Route path="*" element={<NotFound />} />
         </Routes>
