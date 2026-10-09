@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
 import { ProfileFrame } from "@/components/ProfileFrame";
 import { CommendationBadge } from "@/components/commendations/CommendationBadge";
+import { CaseReports } from "@/components/interactive/CaseReport";
 import { dbFetch } from "@/lib/dbFetch";
 import { slugify } from "@/lib/slug";
 import {
@@ -204,6 +205,7 @@ export const Dossier: React.FC<Props> = ({ userId, editable = false, avatarActio
                       <span className="case-label text-[8px] shrink-0">{c.endings_reached}/{c.endings_total} outcomes</span>
                     </div>
                   )}
+                  {owner && c.completed_at && <ReportToggle chapterId={c.chapter_id} userId={data.user_id} />}
                 </li>
               ))}
             </ul>
@@ -295,6 +297,19 @@ export const Dossier: React.FC<Props> = ({ userId, editable = false, avatarActio
 };
 
 // ── Pieces ──
+
+/** Owner-only: decisions and written conclusions for every closed attempt of a case. */
+const ReportToggle: React.FC<{ chapterId: string; userId: string }> = ({ chapterId, userId }) => {
+  const [open, setOpen] = useState(false);
+  return (
+    <div className="mt-4">
+      <button onClick={() => setOpen((v) => !v)} className="case-label text-[9px] hover:text-primary" aria-expanded={open}>
+        {open ? "Hide case reports ↑" : "View case reports ↓"}
+      </button>
+      {open && <div className="mt-4"><CaseReports chapterId={chapterId} userId={userId} /></div>}
+    </div>
+  );
+};
 
 const ClearanceStamp: React.FC<{ level: number }> = ({ level }) => (
   <div className="hidden md:flex relative w-24 h-24 items-center justify-center border-4 border-primary text-primary rotate-[-8deg] cf-stamp-in shrink-0" aria-hidden="true">
