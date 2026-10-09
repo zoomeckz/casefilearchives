@@ -13,13 +13,15 @@ interface ReportProps {
   completedAt?: string | null;
   finalAnswer?: string | null;
   answeredAt?: string | null;
+  feedback?: string | null;
+  feedbackAt?: string | null;
   /** Also show the outcome and the written conclusion (the ending screen shows those itself). */
   full?: boolean;
 }
 
 /** Summary of one playthrough: every decision filed, in order. */
 export const CaseReport: React.FC<ReportProps> = ({
-  graph, decisions, attempt, endingNodeId, completedAt, finalAnswer, answeredAt, full = false,
+  graph, decisions, attempt, endingNodeId, completedAt, finalAnswer, answeredAt, feedback, feedbackAt, full = false,
 }) => {
   const ending = findNode(graph, endingNodeId);
   const ordered = [...decisions].sort((a, b) => (a.created_at || "").localeCompare(b.created_at || ""));
@@ -69,6 +71,15 @@ export const CaseReport: React.FC<ReportProps> = ({
           <blockquote className="mt-2 border-l-4 border-primary pl-4 italic text-foreground/85 whitespace-pre-line break-words">{finalAnswer}</blockquote>
         </div>
       )}
+
+      {full && feedback && (
+        <div className="mt-4 border border-border border-l-4 border-l-accent bg-card/40 px-4 py-3">
+          <p className="case-label text-[9px] !text-accent">
+            The archivist’s response{feedbackAt ? ` · ${new Date(feedbackAt).toLocaleDateString()}` : ""}
+          </p>
+          <p className="mt-2 text-foreground/90 whitespace-pre-line break-words">{feedback}</p>
+        </div>
+      )}
     </div>
   );
 };
@@ -81,6 +92,8 @@ interface PlaythroughRow {
   completed_at: string | null;
   final_answer: string | null;
   answered_at: string | null;
+  admin_feedback?: string | null;
+  feedback_at?: string | null;
   interactive_decisions: Decision[];
 }
 
@@ -106,7 +119,7 @@ export const CaseReports: React.FC<HistoryProps> = ({ chapterId, userId, graph: 
         const token = sessionToken();
         if (!token) throw new Error("auth_required");
         const headers = { apikey: ANON, Authorization: `Bearer ${token}` };
-        const select = "id,attempt,status,ending_node,completed_at,final_answer,answered_at,interactive_decisions(node_id,option_id,option_label,created_at)";
+        const select = "id,attempt,status,ending_node,completed_at,final_answer,answered_at,admin_feedback,feedback_at,interactive_decisions(node_id,option_id,option_label,created_at)";
         const res = await fetch(
           `${SUPA_URL}/rest/v1/interactive_playthroughs?select=${encodeURIComponent(select)}&chapter_id=eq.${chapterId}&user_id=eq.${userId}&completed_at=not.is.null&order=attempt.desc`,
           { headers },
@@ -145,6 +158,8 @@ export const CaseReports: React.FC<HistoryProps> = ({ chapterId, userId, graph: 
             completedAt={r.completed_at}
             finalAnswer={r.final_answer}
             answeredAt={r.answered_at}
+            feedback={r.admin_feedback}
+            feedbackAt={r.feedback_at}
             full
           />
         </div>
