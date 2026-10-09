@@ -59,7 +59,7 @@ export const Navigation: React.FC<NavigationProps> = ({
           {/* Mobile sigil — replaces a naked hamburger with a small brand mark */}
           <button
             onClick={() => setCurrentPage("home")}
-            className="brand-title md:hidden text-foreground text-xl leading-none"
+            className="brand-title md:hidden text-foreground text-xl leading-none -ml-2 min-w-[44px] min-h-[44px] flex items-center px-2"
             aria-label="Case Files home"
           >
             CF
@@ -136,7 +136,9 @@ export const Navigation: React.FC<NavigationProps> = ({
           {/* Mobile Menu Button */}
           <button
             onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-            className="md:hidden text-muted-foreground hover:text-foreground ml-auto mr-3"
+            className="md:hidden text-muted-foreground hover:text-foreground ml-auto mr-1 w-11 h-11 flex items-center justify-center"
+            aria-label={mobileMenuOpen ? "Close menu" : "Open menu"}
+            aria-expanded={mobileMenuOpen}
           >
             {mobileMenuOpen ? <Icons.Close /> : <Icons.Menu />}
           </button>
