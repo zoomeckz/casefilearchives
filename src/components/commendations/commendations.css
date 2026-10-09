@@ -1,0 +1,152 @@
+/* Commendations — stamps, redactions and declassification effects. */
+
+.cf-seal {
+  color: hsl(var(--primary));
+  transform: rotate(-6deg);
+}
+.cf-seal--locked {
+  color: hsl(var(--muted-foreground) / 0.55);
+  transform: none;
+}
+.cf-seal__ink {
+  /* Slightly uneven ink, like a rubber stamp. */
+  filter: url(#cf-ink);
+}
+
+/* Stamp slams onto the page. */
+@keyframes cf-stamp-in {
+  0% { transform: scale(2.4) rotate(-22deg); opacity: 0; }
+  55% { transform: scale(0.9) rotate(-4deg); opacity: 1; }
+  72% { transform: scale(1.06) rotate(-7deg); }
+  100% { transform: scale(1) rotate(-6deg); opacity: 1; }
+}
+.cf-stamp-in {
+  animation: cf-stamp-in 560ms cubic-bezier(0.2, 0.9, 0.25, 1.2) both;
+}
+
+/* Black redaction bar that peels away to reveal text. */
+.cf-redacted {
+  position: relative;
+  display: inline-block;
+  color: transparent !important;
+  user-select: none;
+}
+.cf-redacted::after {
+  content: "";
+  position: absolute;
+  inset: 0.12em -0.15em;
+  background: hsl(var(--foreground));
+}
+@keyframes cf-declassify {
+  0% { clip-path: inset(0 0 0 0); }
+  100% { clip-path: inset(0 0 0 100%); }
+}
+.cf-declassify {
+  position: relative;
+  display: inline-block;
+}
+.cf-declassify::after {
+  content: "";
+  position: absolute;
+  inset: 0.12em -0.15em;
+  background: hsl(var(--foreground));
+  animation: cf-declassify 650ms 420ms cubic-bezier(0.7, 0, 0.3, 1) both;
+}
+
+/* "DECLASSIFIED" diagonal stamp text. */
+@keyframes cf-stamp-word {
+  0% { transform: translate(-50%, -50%) scale(2) rotate(-14deg); opacity: 0; }
+  60% { transform: translate(-50%, -50%) scale(0.95) rotate(-14deg); opacity: 0.95; }
+  100% { transform: translate(-50%, -50%) scale(1) rotate(-14deg); opacity: 0.9; }
+}
+.cf-stamp-word {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  border: 2px solid hsl(var(--primary));
+  color: hsl(var(--primary));
+  font-family: 'IBM Plex Mono', monospace;
+  letter-spacing: 0.25em;
+  padding: 0.2em 0.6em;
+  pointer-events: none;
+  animation: cf-stamp-word 480ms 120ms cubic-bezier(0.2, 0.9, 0.25, 1.2) both;
+}
+
+/* Toast */
+@keyframes cf-toast-in {
+  0% { transform: translateX(120%); opacity: 0; }
+  100% { transform: translateX(0); opacity: 1; }
+}
+@keyframes cf-toast-out {
+  0% { transform: translateX(0); opacity: 1; }
+  100% { transform: translateX(120%); opacity: 0; }
+}
+.cf-toast {
+  animation: cf-toast-in 420ms cubic-bezier(0.2, 0.8, 0.2, 1) both;
+}
+.cf-toast--leaving {
+  animation: cf-toast-out 320ms ease-in both;
+}
+@keyframes cf-toast-timer {
+  from { transform: scaleX(1); }
+  to { transform: scaleX(0); }
+}
+.cf-toast__timer {
+  transform-origin: left;
+  animation: cf-toast-timer linear both;
+}
+
+/* Cards and tiles fade up in sequence. */
+@keyframes cf-rise {
+  from { transform: translateY(10px); opacity: 0; }
+  to { transform: translateY(0); opacity: 1; }
+}
+.cf-rise {
+  animation: cf-rise 420ms ease-out both;
+}
+
+/* Progress bars fill on mount. */
+@keyframes cf-fill {
+  from { transform: scaleX(0); }
+}
+.cf-fill {
+  transform-origin: left;
+  animation: cf-fill 900ms cubic-bezier(0.2, 0.8, 0.2, 1) both;
+}
+
+/* Unlocked badges get a faint sweep of light on hover. */
+.cf-sheen {
+  position: relative;
+  overflow: hidden;
+}
+.cf-sheen::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: -60%;
+  width: 40%;
+  background: linear-gradient(100deg, transparent, hsl(var(--background) / 0.55), transparent);
+  transform: skewX(-18deg);
+  transition: left 700ms ease;
+  pointer-events: none;
+}
+.cf-sheen:hover::before {
+  left: 130%;
+}
+
+/* Evidence board cards hang at slight angles. */
+.cf-evidence:nth-child(3n + 1) { transform: rotate(-1.4deg); }
+.cf-evidence:nth-child(3n + 2) { transform: rotate(0.9deg); }
+.cf-evidence:nth-child(3n) { transform: rotate(-0.4deg); }
+.cf-evidence { transition: transform 200ms ease; }
+.cf-evidence:hover { transform: rotate(0deg) translateY(-2px); }
+
+@media (prefers-reduced-motion: reduce) {
+  .cf-stamp-in, .cf-stamp-word, .cf-toast, .cf-toast--leaving, .cf-rise, .cf-fill,
+  .cf-declassify::after, .cf-toast__timer {
+    animation-duration: 1ms !important;
+    animation-delay: 0ms !important;
+  }
+  .cf-sheen::before { display: none; }
+}
