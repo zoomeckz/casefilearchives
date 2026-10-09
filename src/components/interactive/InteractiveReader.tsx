@@ -5,7 +5,9 @@ import type { AuthUser } from "@/hooks/useAuth";
 import {
   InteractiveGraph, PlayState, StoryNode, DecisionOption, GUEST_CHOICE_LIMIT, DEFAULT_SETTINGS,
   findNode, isOptionLocked, isOptionVisible, startLocal, chooseLocal, parseServerState, collectNotebook,
+  getConclusionQuestions, formatConclusion, heldItems, findItem,
 } from "@/lib/interactive";
+import { itemStyle } from "@/lib/itemColors";
 import { notifyActivity } from "@/lib/commendations";
 import { CaseReport, CaseReports } from "@/components/interactive/CaseReport";
 
@@ -38,6 +40,8 @@ interface Props {
   setShowAuthModal?: (b: boolean) => void;
   /** preview = admin route test; nothing is saved anywhere. */
   mode?: "live" | "preview";
+  /** Preview only: keep progress on this device under this key (used by tester links). */
+  testKey?: string;
   onDiscuss?: () => void;
 }
 
@@ -49,7 +53,7 @@ const clock = (s: number) => {
   return `${Math.floor(t / 60)}:${String(t % 60).padStart(2, "0")}`;
 };
 
-export const InteractiveReader: React.FC<Props> = ({ chapterId, title, graph, user, setShowAuthModal, mode = "live", onDiscuss }) => {
+export const InteractiveReader: React.FC<Props> = ({ chapterId, title, graph, user, setShowAuthModal, mode = "live", onDiscuss, testKey }) => {
   const { t } = useTranslation();
   const tr = (k: string, d: string, o?: any) => t(`interactive.${k}`, { defaultValue: d, ...o }) as string;
   const preview = mode === "preview";
@@ -58,7 +62,8 @@ export const InteractiveReader: React.FC<Props> = ({ chapterId, title, graph, us
   // Callers often rebuild the graph object on every render (e.g. the 30s
   // chapter poll); only reload the file when its content actually changes.
   const graphKey = useMemo(() => JSON.stringify(graph), [graph]);
-  const conclusionPrompt = (graph.settings.conclusionPrompt ?? DEFAULT_SETTINGS.conclusionPrompt ?? "").trim();
+  const questions = useMemo(() => getConclusionQuestions(graph.settings), [graph.settings]);
+  const conclusionPrompt = questions.length === 1 ? questions[0] : questions.length > 1 ? tr("conclusionMany", "Answer each question for your report.") : "";
 
   const [state, setState] = useState<PlayState | null>(null);
   const [loading, setLoading] = useState(true);
@@ -66,7 +71,10 @@ export const InteractiveReader: React.FC<Props> = ({ chapterId, title, graph, us
   const [pending, setPending] = useState<DecisionOption | null>(null);
   const [submitting, setSubmitting] = useState(false);
   const [lastConsequence, setLastConsequence] = useState<string | null>(null);
-  const [answer, setAnswer] = useState("");
+  const [answers, setAnswers] = useState<string[]>([]);
+  const answer = formatConclusion(questions, answers);
+  const perAnswerMax = questions.length > 1 ? Math.floor((ANSWER_MAX - questions.join("").length - questions.length * 8) / questions.length) : ANSWER_MAX;
+  const allAnswered = questions.length > 0 && questions.every((_, i) => (answers[i] || "").trim());
   const [confirmAnswer, setConfirmAnswer] = useState(false);
   const [showHistory, setShowHistory] = useState(false);
 
@@ -83,7 +91,12 @@ export const InteractiveReader: React.FC<Props> = ({ chapterId, title, graph, us
   const load = useCallback(async () => {
     setLoading(true); setError(null);
     try {
-      if (preview) { setState(startLocal(graph)); return; }
+      if (preview) {
+        let saved: PlayState | null = null;
+        if (testKey) { try { saved = JSON.parse(localStorage.getItem(testKey) || "null"); } catch { saved = null; } }
+        setState(saved && Array.isArray(saved.visited) ? saved : startLocal(graph));
+        return;
+      }
       if (!user) { setState(readGuest() || startLocal(graph)); return; }
       let s = parseServerState(await rpc("ic_start", { _chapter_id: chapterId, _replay: false }));
       const guest = readGuest();
@@ -102,6 +115,10 @@ export const InteractiveReader: React.FC<Props> = ({ chapterId, title, graph, us
   }, [chapterId, user?.id, preview, graphKey]);
 
   useEffect(() => { void load(); }, [load]);
+  useEffect(() => {
+    if (!preview || !testKey || !state) return;
+    try { localStorage.setItem(testKey, JSON.stringify(state)); } catch { /* ignore */ }
+  }, [preview, testKey, state]);
 
   const guestLimit = guestAccess === "opening" ? 0 : guestAccess === "two_choices" ? GUEST_CHOICE_LIMIT : Infinity;
   const guestBlocked = isGuest && (state?.decisions.length ?? 0) >= guestLimit;
@@ -165,7 +182,7 @@ export const InteractiveReader: React.FC<Props> = ({ chapterId, title, graph, us
   /** The written conclusion: filed once per attempt, locked afterwards. */
   const fileAnswer = async () => {
     const text = answer.trim().slice(0, ANSWER_MAX);
-    if (!text || !state) return;
+    if (!text || !allAnswered || !state) return;
     setSubmitting(true); setError(null);
     try {
       if (preview) {
@@ -176,7 +193,7 @@ export const InteractiveReader: React.FC<Props> = ({ chapterId, title, graph, us
         notifyActivity();
       }
       setConfirmAnswer(false);
-      setAnswer("");
+      setAnswers([]);
     } catch (e: any) {
       setError(e.message);
       setConfirmAnswer(false);
@@ -214,6 +231,7 @@ export const InteractiveReader: React.FC<Props> = ({ chapterId, title, graph, us
   const visitedKey = state?.visited.join("|") ?? "";
   // eslint-disable-next-line react-hooks/exhaustive-deps
   const notebook = useMemo(() => collectNotebook(graph, state?.visited ?? []), [graphKey, visitedKey]);
+  const inventory = state ? heldItems(graph, state.variables) : [];
   const notebookEvidence = notebook.filter((e) => e.kind === "evidence");
   const notebookNotes = notebook.filter((e) => e.kind === "note");
 
@@ -264,7 +282,9 @@ export const InteractiveReader: React.FC<Props> = ({ chapterId, title, graph, us
     <div>
       {preview && (
         <p className="mb-6 border border-dashed border-primary/60 p-3 text-xs uppercase tracking-wider text-primary">
-          Preview route — nothing is saved and no reader progress is affected.
+          {testKey
+            ? "Test copy — your progress is kept on this device only. Nothing is sent to the archive."
+            : "Preview route — nothing is saved and no reader progress is affected."}
         </p>
       )}
       {shownNodes.map(renderNode)}
@@ -273,6 +293,20 @@ export const InteractiveReader: React.FC<Props> = ({ chapterId, title, graph, us
         <div className="mb-8 border-y border-border py-3 text-sm italic text-muted-foreground">
           <span className="case-label text-[9px] not-italic mr-2">{tr("consequence", "Consequence logged")}</span>
           {lastConsequence}
+        </div>
+      )}
+
+      {inventory.length > 0 && (
+        <div className="mb-4 border border-border bg-card/40 px-4 py-3 flex flex-wrap items-center gap-2">
+          <span className="case-label text-[10px] text-primary mr-1">{tr("inventory", "Carrying")}</span>
+          {inventory.map((it) => {
+            const st = itemStyle(it.color);
+            return (
+              <span key={it.id} className={`inline-flex items-center gap-1.5 px-2 py-0.5 border text-xs ${st.border} ${st.text} ${st.bg}`}>
+                <span className={`w-1.5 h-1.5 rounded-full ${st.dot}`} />{it.name || it.id}
+              </span>
+            );
+          })}
         </div>
       )}
 
@@ -352,15 +386,22 @@ export const InteractiveReader: React.FC<Props> = ({ chapterId, title, graph, us
               {(current.options || []).filter((o) => isOptionVisible(o, state.variables)).map((o, idx) => {
                 const locked = isOptionLocked(o, state.variables);
                 const letter = String.fromCharCode(65 + idx);
+                const item = findItem(graph, o.requiresItem);
+                const ist = item ? itemStyle(item.color) : null;
                 return (
                   <li key={o.id}>
                     <button
                       type="button"
                       disabled={locked || submitting || remaining === 0}
                       onClick={() => setPending(o)}
-                      className="w-full text-left border border-border hover:border-primary focus-visible:border-primary px-4 py-3 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+                      className={`w-full text-left border px-4 py-3 transition-colors disabled:opacity-40 disabled:cursor-not-allowed ${ist ? `${ist.border} ${ist.bg} ${ist.hover}` : "border-border hover:border-primary focus-visible:border-primary"}`}
                     >
-                      <span className="font-display text-primary mr-3">{letter}.</span>
+                      {item && (
+                        <span className={`block text-[10px] uppercase tracking-[0.18em] mb-1 pl-7 ${ist!.text}`}>
+                          {tr("itemChoice", "Item")} · {item.name || item.id}
+                        </span>
+                      )}
+                      <span className={`font-display mr-3 ${ist ? ist.text : "text-primary"}`}>{letter}.</span>
                       <span className="text-foreground">{o.label}</span>
                       {o.description && <span className="block text-sm text-muted-foreground mt-1 pl-7">{o.description}</span>}
                       {locked && <span className="block text-[10px] uppercase tracking-wider text-muted-foreground mt-1 pl-7">{tr("unavailable", "Unavailable")}</span>}
@@ -432,18 +473,28 @@ export const InteractiveReader: React.FC<Props> = ({ chapterId, title, graph, us
                 </div>
               ) : (
                 <>
-                  <textarea
-                    value={answer}
-                    onChange={(e) => setAnswer(e.target.value.slice(0, ANSWER_MAX))}
-                    rows={5}
-                    placeholder={tr("conclusionPlaceholder", "Write what you believe happened…")}
-                    className="mt-3 w-full px-3 py-2 bg-background border border-border text-foreground focus:outline-none focus:border-primary resize-y"
-                  />
-                  <div className="flex flex-wrap items-center justify-between gap-3 mt-2">
-                    <span className="case-label text-[9px] tabular-nums">{answer.length}/{ANSWER_MAX}</span>
+                  {questions.map((q, i) => (
+                    <div key={i} className={i === 0 ? "mt-3" : "mt-5"}>
+                      {questions.length > 1 && (
+                        <p className="text-foreground font-medium"><span className="font-display text-primary mr-2">{i + 1}.</span>{q}</p>
+                      )}
+                      <textarea
+                        value={answers[i] || ""}
+                        onChange={(e) => setAnswers((prev) => { const next = [...prev]; next[i] = e.target.value.slice(0, perAnswerMax); return next; })}
+                        rows={questions.length > 1 ? 3 : 5}
+                        placeholder={tr("conclusionPlaceholder", "Write what you believe happened…")}
+                        className="mt-2 w-full px-3 py-2 bg-background border border-border text-foreground focus:outline-none focus:border-primary resize-y"
+                      />
+                      <span className="case-label text-[9px] tabular-nums">{(answers[i] || "").length}/{perAnswerMax}</span>
+                    </div>
+                  ))}
+                  <div className="flex flex-wrap items-center justify-end gap-3 mt-3">
+                    {questions.length > 1 && !allAnswered && (
+                      <span className="text-xs text-muted-foreground mr-auto">{tr("answerAll", "Answer every question to file your report.")}</span>
+                    )}
                     <button
                       type="button"
-                      disabled={!answer.trim() || submitting}
+                      disabled={!allAnswered || submitting}
                       onClick={() => setConfirmAnswer(true)}
                       className="px-4 py-2 bg-primary text-primary-foreground text-xs uppercase tracking-wider disabled:opacity-50"
                     >
