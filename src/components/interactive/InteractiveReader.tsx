@@ -537,7 +537,7 @@ export const InteractiveReader: React.FC<Props> = ({ chapterId, title, graph, us
                 ? "Preview only — this conclusion is not saved."
                 : tr("conclusionIrreversible", "Your conclusion will be saved to your account and cannot be changed for this attempt.")}
             </p>
-            <blockquote className="mt-4 border-l-4 border-primary pl-3 italic text-foreground/85 max-h-48 overflow-y-auto whitespace-pre-line break-words">{answer.trim()}</blockquote>
+            <blockquote className="mt-4 border-l-4 border-primary pl-3 italic text-foreground/85 max-h-48 overflow-y-auto overscroll-contain whitespace-pre-line break-words" data-lenis-prevent>{answer.trim()}</blockquote>
             <div className="mt-6 flex gap-3 justify-end">
               <button onClick={() => setConfirmAnswer(false)} disabled={submitting} className="px-4 py-2 border border-border text-xs uppercase tracking-wider">
                 {tr("goBack", "Go back")}
