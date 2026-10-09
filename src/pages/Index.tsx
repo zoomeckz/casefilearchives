@@ -15,7 +15,8 @@ import { StoriesPage } from "@/pages/StoriesPage";
 import { ReaderPage } from "@/pages/ReaderPage";
 import { ProfilePage } from "@/pages/ProfilePage";
 import { AdminPanel } from "@/pages/AdminPanel";
-import { RewardsPage } from "@/pages/RewardsPage";
+import { CommendationsPage } from "@/pages/CommendationsPage";
+import { CommendationsProvider } from "@/components/commendations/CommendationsProvider";
 import { PublicProfilePage } from "@/pages/PublicProfilePage";
 import { AboutPage } from "@/pages/AboutPage";
 import { ForumPage } from "@/pages/ForumPage";
@@ -38,7 +39,7 @@ const Index = () => {
     const path = barePath;
     if (path.startsWith("/chapters/") || path.startsWith("/stories/")) return "reader";
     if (path === "/chapters") return "chapters";
-    if (path === "/rewards") return "rewards";
+    if (path === "/commendations") return "commendations";
     if (path.startsWith("/user/")) return "public-profile";
     if (path === "/profile") return "profile";
     if (path === "/admin") return "admin";
@@ -51,7 +52,7 @@ const Index = () => {
     const go = (path: string) => navigate(withLanguagePrefix(path, lang));
     if (page === "home") go("/");
     else if (page === "chapters") go("/chapters");
-    else if (page === "rewards") go("/rewards");
+    else if (page === "commendations") go("/commendations");
     else if (page === "profile") go("/profile");
     else if (page === "admin") go("/admin");
     else if (page === "about") go("/about");
@@ -146,6 +147,7 @@ const Index = () => {
   };
 
   return (
+    <CommendationsProvider user={user}>
     <div className="min-h-screen bg-background text-foreground flex flex-col">
       <Navigation
         currentPage={currentPage}
@@ -226,8 +228,8 @@ const Index = () => {
           <AdminPanel glossary={glossary} authToken={session?.access_token} userId={session?.user?.id} onGlossaryChange={fetchGlossary} />
         )}
 
-        {false && currentPage === "rewards" && user && (
-          <RewardsPage user={user} />
+        {currentPage === "commendations" && user && (
+          <CommendationsPage user={user} refreshUser={refreshUser} />
         )}
 
         {currentPage === "public-profile" && <PublicProfilePage />}
@@ -250,6 +252,7 @@ const Index = () => {
         onSignUp={signUp}
       />
     </div>
+    </CommendationsProvider>
   );
 };
 
