@@ -516,7 +516,7 @@ export const ChapterEditor: React.FC<ChapterEditorProps> = ({ authToken, userId,
   return (
     <div className="min-h-screen">
       {/* Top bar */}
-      <div className="flex items-center justify-between mb-6">
+      <div className="flex flex-wrap items-center justify-between gap-3 mb-6">
         <a
           href="/admin"
           onClick={(e) => { e.preventDefault(); onBack(); }}
@@ -525,7 +525,7 @@ export const ChapterEditor: React.FC<ChapterEditorProps> = ({ authToken, userId,
           <Icons.ChevronLeft className="w-4 h-4" />
           Back
         </a>
-        <div className="flex items-center gap-3">
+        <div className="flex flex-wrap items-center gap-3">
           {draftStatus && (
             <span className="text-xs text-muted-foreground">{draftStatus}</span>
           )}
