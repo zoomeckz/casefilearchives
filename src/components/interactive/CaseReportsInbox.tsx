@@ -3,6 +3,7 @@ import { toast } from "sonner";
 import { collectNotebook, findNode, normalizeGraph, type Decision, type InteractiveGraph } from "@/lib/interactive";
 import { storyPath } from "@/lib/slug";
 import { CaseReport } from "@/components/interactive/CaseReport";
+import { CaseMap } from "@/components/interactive/CaseMap";
 
 // Admin → Case reports. Every written conclusion readers file at the end of an
 // interactive case lands here. The archivist can answer each one; the reader
@@ -220,6 +221,12 @@ export const CaseReportsInbox: React.FC<{ authToken?: string }> = ({ authToken }
                 <summary className="cursor-pointer text-xs text-muted-foreground select-none">
                   Their route: {r.decisions?.length || 0} decisions · {notebook.length} notebook entries
                 </summary>
+                {meta && (
+                  <div className="mt-4">
+                    <p className="case-label text-[9px] mb-2">Route map</p>
+                    <CaseMap graph={meta.graph} decisions={r.decisions || []} endingNode={r.ending_node} />
+                  </div>
+                )}
                 <div className="mt-4 grid gap-6 md:grid-cols-2">
                   <div className="min-w-0">
                     {meta ? <CaseReport graph={meta.graph} decisions={r.decisions || []} attempt={r.attempt} completedAt={r.completed_at} />
