@@ -205,7 +205,7 @@ export const Dossier: React.FC<Props> = ({ userId, editable = false, avatarActio
                       <span className="case-label text-[8px] shrink-0">{c.endings_reached}/{c.endings_total} outcomes</span>
                     </div>
                   )}
-                  {owner && c.completed_at && <ReportToggle chapterId={c.chapter_id} userId={data.user_id} />}
+                  {owner && (c.completed_at || c.endings_reached > 0) && <ReportToggle chapterId={c.chapter_id} userId={data.user_id} />}
                 </li>
               ))}
             </ul>
