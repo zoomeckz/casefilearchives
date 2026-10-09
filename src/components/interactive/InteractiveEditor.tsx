@@ -5,9 +5,12 @@ import { InteractiveReader } from "@/components/interactive/InteractiveReader";
 import { Collapse, CollapseButton, usePanelOpen } from "@/components/Collapsible";
 import {
   InteractiveGraph, StoryNode, NodeType, Condition, CondOp, Effect, DecisionOption, NotebookEntry,
-  ReplayPolicy, GuestAccess, EndingVisibility,
-  uid, validateGraph, removedNodeIds, normalizeGraph,
+  ReplayPolicy, GuestAccess, EndingVisibility, InventoryItem, ItemColor,
+  uid, validateGraph, removedNodeIds, normalizeGraph, nextNodeId, getConclusionQuestions, findItem,
+  ITEM_COLORS, ITEM_PREFIX, itemVar,
 } from "@/lib/interactive";
+import { ITEM_STYLE, itemStyle } from "@/lib/itemColors";
+import { toast } from "sonner";
 import { sampleCaseGraph } from "@/lib/interactiveSample";
 import { chainOfCustodyGraph } from "@/lib/cases/chainOfCustody";
 
@@ -53,10 +56,10 @@ const OPS: { v: CondOp; l: string }[] = [
   { v: "lte", l: "≤" },
 ];
 
-function blankNode(type: NodeType): StoryNode {
-  if (type === "decision") return { id: uid("d"), type, title: "", content: "", options: [blankOption(), blankOption()] };
-  if (type === "ending") return { id: uid("end"), type, content: "", endingTitle: "", endingText: "" };
-  return { id: uid("n"), type, title: "", content: "" };
+function blankNode(type: NodeType, id: string): StoryNode {
+  if (type === "decision") return { id, type, title: "", content: "", options: [blankOption(), blankOption()] };
+  if (type === "ending") return { id, type, content: "", endingTitle: "", endingText: "" };
+  return { id, type, title: "", content: "" };
 }
 function blankOption(): DecisionOption {
   return { id: uid("o"), label: "", next: "" };
@@ -169,6 +172,71 @@ const NodeIdField: React.FC<{ id: string; onRename: (next: string) => string | n
   );
 };
 
+/** Inventory items for the whole case. */
+const ItemsEditor: React.FC<{ items: InventoryItem[]; onChange: (i: InventoryItem[]) => void }> = ({ items, onChange }) => {
+  const set = (i: number, patch: Partial<InventoryItem>) => onChange(items.map((x, j) => (j === i ? { ...x, ...patch } : x)));
+  const add = () => {
+    const used = new Set(items.map((x) => x.id));
+    let n = items.length + 1;
+    while (used.has(`item${n}`)) n++;
+    const color = ITEM_COLORS[items.length % ITEM_COLORS.length];
+    onChange([...items, { id: `item${n}`, name: "", color }]);
+  };
+  return (
+    <div className="space-y-2">
+      {items.length === 0 && <p className="text-xs text-muted-foreground italic">No items. Choices that need an item are drawn in the item’s colour instead of red.</p>}
+      {items.map((it, i) => {
+        const st = itemStyle(it.color);
+        return (
+          <div key={i} className="flex flex-wrap gap-2 items-center">
+            <span className={`w-3 h-3 rounded-full shrink-0 ${st.dot}`} />
+            <input value={it.name} placeholder="e.g. Revolver"
+              onChange={(e) => set(i, { name: e.target.value })}
+              className={`${field} flex-1 min-w-[10rem]`} />
+            <select value={it.color} onChange={(e) => set(i, { color: e.target.value as ItemColor })} className={`${field} w-auto`}>
+              {ITEM_COLORS.map((c) => <option key={c} value={c}>{ITEM_STYLE[c].label}</option>)}
+            </select>
+            <span className="font-mono text-[10px] text-muted-foreground" title="Internal ID used by the story logic; it never changes, so renaming the item is safe">{itemVar(it.id)}</span>
+            <button type="button" onClick={() => onChange(items.filter((_, j) => j !== i))} className={smallBtn} aria-label="Remove item">✕</button>
+          </div>
+        );
+      })}
+      <button type="button" onClick={add} className="text-xs text-primary hover:underline">+ Add item</button>
+    </div>
+  );
+};
+
+/** Closing questions readers answer after the ending. */
+const QuestionsEditor: React.FC<{ questions: string[]; onChange: (q: string[]) => void }> = ({ questions, onChange }) => {
+  const move = (i: number, d: -1 | 1) => {
+    const j = i + d;
+    if (j < 0 || j >= questions.length) return;
+    const q = [...questions];
+    [q[i], q[j]] = [q[j], q[i]];
+    onChange(q);
+  };
+  return (
+    <div className="space-y-2">
+      {questions.length === 0 && <p className="text-xs text-muted-foreground italic">No closing questions. Readers just see their ending.</p>}
+      {questions.map((q, i) => (
+        <div key={i} className="flex gap-2 items-start">
+          <span className="font-display text-primary pt-2 w-5 shrink-0">{i + 1}.</span>
+          <textarea value={q} rows={1} onChange={(e) => onChange(questions.map((x, j) => (j === i ? e.target.value : x)))}
+            placeholder={i === 0 ? "e.g. Who killed Walter Ames?" : "e.g. What was the motive?"} className={`${field} flex-1`} />
+          <div className="flex gap-1 pt-1">
+            <button type="button" onClick={() => move(i, -1)} disabled={i === 0} className={smallBtn} aria-label="Move question up">↑</button>
+            <button type="button" onClick={() => move(i, 1)} disabled={i === questions.length - 1} className={smallBtn} aria-label="Move question down">↓</button>
+            <button type="button" onClick={() => onChange(questions.filter((_, j) => j !== i))} className={smallBtn} aria-label="Remove question">✕</button>
+          </div>
+        </div>
+      ))}
+      {questions.length < 8 && (
+        <button type="button" onClick={() => onChange([...questions, ""])} className="text-xs text-primary hover:underline">+ Add question</button>
+      )}
+    </div>
+  );
+};
+
 // ── Editor ──
 
 export const InteractiveEditor: React.FC<Props> = ({ graph, onChange, title, publishedGraph }) => {
@@ -265,7 +333,8 @@ export const InteractiveEditor: React.FC<Props> = ({ graph, onChange, title, pub
     let nodes = graph.nodes;
     let target = value;
     if (value.startsWith(NEW_PREFIX)) {
-      const created = blankNode(value.slice(NEW_PREFIX.length) as NodeType);
+      const t = value.slice(NEW_PREFIX.length) as NodeType;
+      const created = blankNode(t, nextNodeId(graph, t));
       nodes = [...nodes, created];
       target = created.id;
     }
@@ -273,8 +342,12 @@ export const InteractiveEditor: React.FC<Props> = ({ graph, onChange, title, pub
   };
 
   const addNode = (type: NodeType) => {
-    const n = blankNode(type);
-    const nodes = [...graph.nodes];
+    const n = blankNode(type, nextNodeId(graph, type));
+    // A scene that does not continue anywhere yet is linked to the new section,
+    // so new sections start out connected instead of "unreachable".
+    let nodes = graph.nodes.map((x) =>
+      x.id === sel?.id && (x.type || "narrative") === "narrative" && !x.next && !(x.routes || []).length ? { ...x, next: n.id } : x);
+    nodes = [...nodes];
     nodes.splice(selIndex < 0 ? nodes.length : selIndex + 1, 0, n);
     setNodes(nodes);
     setSelectedId(n.id);
@@ -282,7 +355,7 @@ export const InteractiveEditor: React.FC<Props> = ({ graph, onChange, title, pub
 
   const duplicateNode = () => {
     const copy: StoryNode = JSON.parse(JSON.stringify(sel));
-    copy.id = uid(sel.type === "decision" ? "d" : sel.type === "ending" ? "end" : "n");
+    copy.id = nextNodeId(graph, sel.type || "narrative");
     if (copy.title) copy.title = `${copy.title} (copy)`;
     copy.options = copy.options?.map((o) => ({ ...o, id: uid("o") }));
     const nodes = [...graph.nodes];
@@ -352,6 +425,35 @@ export const InteractiveEditor: React.FC<Props> = ({ graph, onChange, title, pub
   };
 
   const setSettings = (patch: Partial<InteractiveGraph["settings"]>) => onChange({ ...graph, settings: { ...graph.settings, ...patch } });
+  const questions = Array.isArray(graph.settings.conclusionQuestions) ? graph.settings.conclusionQuestions : getConclusionQuestions(graph.settings);
+  const items = graph.settings.items || [];
+
+  // Test link: a snapshot of the case as it is right now, readable by anyone with the link.
+  const [testLink, setTestLink] = useState<string | null>(null);
+  const [makingLink, setMakingLink] = useState(false);
+  const createTestLink = async () => {
+    setMakingLink(true);
+    try {
+      const token = (() => { try { return JSON.parse(localStorage.getItem("app-auth-session") || "null")?.access_token || null; } catch { return null; } })();
+      if (!token) throw new Error("Sign in again to create a test link.");
+      const id = crypto.randomUUID();
+      const url = import.meta.env.VITE_SUPABASE_URL;
+      const key = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY;
+      const body = JSON.stringify({ title: title || "Untitled case", createdAt: new Date().toISOString(), graph: graphRef.current });
+      const res = await fetch(`${url}/storage/v1/object/images/test-cases/${id}.json`, {
+        method: "POST",
+        headers: { apikey: key, Authorization: `Bearer ${token}`, "Content-Type": "application/json", "x-upsert": "false" },
+        body,
+      });
+      if (!res.ok) throw new Error((await res.text().catch(() => "")) || `Upload failed (${res.status})`);
+      const link = `${window.location.origin}/test-case/${id}`;
+      setTestLink(link);
+      try { await navigator.clipboard.writeText(link); toast.success("Test link copied. It shows the case exactly as it is now."); }
+      catch { toast.success("Test link created."); }
+    } catch (e: any) {
+      toast.error(e?.message || "Could not create the test link.");
+    } finally { setMakingLink(false); }
+  };
 
   const loadTemplate = (templateId: string) => {
     const t = TEMPLATES.find((x) => x.id === templateId);
@@ -450,10 +552,16 @@ export const InteractiveEditor: React.FC<Props> = ({ graph, onChange, title, pub
             </select>
           </div>
         </div>
-        <div className="mt-4">
-          <label className={label}>Closing question — readers type an answer after the ending (leave empty for none)</label>
-          <textarea value={graph.settings.conclusionPrompt ?? ""} onChange={(e) => setSettings({ conclusionPrompt: e.target.value })}
-            rows={2} className={field} placeholder="What do you believe really happened?" />
+        <div className="mt-5">
+          <label className={label}>Inventory items — things readers can pick up through their choices</label>
+          <ItemsEditor items={graph.settings.items || []} onChange={(items) => setSettings({ items: items.length ? items : undefined })} />
+        </div>
+        <div className="mt-5">
+          <label className={label}>Closing questions — readers answer each one in writing after the ending (none = no written conclusion)</label>
+          <QuestionsEditor
+            questions={questions}
+            onChange={(qs) => setSettings({ conclusionQuestions: qs, conclusionPrompt: qs.find((q) => q.trim()) || "" })}
+          />
         </div>
         {varNames.length > 0 && (
           <p className="mt-3 text-[11px] text-muted-foreground break-words">
@@ -488,10 +596,24 @@ export const InteractiveEditor: React.FC<Props> = ({ graph, onChange, title, pub
             )}
           </h3>
           </div>
-          <button type="button" onClick={() => setPreview({ start: graph.startNodeId, key: Date.now() })} className="px-3 py-1.5 bg-accent/20 hover:bg-accent/30 text-accent rounded text-xs">
-            Preview from opening
-          </button>
+          <div className="flex flex-wrap gap-2">
+            <button type="button" onClick={() => setPreview({ start: graph.startNodeId, key: Date.now() })} className="px-3 py-1.5 bg-accent/20 hover:bg-accent/30 text-accent rounded text-xs">
+              Preview from opening
+            </button>
+            <button type="button" onClick={createTestLink} disabled={makingLink} className="px-3 py-1.5 border border-border hover:border-primary hover:text-primary rounded text-xs disabled:opacity-50"
+              title="Creates a link testers can open without an account. It shows the case as it is right now; make a new link after changes.">
+              {makingLink ? "Creating…" : "Copy test link"}
+            </button>
+          </div>
         </div>
+        {testLink && (
+          <div className="mt-3 flex flex-wrap items-center gap-2 text-xs">
+            <span className="text-muted-foreground">Test link (snapshot of this version):</span>
+            <input readOnly value={testLink} onFocus={(e) => e.currentTarget.select()} className={`${field} !py-1 font-mono text-xs flex-1 min-w-[16rem]`} />
+            <button type="button" onClick={() => { void navigator.clipboard?.writeText(testLink); toast.success("Copied."); }} className={smallBtn}>Copy</button>
+            <a href={testLink} target="_blank" rel="noreferrer" className={smallBtn}>Open</a>
+          </div>
+        )}
         <Collapse open={checkOpen}>
         {(issues.length > 0 || removed.length > 0) && (
           <ul className="mt-3 space-y-1 text-xs max-h-48 overflow-y-auto overscroll-contain" data-lenis-prevent>
@@ -543,6 +665,8 @@ export const InteractiveEditor: React.FC<Props> = ({ graph, onChange, title, pub
                     {n.id === graph.startNodeId && <span className="ml-1 text-[9px] uppercase text-primary">opening</span>}
                     {(n.conditions?.length || 0) > 0 && <span className="ml-1 text-[9px] uppercase text-muted-foreground">conditional</span>}
                     {(n.notebook?.length || 0) > 0 && <span className="ml-1 text-[9px] uppercase text-muted-foreground">notebook</span>}
+                    {n.type === "decision" && <span className="ml-1 text-[9px] uppercase text-muted-foreground">{(n.options || []).length} choices</span>}
+                    {n.type === "decision" && (n.timeLimit || 0) > 0 && <span className="ml-1 text-[9px] uppercase text-primary">⏱ {n.timeLimit}s</span>}
                     {errs > 0 && <span className="ml-1 text-destructive">●</span>}
                     {!errs && warns > 0 && <span className="ml-1 text-accent">●</span>}
                     {(n.title || n.endingTitle) && <span className="block text-muted-foreground truncate">{n.title || n.endingTitle}</span>}
@@ -593,6 +717,168 @@ export const InteractiveEditor: React.FC<Props> = ({ graph, onChange, title, pub
               <input value={sel.label || ""} onChange={(e) => patchSel({ label: e.target.value || undefined })} placeholder="e.g. Location: Basement, 00:12" className={field} />
             </div>
           </div>
+
+          {/* Choices — first thing you see on a decision */}
+          {sel.type === "decision" && (
+            <div className="rounded-lg border border-primary/40 bg-primary/[0.03] p-4 space-y-4">
+              <div className="flex flex-wrap items-end justify-between gap-3">
+                <div>
+                  <h4 className="text-sm font-medium text-foreground">Choices</h4>
+                  <p className="text-[11px] text-muted-foreground">What the reader can pick. Each choice needs a label and a section it leads to.</p>
+                </div>
+                <div className="flex items-end gap-2">
+                  <div>
+                    <label className={label}>⏱ Timer (seconds)</label>
+                    <input type="number" min={5} max={3600} value={sel.timeLimit ?? ""} placeholder="No timer"
+                      onChange={(e) => { const v = parseInt(e.target.value, 10); patchSel({ timeLimit: Number.isFinite(v) && v > 0 ? v : undefined }); }}
+                      className={`${field} w-32`} />
+                  </div>
+                </div>
+              </div>
+              {(sel.timeLimit || 0) > 0 && (
+                <p className="text-[11px] text-primary -mt-2">Timed decision: readers get {sel.timeLimit} seconds once they reach it. When time runs out, a random available choice is filed for them.</p>
+              )}
+              <div className="space-y-3">
+                {(sel.options || []).map((o, i) => {
+                  const letter = String.fromCharCode(65 + i);
+                  const key = `${sel.id}:opt:${o.id}`;
+                  const req = findItem(graph, o.requiresItem);
+                  const st = req ? itemStyle(req.color) : null;
+                  const otherEffects = (o.effects || []).filter((e) => !e.var.startsWith(ITEM_PREFIX));
+                  const otherVisible = (o.visibleIf || []).filter((c) => !(o.requiresItem && c.var === itemVar(o.requiresItem)));
+                  const itemMode = (id: string) => {
+                    const e = (o.effects || []).find((x) => x.var === itemVar(id));
+                    return !e ? "none" : (e.value === "" || e.value === "0" || e.value === "false") ? "take" : "give";
+                  };
+                  const setItemMode = (id: string, mode: "none" | "give" | "take") => {
+                    const rest = (o.effects || []).filter((x) => x.var !== itemVar(id));
+                    const next = mode === "none" ? rest : [...rest, { var: itemVar(id), op: "set" as const, value: mode === "give" ? "1" : "0" }];
+                    patchOption(o.id, { effects: next.length ? next : undefined });
+                  };
+                  const setRequires = (id: string) => {
+                    const base = (o.visibleIf || []).filter((c) => !(o.requiresItem && c.var === itemVar(o.requiresItem)));
+                    const vis = id ? [...base, { var: itemVar(id), op: "truthy" as const }] : base;
+                    patchOption(o.id, { requiresItem: id || undefined, visibleIf: vis.length ? vis : undefined });
+                  };
+                  const advOpen = openVars[o.id] ?? !!(otherEffects.length || otherVisible.length || o.lockedIf?.length);
+                  const problems = [!o.label?.trim() && "needs a label", !o.next && "pick where it leads"].filter(Boolean) as string[];
+                  return (
+                  <div key={o.id} className={`p-4 border rounded-lg ${st ? `${st.border} ${st.bg}` : "border-border"}`}>
+                    <div className="flex items-center gap-2 min-w-0">
+                      <CollapseButton open={cardOpen(key)} onToggle={() => toggleCard(key)} label={`choice ${letter}`} />
+                      <span className={`font-display text-lg ${st ? st.text : "text-primary"}`}>{letter}.</span>
+                      {req && <span className={`text-[10px] uppercase tracking-wider px-1.5 py-0.5 border rounded ${st!.border} ${st!.text}`}>Item: {req.name}</span>}
+                      {!cardOpen(key) && <span className="text-xs text-muted-foreground truncate min-w-0">{o.label || <em>No label</em>} → <span className="font-mono">{o.next || "—"}</span></span>}
+                      {problems.length > 0 && <span className="text-[11px] text-destructive truncate">{problems.join(" · ")}</span>}
+                      <div className="ml-auto flex gap-1">
+                        <button type="button" onClick={() => moveOption(i, -1)} disabled={i === 0} className={smallBtn} aria-label="Move choice up">↑</button>
+                        <button type="button" onClick={() => moveOption(i, 1)} disabled={i === (sel.options || []).length - 1} className={smallBtn} aria-label="Move choice down">↓</button>
+                        <button type="button" onClick={() => patchSel({ options: (sel.options || []).filter((x) => x.id !== o.id) })}
+                          disabled={(sel.options || []).length <= 2} className={`${smallBtn} hover:border-destructive hover:text-destructive`}>Remove</button>
+                      </div>
+                    </div>
+                    <Collapse open={cardOpen(key)}>
+                    <div className="space-y-3 pt-3">
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                      <div>
+                        <label className={label}>Choice text</label>
+                        <input value={o.label} onChange={(e) => patchOption(o.id, { label: e.target.value })} placeholder="e.g. Follow Mara into the kitchen." className={field} />
+                      </div>
+                      <div>
+                        <label className={label}>Leads to</label>
+                        <NodeSelect value={o.next} nodes={graph.nodes} selfId={sel.id} emptyLabel="— choose —"
+                          onChange={(v) => commitLink(v, (n, id) => ({ ...n, options: (n.options || []).map((x) => (x.id === o.id ? { ...x, next: id } : x)) }))} />
+                      </div>
+                    </div>
+                    <div>
+                      <label className={label}>Description (optional)</label>
+                      <input value={o.description || ""} onChange={(e) => patchOption(o.id, { description: e.target.value || undefined })}
+                        placeholder="e.g. “She was in the house first. She knows where the key is.”" className={field} />
+                    </div>
+                    <div>
+                      <label className={label}>Consequence logged after confirming (optional)</label>
+                      <input value={o.consequence || ""} onChange={(e) => patchOption(o.id, { consequence: e.target.value || undefined })}
+                        placeholder="e.g. Mara will remember this." className={field} />
+                    </div>
+                    {items.length > 0 ? (
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                        <div>
+                          <label className={label}>Item choice — only shown to readers carrying</label>
+                          <select value={o.requiresItem || ""} onChange={(e) => setRequires(e.target.value)} className={field}>
+                            <option value="">— nobody needs an item (normal red choice) —</option>
+                            {items.map((it) => <option key={it.id} value={it.id}>{it.name || it.id} ({ITEM_STYLE[it.color]?.label || "Blue"})</option>)}
+                          </select>
+                        </div>
+                        <div>
+                          <label className={label}>Picking this choice…</label>
+                          <div className="flex flex-wrap gap-1.5">
+                            {items.map((it) => {
+                              const m = itemMode(it.id);
+                              const ist = itemStyle(it.color);
+                              const cycle = () => setItemMode(it.id, m === "none" ? "give" : m === "give" ? "take" : "none");
+                              return (
+                                <button key={it.id} type="button" onClick={cycle} title="Click to switch: no change → gives → takes away"
+                                  className={`px-2 py-1 text-xs border rounded transition-colors ${m === "none" ? "border-border text-muted-foreground" : `${ist.border} ${ist.text} ${ist.bg}`}`}>
+                                  <span className={`inline-block w-2 h-2 rounded-full mr-1.5 ${ist.dot}`} />
+                                  {m === "give" ? "Gives " : m === "take" ? "Takes away " : ""}{it.name || it.id}
+                                </button>
+                              );
+                            })}
+                          </div>
+                        </div>
+                      </div>
+                    ) : (
+                      <p className="text-[11px] text-muted-foreground">Want item choices (e.g. a gun picked up earlier)? Add inventory items under Interactive case settings.</p>
+                    )}
+                    <div className="text-sm">
+                      <button type="button" onClick={() => setOpenVars((m) => ({ ...m, [o.id]: !advOpen }))}
+                        aria-expanded={advOpen}
+                        className="flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground select-none text-left">
+                        <span className={`inline-block transition-transform duration-200 ease-out ${advOpen ? "rotate-90" : ""}`}>▸</span>
+                        Variables & conditions (advanced)
+                        {otherEffects.length > 0 && ` · sets ${otherEffects.length}`}
+                        {otherVisible.length > 0 && " · conditional"}
+                        {(o.lockedIf?.length || 0) > 0 && " · can lock"}
+                      </button>
+                      <Collapse open={advOpen}>
+                      <div className="mt-3 space-y-4 pl-3 border-l border-border">
+                        <div>
+                          <label className={label}>When chosen</label>
+                          <EffectList value={otherEffects} onChange={(e) => {
+                            const itemFx = (o.effects || []).filter((x) => x.var.startsWith(ITEM_PREFIX));
+                            const all = [...e, ...itemFx];
+                            patchOption(o.id, { effects: all.length ? all : undefined });
+                          }} />
+                        </div>
+                        <div>
+                          <label className={label}>Only show this choice if…</label>
+                          <ConditionList value={otherVisible} onChange={(c) => {
+                            const itemCond = (o.visibleIf || []).filter((x) => o.requiresItem && x.var === itemVar(o.requiresItem));
+                            const all = [...c, ...itemCond];
+                            patchOption(o.id, { visibleIf: all.length ? all : undefined });
+                          }} empty={req ? `Shown to readers carrying ${req.name || req.id}.` : "Always shown."} />
+                        </div>
+                        <div>
+                          <label className={label}>Show as unavailable (locked) if…</label>
+                          <ConditionList value={o.lockedIf} onChange={(c) => patchOption(o.id, { lockedIf: c.length ? c : undefined })} empty="Never locked." />
+                        </div>
+                      </div>
+                      </Collapse>
+                    </div>
+                    </div>
+                    </Collapse>
+                  </div>
+                  );
+                })}
+                {(sel.options || []).length < MAX_OPTIONS && (
+                  <button type="button" onClick={() => patchSel({ options: [...(sel.options || []), blankOption()] })}
+                    className="w-full py-2 border border-dashed border-border rounded-lg text-xs text-primary hover:border-primary transition-colors">
+                    + Add choice
+                  </button>
+                )}
+              </div>
+            </div>
+          )}
 
           {sel.type !== "ending" && (
             <div>
@@ -674,89 +960,6 @@ export const InteractiveEditor: React.FC<Props> = ({ graph, onChange, title, pub
                 <label className={label}>Confirmation warning (leave empty for the standard text)</label>
                 <input value={sel.warning || ""} onChange={(e) => patchSel({ warning: e.target.value || undefined })}
                   placeholder="This decision will be saved to your account and cannot be changed." className={field} />
-              </div>
-              <div>
-                <label className={label}>Time limit in seconds (optional)</label>
-                <input type="number" min={5} max={3600} value={sel.timeLimit ?? ""} placeholder="No limit"
-                  onChange={(e) => { const v = parseInt(e.target.value, 10); patchSel({ timeLimit: Number.isFinite(v) && v > 0 ? v : undefined }); }}
-                  className={`${field} w-40`} />
-                <p className="text-[11px] text-muted-foreground mt-1">The clock starts when the reader reaches this decision. When it runs out, a random available option is filed.</p>
-              </div>
-              <div className="space-y-4">
-                {(sel.options || []).map((o, i) => (
-                  <div key={o.id} className="p-4 border border-border rounded-lg">
-                    <div className="flex items-center gap-2 min-w-0">
-                      <CollapseButton open={cardOpen(`${sel.id}:opt:${o.id}`)} onToggle={() => toggleCard(`${sel.id}:opt:${o.id}`)} label={`option ${String.fromCharCode(65 + i)}`} />
-                      <span className="font-display text-primary text-lg">{String.fromCharCode(65 + i)}.</span>
-                      {cardOpen(`${sel.id}:opt:${o.id}`)
-                        ? <span className="font-mono text-[10px] text-muted-foreground">{o.id}</span>
-                        : <span className="text-xs text-muted-foreground truncate min-w-0">{o.label || <em>No label</em>} → <span className="font-mono">{o.next || "—"}</span></span>}
-                      <div className="ml-auto flex gap-1">
-                        <button type="button" onClick={() => moveOption(i, -1)} disabled={i === 0} className={smallBtn}>↑</button>
-                        <button type="button" onClick={() => moveOption(i, 1)} disabled={i === (sel.options || []).length - 1} className={smallBtn}>↓</button>
-                        <button type="button" onClick={() => patchSel({ options: (sel.options || []).filter((x) => x.id !== o.id) })}
-                          disabled={(sel.options || []).length <= 2} className={`${smallBtn} hover:border-destructive hover:text-destructive`}>Remove</button>
-                      </div>
-                    </div>
-                    <Collapse open={cardOpen(`${sel.id}:opt:${o.id}`)}>
-                    <div className="space-y-3 pt-3">
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                      <div>
-                        <label className={label}>Option label</label>
-                        <input value={o.label} onChange={(e) => patchOption(o.id, { label: e.target.value })} placeholder="Follow Mara into the kitchen." className={field} />
-                      </div>
-                      <div>
-                        <label className={label}>Leads to</label>
-                        <NodeSelect value={o.next} nodes={graph.nodes} selfId={sel.id} emptyLabel="— choose —"
-                          onChange={(v) => commitLink(v, (n, id) => ({ ...n, options: (n.options || []).map((x) => (x.id === o.id ? { ...x, next: id } : x)) }))} />
-                      </div>
-                    </div>
-                    <div>
-                      <label className={label}>Description (optional)</label>
-                      <input value={o.description || ""} onChange={(e) => patchOption(o.id, { description: e.target.value || undefined })}
-                        placeholder="“She was in the house first. She knows where the key is.”" className={field} />
-                    </div>
-                    <div>
-                      <label className={label}>Consequence logged after confirming (optional)</label>
-                      <input value={o.consequence || ""} onChange={(e) => patchOption(o.id, { consequence: e.target.value || undefined })}
-                        placeholder="Mara will remember this." className={field} />
-                    </div>
-                    <div className="text-sm">
-                      <button type="button" onClick={() => setOpenVars((m) => ({ ...m, [o.id]: !(m[o.id] ?? !!(o.effects?.length || o.visibleIf?.length || o.lockedIf?.length)) }))}
-                        aria-expanded={openVars[o.id] ?? !!(o.effects?.length || o.visibleIf?.length || o.lockedIf?.length)}
-                        className="flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground select-none text-left">
-                        <span className={`inline-block transition-transform duration-200 ease-out ${(openVars[o.id] ?? !!(o.effects?.length || o.visibleIf?.length || o.lockedIf?.length)) ? "rotate-90" : ""}`}>▸</span>
-                        Variables & conditions
-                        {(o.effects?.length || 0) > 0 && ` · sets ${o.effects!.length}`}
-                        {(o.visibleIf?.length || 0) > 0 && " · conditional"}
-                        {(o.lockedIf?.length || 0) > 0 && " · can lock"}
-                      </button>
-                      <Collapse open={openVars[o.id] ?? !!(o.effects?.length || o.visibleIf?.length || o.lockedIf?.length)}>
-                      <div className="mt-3 space-y-4 pl-3 border-l border-border">
-                        <div>
-                          <label className={label}>When chosen</label>
-                          <EffectList value={o.effects} onChange={(e) => patchOption(o.id, { effects: e.length ? e : undefined })} />
-                        </div>
-                        <div>
-                          <label className={label}>Only show this option if…</label>
-                          <ConditionList value={o.visibleIf} onChange={(c) => patchOption(o.id, { visibleIf: c.length ? c : undefined })} empty="Always shown." />
-                        </div>
-                        <div>
-                          <label className={label}>Show as unavailable (locked) if…</label>
-                          <ConditionList value={o.lockedIf} onChange={(c) => patchOption(o.id, { lockedIf: c.length ? c : undefined })} empty="Never locked." />
-                        </div>
-                      </div>
-                      </Collapse>
-                    </div>
-                    </div>
-                    </Collapse>
-                  </div>
-                ))}
-                {(sel.options || []).length < MAX_OPTIONS && (
-                  <button type="button" onClick={() => patchSel({ options: [...(sel.options || []), blankOption()] })} className="text-xs text-primary hover:underline">
-                    + Add option
-                  </button>
-                )}
               </div>
             </>
           )}
