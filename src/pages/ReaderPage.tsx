@@ -365,7 +365,7 @@ export const ReaderPage: React.FC<ReaderPageProps> = ({
               graph={normalizeGraph(chapter.interactiveGraph)}
               user={user}
               setShowAuthModal={setShowAuthModal}
-              onDiscuss={() => setCurrentPage("forum")}
+              onDiscuss={() => setCurrentPage(`forum?case=${chapter.id}`)}
             />
           ) : (
           <div
@@ -399,6 +399,13 @@ export const ReaderPage: React.FC<ReaderPageProps> = ({
         <div className="mb-8 p-4 bg-primary/5 rounded-lg border border-primary/20 text-center">
           <p className="text-primary text-sm font-medium">💬 {t("reader.discussionPrompt")}</p>
           <p className="text-foreground/80 mt-1">{randomPrompt}</p>
+          <button
+            type="button"
+            onClick={() => setCurrentPage(`forum?case=${chapter.id}`)}
+            className="mt-3 inline-flex items-center gap-1 px-3 py-1.5 border border-primary/60 text-primary text-xs uppercase tracking-wider hover:bg-primary/10 transition-colors"
+          >
+            {t("reader.discussInForum", { defaultValue: "Discuss this case in the forum" })} →
+          </button>
         </div>
 
         <CommentsSection
