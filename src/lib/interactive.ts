@@ -53,6 +53,8 @@ export type EndingVisibility = "own" | "count" | "index";
 export interface InteractiveSettings {
   replay: ReplayPolicy;
   replayWaitHours?: number;
+  /** Total playthroughs each registered reader may start. Empty = no limit; admins are exempt. */
+  maxAttempts?: number;
   guestAccess: GuestAccess;
   endingVisibility: EndingVisibility;
   /** Question readers answer in writing after the ending. Empty = no written conclusion. */
