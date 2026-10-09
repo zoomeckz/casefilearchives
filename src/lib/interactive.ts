@@ -17,7 +17,20 @@ export interface DecisionOption {
   lockedIf?: Condition[];
   effects?: Effect[];
   consequence?: string;
+  /** Inventory item this option needs. The option is only shown to readers who hold it,
+   *  and is drawn in the item's colour. (Enforced through a matching visibleIf condition.) */
+  requiresItem?: string;
 }
+
+/** Colours an item choice can be drawn in (the normal choice colour is the site red). */
+export type ItemColor = "blue" | "green" | "amber" | "violet" | "cyan" | "pink";
+export const ITEM_COLORS: ItemColor[] = ["blue", "green", "amber", "violet", "cyan", "pink"];
+
+/** Something the reader can carry (a gun, a key, a photograph…). Held = variable item_<id> is true. */
+export interface InventoryItem { id: string; name: string; color: ItemColor }
+
+export const ITEM_PREFIX = "item_";
+export const itemVar = (id: string) => `${ITEM_PREFIX}${id}`;
 
 export type NodeType = "narrative" | "decision" | "ending";
 
@@ -57,8 +70,13 @@ export interface InteractiveSettings {
   maxAttempts?: number;
   guestAccess: GuestAccess;
   endingVisibility: EndingVisibility;
-  /** Question readers answer in writing after the ending. Empty = no written conclusion. */
+  /** Question readers answer in writing after the ending. Empty = no written conclusion.
+   *  Superseded by conclusionQuestions; kept for older cases (and set to the first question). */
   conclusionPrompt?: string;
+  /** Questions readers answer in writing after the ending (e.g. "Who did it?", "Why?"). */
+  conclusionQuestions?: string[];
+  /** Items readers can pick up through their choices. */
+  items?: InventoryItem[];
 }
 
 export interface InteractiveGraph {
@@ -98,6 +116,38 @@ export const DEFAULT_SETTINGS: InteractiveSettings = {
 };
 
 export const GUEST_CHOICE_LIMIT = 2;
+
+/** The closing questions of a case (new list, or the single older prompt). */
+export function getConclusionQuestions(settings: InteractiveSettings): string[] {
+  const list = Array.isArray(settings.conclusionQuestions)
+    ? settings.conclusionQuestions
+    : [settings.conclusionPrompt ?? DEFAULT_SETTINGS.conclusionPrompt ?? ""];
+  return list.map((q) => (q || "").trim()).filter(Boolean);
+}
+
+/** One stored text for all answers (the database keeps a single conclusion per attempt). */
+export function formatConclusion(questions: string[], answers: string[]): string {
+  if (questions.length <= 1) return (answers[0] || "").trim();
+  return questions.map((q, i) => `${i + 1}. ${q}\n${(answers[i] || "").trim() || "—"}`).join("\n\n");
+}
+
+/** Items the reader currently holds, in the order they are defined. */
+export function heldItems(g: InteractiveGraph, vars: Record<string, string>): InventoryItem[] {
+  return (g.settings.items || []).filter((it) => !isFalsy(vars[itemVar(it.id)]));
+}
+
+export function findItem(g: InteractiveGraph, id: string | undefined): InventoryItem | undefined {
+  return id ? (g.settings.items || []).find((it) => it.id === id) : undefined;
+}
+
+/** Readable, unused section ID: scene_3, decision_2, ending_1… */
+export function nextNodeId(g: InteractiveGraph, type: NodeType): string {
+  const base = type === "decision" ? "decision" : type === "ending" ? "ending" : "scene";
+  const used = new Set(g.nodes.map((n) => n.id));
+  let i = g.nodes.filter((n) => (n.type || "narrative") === type).length + 1;
+  while (used.has(`${base}_${i}`)) i++;
+  return `${base}_${i}`;
+}
 
 export function uid(prefix = "n"): string {
   return `${prefix}_${Math.random().toString(36).slice(2, 8)}`;
@@ -295,9 +345,15 @@ export function validateGraph(g: InteractiveGraph): ValidationIssue[] {
         issues.push({ level: "warning", nodeId: n.id, message: "A time limit under 5 seconds leaves little time to read the options." });
       }
       opts.forEach((o, i) => {
-        if (!o.label?.trim()) issues.push({ level: "error", nodeId: n.id, message: `Option ${i + 1} has no label.` });
-        if (!o.next) issues.push({ level: "error", nodeId: n.id, message: `Option "${o.label || i + 1}" does not lead anywhere.` });
-        link(n.id, o.next, `Option "${o.label || i + 1}"`);
+        const name = `Choice ${String.fromCharCode(65 + i)}`;
+        if (!o.label?.trim()) issues.push({ level: "error", nodeId: n.id, message: `${name} has no text yet.` });
+        if (!o.next) issues.push({ level: "error", nodeId: n.id, message: `${name} does not lead anywhere yet.` });
+        link(n.id, o.next, name);
+      });
+      opts.forEach((o, i) => {
+        if (o.requiresItem && !findItem(g, o.requiresItem)) {
+          issues.push({ level: "error", nodeId: n.id, message: `Choice ${String.fromCharCode(65 + i)} needs an item that no longer exists.` });
+        }
       });
       if (opts.length > 0 && opts.every((o) => (o.visibleIf?.length || 0) > 0 || (o.lockedIf?.length || 0) > 0)) {
         issues.push({ level: "warning", nodeId: n.id, message: "Every option has conditions — some readers may have no valid option." });
@@ -335,6 +391,10 @@ export function validateGraph(g: InteractiveGraph): ValidationIssue[] {
     }
   }
   if (!g.nodes.some((n) => n.type === "ending")) issues.push({ level: "warning", message: "The case has no ending nodes." });
+  for (const it of g.settings.items || []) {
+    const given = g.nodes.some((n) => (n.options || []).some((o) => (o.effects || []).some((e) => e.var === itemVar(it.id) && !isFalsy(e.value))));
+    if (!given) issues.push({ level: "warning", message: `Item "${it.name || it.id}" is never given by any choice.` });
+  }
   return issues;
 }
 
