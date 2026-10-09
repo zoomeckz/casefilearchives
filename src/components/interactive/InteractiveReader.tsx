@@ -197,14 +197,19 @@ export const InteractiveReader: React.FC<Props> = ({ chapterId, title, graph, us
     ? Date.parse(state.completed_at) + waitHours * 3600_000
     : null;
 
+  // Optional cap on total playthroughs per account (the server enforces the same rule).
+  const maxAttempts = Number(graph.settings.maxAttempts) || 0;
+  const attemptsUsedUp = !preview && !!user && !user.isAdmin && maxAttempts > 0 && (state?.attempt ?? 1) >= maxAttempts;
+
   const canReplay = useMemo(() => {
     if (preview) return true;
+    if (attemptsUsedUp) return false;
     if (!user || !state || state.status !== "completed") return false;
     if (replayPolicy === "after_completion") return true;
     if (replayPolicy === "admin_only") return !!user.isAdmin;
     if (replayPolicy === "after_wait" && reopensAt) return reopensAt <= Date.now();
     return false;
-  }, [preview, replayPolicy, reopensAt, user, state]);
+  }, [preview, attemptsUsedUp, replayPolicy, reopensAt, user, state]);
 
   const visitedKey = state?.visited.join("|") ?? "";
   // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -464,12 +469,17 @@ export const InteractiveReader: React.FC<Props> = ({ chapterId, title, graph, us
               </button>
             )}
           </div>
-          {!canReplay && !preview && reopensAt && (
+          {attemptsUsedUp && (
+            <p className="text-xs text-muted-foreground mt-4 text-center">
+              {tr("attemptsUsed", "You have used all {{n}} attempts for this file. Your record is final.", { n: maxAttempts })}
+            </p>
+          )}
+          {!canReplay && !preview && !attemptsUsedUp && reopensAt && (
             <p className="text-xs text-muted-foreground mt-4 text-center">
               {tr("reopens", "This record is locked. The case reopens for another attempt on {{date}}.", { date: fmtDate(reopensAt) })}
             </p>
           )}
-          {!canReplay && !preview && replayPolicy === "disabled" && (
+          {!canReplay && !preview && !attemptsUsedUp && replayPolicy === "disabled" && (
             <p className="text-xs text-muted-foreground mt-4 text-center">{tr("noReplay", "This record is permanent. Replay is not permitted for this file.")}</p>
           )}
 
