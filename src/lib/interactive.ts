@@ -21,6 +21,9 @@ export interface DecisionOption {
 
 export type NodeType = "narrative" | "decision" | "ending";
 
+/** A line the reader's case notebook gains when the scene holding it is shown. */
+export interface NotebookEntry { kind: "note" | "evidence"; text: string }
+
 export interface StoryNode {
   id: string;
   type: NodeType;
@@ -31,6 +34,7 @@ export interface StoryNode {
   next?: string;
   routes?: Route[];
   conditions?: Condition[]; // narrative only: skip when unmet
+  notebook?: NotebookEntry[]; // narrative only: added to the reader's notebook when shown
   // decision
   context?: string;
   options?: DecisionOption[];
@@ -236,6 +240,22 @@ export function parseServerState(raw: any): PlayState | null {
   };
 }
 
+/** Notebook entries from every scene the reader has been shown, in order, without repeats. */
+export function collectNotebook(g: InteractiveGraph, visited: string[]): NotebookEntry[] {
+  const seen = new Set<string>();
+  const out: NotebookEntry[] = [];
+  for (const id of visited) {
+    for (const e of findNode(g, id)?.notebook || []) {
+      const text = (e.text || "").trim();
+      const kind = e.kind === "evidence" ? "evidence" : "note";
+      if (!text || seen.has(`${kind}:${text}`)) continue;
+      seen.add(`${kind}:${text}`);
+      out.push({ kind, text });
+    }
+  }
+  return out;
+}
+
 /** Plain-text opening used as the story's searchable/SEO body. */
 export function openingContent(g: InteractiveGraph): string {
   return resolve(g, g.startNodeId, {}).visited
@@ -283,6 +303,9 @@ export function validateGraph(g: InteractiveGraph): ValidationIssue[] {
       if (!n.next && !(n.routes || []).length) {
         issues.push({ level: "warning", nodeId: n.id, message: "Scene has no next node — the file ends here without an ending." });
       }
+      (n.notebook || []).forEach((e, i) => {
+        if (!e.text?.trim()) issues.push({ level: "warning", nodeId: n.id, message: `Notebook entry ${i + 1} is empty and will not be shown.` });
+      });
     }
   }
 
