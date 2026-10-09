@@ -15,6 +15,8 @@ import { ChapterPoll } from "@/components/ChapterPoll";
 import { TextHighlightBookmark } from "@/components/TextHighlightBookmark";
 import { ReaderCardsView } from "@/components/ReaderCardsView";
 import { useChapterTranslation } from "@/hooks/useChapterTranslation";
+import { InteractiveReader } from "@/components/interactive/InteractiveReader";
+import { normalizeGraph } from "@/lib/interactive";
 
 
 function estimateReadingTime(content: string): number {
@@ -218,8 +220,9 @@ export const ReaderPage: React.FC<ReaderPageProps> = ({
   const prevChapter = currentIndex > 0 ? chapters[currentIndex - 1] : null;
   const nextChapter = currentIndex < chapters.length - 1 ? chapters[currentIndex + 1] : null;
   const readTime = estimateReadingTime(chapter.content);
+  const isInteractive = chapter.storyFormat === "interactive" && !!chapter.interactiveGraph;
 
-  if (cardsMode) {
+  if (cardsMode && !isInteractive) {
     return (
       <ReaderCardsView
         chapter={chapter}
@@ -291,7 +294,7 @@ export const ReaderPage: React.FC<ReaderPageProps> = ({
               {readerWidth}px{charsPerLine > 0 && ` · ~${charsPerLine} ch/line`}
             </span>
           </label>
-          <button
+          {!isInteractive && <button
             type="button"
             onClick={() => setCardsMode(true)}
             className="inline-flex items-center gap-2 px-3 py-1.5 border border-border text-muted-foreground hover:text-primary hover:border-primary transition-colors text-xs uppercase tracking-wider"
@@ -299,7 +302,7 @@ export const ReaderPage: React.FC<ReaderPageProps> = ({
           >
             <Icons.Book className="w-3.5 h-3.5" />
             {t("reader.cardsMode")}
-          </button>
+          </button>}
         </div>
 
         <header className="mb-12 border-l-4 border-primary pl-6 text-left">
@@ -354,10 +357,21 @@ export const ReaderPage: React.FC<ReaderPageProps> = ({
         <article
           className="mb-12 border-y border-border py-8 sm:py-12"
         >
+          {isInteractive ? (
+            <InteractiveReader
+              chapterId={chapter.id}
+              title={chapter.title}
+              graph={normalizeGraph(chapter.interactiveGraph)}
+              user={user}
+              setShowAuthModal={setShowAuthModal}
+              onDiscuss={() => setCurrentPage("forum")}
+            />
+          ) : (
           <div
             className="prose-story chapter-content"
             dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(chapter.content) }}
           />
+          )}
         </article>
 
         <div className="my-8 flex justify-center">
