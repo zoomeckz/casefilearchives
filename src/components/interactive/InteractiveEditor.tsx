@@ -3,6 +3,7 @@ import { RichTextEditor } from "@/components/RichTextEditor";
 import { ImageUploadField } from "@/components/ImageUploadField";
 import { InteractiveReader } from "@/components/interactive/InteractiveReader";
 import { Collapse, CollapseButton, usePanelOpen } from "@/components/Collapsible";
+import { CaseMap } from "@/components/interactive/CaseMap";
 import {
   InteractiveGraph, StoryNode, NodeType, Condition, CondOp, Effect, DecisionOption, NotebookEntry,
   ReplayPolicy, GuestAccess, EndingVisibility, InventoryItem, ItemColor,
@@ -249,6 +250,7 @@ export const InteractiveEditor: React.FC<Props> = ({ graph, onChange, title, pub
   const [structureOpen, toggleStructure] = usePanelOpen("ic-editor:structure-open");
   const [checkOpen, toggleCheck] = usePanelOpen("ic-editor:check-open");
   const [sectionOpen, toggleSection] = usePanelOpen("ic-editor:section-open");
+  const [mapOpen, toggleMap] = usePanelOpen("ic-editor:map-open", false);
   // Option / route cards collapsed in this session, keyed per section.
   const [collapsedCards, setCollapsedCards] = useState<Set<string>>(() => new Set());
   const cardOpen = (key: string) => !collapsedCards.has(key);
@@ -684,6 +686,21 @@ export const InteractiveEditor: React.FC<Props> = ({ graph, onChange, title, pub
           </ul>
         )}
         {errors.length > 0 && <p className="text-[11px] text-muted-foreground mt-2">Errors must be fixed before the case can be published.</p>}
+        </Collapse>
+      </div>
+
+      {/* Story map */}
+      <div className={panel}>
+        <div className="flex items-center gap-2">
+          <CollapseButton open={mapOpen} onToggle={toggleMap} label="story map" />
+          <button type="button" onClick={toggleMap} className="text-sm font-medium text-foreground text-left">Story map</button>
+          {!mapOpen && <span className="text-xs text-muted-foreground">· every decision and ending as a flowchart</span>}
+        </div>
+        <Collapse open={mapOpen}>
+          <div className="pt-3">
+            {mapOpen && <CaseMap graph={graph} selected={sel?.id} onSelect={(id) => goToIssue({ nodeId: id })} />}
+            <p className="text-[11px] text-muted-foreground mt-2">Click a decision or ending to open it below. Scenes are folded into the arrows between decisions.</p>
+          </div>
         </Collapse>
       </div>
 
