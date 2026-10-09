@@ -12,6 +12,8 @@ export interface Chapter {
   coverImageUrl: string | null;
   isArchived: boolean;
   tags: string[];
+  storyFormat: 'linear' | 'interactive';
+  interactiveGraph: any | null;
 }
 
 function mapChapter(c: any): Chapter {
@@ -26,6 +28,8 @@ function mapChapter(c: any): Chapter {
     coverImageUrl: c.cover_image_url || null,
     isArchived: c.is_archived === true,
     tags: Array.isArray(c.tags) ? c.tags : [],
+    storyFormat: c.story_format === 'interactive' ? 'interactive' : 'linear',
+    interactiveGraph: c.interactive_graph ?? null,
   };
 }
 
