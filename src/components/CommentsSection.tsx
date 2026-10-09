@@ -4,6 +4,8 @@ import { useComments } from "@/hooks/useComments";
 import { AuthUser } from "@/hooks/useAuth";
 import { FormatToolbar } from "@/components/FormatToolbar";
 import { renderFormatted } from "@/pages/ForumPage";
+import { ReaderTitle } from "@/components/commendations/ReaderTitle";
+import { notifyActivity } from "@/lib/commendations";
 
 interface CommentsSectionProps {
   chapterId: string;
@@ -35,6 +37,7 @@ export const CommentsSection: React.FC<CommentsSectionProps> = ({
     if (newComment.trim() && !submitting) {
       setSubmitting(true);
       await addComment(newComment, user);
+      notifyActivity();
       setNewComment("");
       setSubmitting(false);
     }
@@ -93,6 +96,7 @@ export const CommentsSection: React.FC<CommentsSectionProps> = ({
                     {comment.author?.charAt(0).toUpperCase()}
                   </div>
                   <span className="text-primary cursor-pointer hover:underline" onClick={() => navigate(`/user/${comment.authorId}`)}>{comment.author}</span>
+                  <ReaderTitle userId={comment.authorId} />
                   <span className="text-muted-foreground text-sm">
                     {new Date(comment.createdAt).toLocaleDateString()}
                   </span>
