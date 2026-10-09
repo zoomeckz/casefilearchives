@@ -7,6 +7,8 @@ import { dbFetch } from "@/lib/dbFetch";
 import { FormatToolbar } from "@/components/FormatToolbar";
 import { normalizePlainTextFormatting, renderFormattedContent } from "@/lib/contentFormatting";
 import i18n from "i18next";
+import { ReaderTitle } from "@/components/commendations/ReaderTitle";
+import { notifyActivity } from "@/lib/commendations";
 const tr = (k: string) => i18n.t(`ui.${k}`);
 
 
@@ -147,6 +149,7 @@ export const ForumPage: React.FC<ForumPageProps> = ({ user, authToken, stories, 
     });
     setBusy(false);
     if (error || !data?.[0]) return alert("Could not open the thread. Please try again.");
+    notifyActivity();
     setTitle(""); setBody(""); setComposing(false);
     await loadThreads();
     navigate(threadUrl(data[0]));
@@ -275,7 +278,7 @@ export const ForumPage: React.FC<ForumPageProps> = ({ user, authToken, stories, 
                   </div>
                   <h2 className="font-display text-3xl text-foreground mb-2">{active.title}</h2>
                   <p className="case-label text-[9px] mb-5">
-                    Filed by <button className="text-primary" onClick={() => navigate(`/user/${active.userId}`)}>{name(active.userId)}</button> · {fmt(active.createdAt)}
+                    Filed by <button className="text-primary" onClick={() => navigate(`/user/${active.userId}`)}>{name(active.userId)}</button> <ReaderTitle userId={active.userId} /> · {fmt(active.createdAt)}
                   </p>
                   <div className="text-foreground/85 leading-relaxed break-words" dangerouslySetInnerHTML={{ __html: renderFormatted(active.content) }} />
                   {canModerate(active.userId) && (
@@ -291,7 +294,7 @@ export const ForumPage: React.FC<ForumPageProps> = ({ user, authToken, stories, 
                   {replies.map((r) => (
                     <div key={r.id} className="border-l-2 border-border pl-4 py-2">
                       <p className="case-label text-[9px] mb-2">
-                        <button className="text-primary" onClick={() => navigate(`/user/${r.userId}`)}>{name(r.userId)}</button> · {fmt(r.createdAt)}
+                        <button className="text-primary" onClick={() => navigate(`/user/${r.userId}`)}>{name(r.userId)}</button> <ReaderTitle userId={r.userId} /> · {fmt(r.createdAt)}
                       </p>
                       <div className="text-foreground/80 break-words" dangerouslySetInnerHTML={{ __html: renderFormatted(r.content) }} />
                       {canModerate(r.userId) && (
