@@ -9,9 +9,11 @@ interface TagPickerProps {
   selected: string[];
   onChange: (tags: string[]) => void;
   authToken?: string;
+  /** Hide the built-in "Tags" heading (when the surrounding box already shows one). */
+  hideLabel?: boolean;
 }
 
-export const TagPicker: React.FC<TagPickerProps> = ({ selected, onChange, authToken }) => {
+export const TagPicker: React.FC<TagPickerProps> = ({ selected, onChange, authToken, hideLabel }) => {
   const [tags, setTags] = useState<StoryTag[]>([]);
   const [newTag, setNewTag] = useState('');
   const [manage, setManage] = useState(false);
@@ -58,8 +60,8 @@ export const TagPicker: React.FC<TagPickerProps> = ({ selected, onChange, authTo
 
   return (
     <div>
-      <div className="flex items-center justify-between mb-2">
-        <label className="text-sm text-muted-foreground">Tags</label>
+      <div className={`flex items-center mb-2 ${hideLabel ? 'justify-end' : 'justify-between'}`}>
+        {!hideLabel && <label className="text-sm text-muted-foreground">Tags</label>}
         <button type="button" onClick={() => setManage((m) => !m)} className="text-xs text-muted-foreground hover:text-foreground">
           {manage ? 'Done' : 'Manage tags'}
         </button>
