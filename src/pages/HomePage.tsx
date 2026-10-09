@@ -30,7 +30,7 @@ export const HomePage: React.FC<HomePageProps> = ({
           </p>
           <div className="mt-10 flex flex-wrap items-center gap-5">
             <Button
-              onClick={() => chapters[0] ? setSelectedChapter(chapters[0]) : setCurrentPage("chapters")}
+              onClick={() => setCurrentPage("chapters")}
               size="lg"
               className="rounded-none uppercase tracking-widest"
             >
