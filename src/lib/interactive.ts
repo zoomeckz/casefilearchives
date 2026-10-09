@@ -51,6 +51,8 @@ export interface InteractiveSettings {
   replayWaitHours?: number;
   guestAccess: GuestAccess;
   endingVisibility: EndingVisibility;
+  /** Question readers answer in writing after the ending. Empty = no written conclusion. */
+  conclusionPrompt?: string;
 }
 
 export interface InteractiveGraph {
@@ -71,14 +73,19 @@ export interface PlayState {
   attempt?: number;
   /** When the current decision was reached (ISO); starts the clock on timed decisions. */
   reached_at?: string | null;
+  /** The reader's written conclusion for this attempt. */
+  final_answer?: string | null;
+  answered_at?: string | null;
   decisions: Decision[];
 }
 
 export const DEFAULT_SETTINGS: InteractiveSettings = {
-  replay: "disabled",
-  replayWaitHours: 24,
+  // A closed case reopens for a new attempt one week after completion.
+  replay: "after_wait",
+  replayWaitHours: 168,
   guestAccess: "two_choices",
   endingVisibility: "own",
+  conclusionPrompt: "File your conclusion: what do you believe really happened?",
 };
 
 export const GUEST_CHOICE_LIMIT = 2;
@@ -223,6 +230,8 @@ export function parseServerState(raw: any): PlayState | null {
     completed_at: p.completed_at,
     attempt: p.attempt,
     reached_at: p.updated_at ?? null,
+    final_answer: p.final_answer ?? null,
+    answered_at: p.answered_at ?? null,
     decisions: Array.isArray(raw.decisions) ? raw.decisions : [],
   };
 }
