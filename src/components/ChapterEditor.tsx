@@ -8,6 +8,7 @@ import { swedishToUTC, utcToSwedishDateTimeLocal } from '@/lib/timezone';
 import { normalizeRichTextHtml } from '@/lib/contentFormatting';
 import { toast } from 'sonner';
 import { TagPicker } from '@/components/TagPicker';
+import { CollapsiblePanel, usePanelOpen, useCollapsedSettled } from '@/components/Collapsible';
 import { FlagIcon } from '@/components/FlagIcon';
 import { SUPPORTED_LANGUAGES, LANGUAGE_LABELS, DEFAULT_LANGUAGE, type SupportedLanguage } from '@/i18n';
 import { InteractiveEditor } from '@/components/interactive/InteractiveEditor';
@@ -179,6 +180,12 @@ export const ChapterEditor: React.FC<ChapterEditorProps> = ({ authToken, userId,
   const [content, setContent] = useState('');
   const [chapterNumber, setChapterNumber] = useState(1);
   const [scheduledAt, setScheduledAt] = useState<string>('');
+  const [tagsOpen, toggleTags] = usePanelOpen('chapter-editor:tags-open');
+  const [formatOpen, toggleFormat] = usePanelOpen('chapter-editor:format-open');
+  const [coverOpen, toggleCover] = usePanelOpen('chapter-editor:cover-open');
+  const tagsCompact = useCollapsedSettled(tagsOpen);
+  const formatCompact = useCollapsedSettled(formatOpen);
+  const coverCompact = useCollapsedSettled(coverOpen);
   const [coverImageUrl, setCoverImageUrl] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
   const [publishing, setPublishing] = useState(false);
@@ -513,6 +520,10 @@ export const ChapterEditor: React.FC<ChapterEditorProps> = ({ authToken, userId,
     return <p className="text-muted-foreground p-8">Loading {isLegacy ? 'chapter' : 'story'}...</p>;
   }
 
+  const wordCount = content.replace(/<[^>]*>/g, '').trim().split(/\s+/).filter(Boolean).length;
+  // An open box takes the full row; a collapsed one shrinks so neighbours can share the row.
+  const boxWidth = (compact: boolean) => (compact ? 'flex-1 basis-64 min-w-0' : 'basis-full min-w-0');
+
   return (
     <div className="min-h-screen">
       {/* Top bar */}
@@ -714,50 +725,71 @@ export const ChapterEditor: React.FC<ChapterEditorProps> = ({ authToken, userId,
         </div>
       </div>
 
-      {!isLegacy && (
-        <div className="mb-6 p-4 rounded-lg border border-border/60 bg-card/30">
-          <TagPicker selected={tags} onChange={setTags} authToken={authToken} />
-        </div>
-      )}
+      {/* Metadata boxes. Collapsed boxes shrink to their header and sit side by
+          side (e.g. Tags and Story format share a row when both are collapsed). */}
+      <div className="mb-6 flex flex-wrap gap-x-4 gap-y-6">
+        {!isLegacy && (
+          <CollapsiblePanel
+            title="Tags"
+            summary={tags.length ? tags.join(', ') : 'none'}
+            open={tagsOpen}
+            onToggle={toggleTags}
+            className={boxWidth(tagsCompact)}
+          >
+            <TagPicker selected={tags} onChange={setTags} authToken={authToken} hideLabel />
+          </CollapsiblePanel>
+        )}
 
-      {/* Story format: linear Case File or branching Interactive Case File. */}
-      {!isLegacy && (
-        <div className="mb-6 p-4 rounded-lg border border-border/60 bg-card/30">
-          <span className="block text-sm text-muted-foreground mb-2">Story format</span>
-          <div className="flex flex-wrap gap-2">
-            {([
-              ['linear', 'Linear Case File'],
-              ['interactive', 'Interactive Case File'],
-            ] as const).map(([f, label]) => (
-              <button
-                key={f}
-                type="button"
-                onClick={() => changeStoryFormat(f)}
-                className={`px-3 py-1.5 border text-sm transition-colors ${
-                  storyFormat === f ? 'border-primary text-primary bg-primary/10' : 'border-border text-muted-foreground hover:text-foreground hover:border-foreground/40'
-                }`}
-              >
-                {label}
-              </button>
-            ))}
-          </div>
-          <p className="text-xs text-muted-foreground mt-2">
-            {isInteractive
-              ? 'Readers make decisions that change the scenes, options and ending they receive. Registered readers’ choices are locked to their account.'
-              : 'A normal story with no reader decisions.'}
-          </p>
-        </div>
-      )}
+        {/* Story format: linear Case File or branching Interactive Case File. */}
+        {!isLegacy && (
+          <CollapsiblePanel
+            title="Story format"
+            summary={isInteractive ? 'Interactive Case File' : 'Linear Case File'}
+            open={formatOpen}
+            onToggle={toggleFormat}
+            className={boxWidth(formatCompact)}
+          >
+            <div className="flex flex-wrap gap-2">
+              {([
+                ['linear', 'Linear Case File'],
+                ['interactive', 'Interactive Case File'],
+              ] as const).map(([f, label]) => (
+                <button
+                  key={f}
+                  type="button"
+                  onClick={() => changeStoryFormat(f)}
+                  className={`px-3 py-1.5 border text-sm transition-colors ${
+                    storyFormat === f ? 'border-primary text-primary bg-primary/10' : 'border-border text-muted-foreground hover:text-foreground hover:border-foreground/40'
+                  }`}
+                >
+                  {label}
+                </button>
+              ))}
+            </div>
+            <p className="text-xs text-muted-foreground mt-2">
+              {isInteractive
+                ? 'Readers make decisions that change the scenes, options and ending they receive. Registered readers’ choices are locked to their account.'
+                : 'A normal story with no reader decisions.'}
+            </p>
+          </CollapsiblePanel>
+        )}
 
-      {/* Cover image (optional) */}
-      <div className="mb-6 p-4 rounded-lg border border-border/60 bg-card/30">
-        <ImageUploadField
-          kind="cover"
-          pathPrefix="chapters/cover"
-          label="Cover image (optional · 4:5 portrait, ~800×1000)"
-          value={coverImageUrl}
-          onChange={setCoverImageUrl}
-        />
+        {/* Cover image (optional) */}
+        <CollapsiblePanel
+          title="Cover image"
+          summary={coverImageUrl ? 'set' : 'none'}
+          open={coverOpen}
+          onToggle={toggleCover}
+          className={boxWidth(coverCompact)}
+        >
+          <ImageUploadField
+            kind="cover"
+            pathPrefix="chapters/cover"
+            label="Optional · 4:5 portrait, ~800×1000"
+            value={coverImageUrl}
+            onChange={setCoverImageUrl}
+          />
+        </CollapsiblePanel>
       </div>
 
       {/* Glossary tooling belongs only to the connected legacy story. */}
@@ -803,20 +835,22 @@ export const ChapterEditor: React.FC<ChapterEditorProps> = ({ authToken, userId,
         <InteractiveEditor graph={graph} onChange={setGraph} title={title} publishedGraph={publishedFormat === 'interactive' ? publishedGraph : null} />
       ) : (
         <>
-          <RichTextEditor
-            key={editLang}
-            content={content}
-            onChange={setContent}
-            glossaryTerms={isLegacy ? Object.keys(glossary) : []}
-            onMarkGlossary={isLegacy ? handleMarkGlossary : undefined}
-            searchHighlight={searchHighlight || undefined}
-            searchSentence={searchSentence || undefined}
-          />
+          <CollapsiblePanel title="Story text" summary={`${wordCount} words`} storageKey="chapter-editor:text-open">
+            <RichTextEditor
+              key={editLang}
+              content={content}
+              onChange={setContent}
+              glossaryTerms={isLegacy ? Object.keys(glossary) : []}
+              onMarkGlossary={isLegacy ? handleMarkGlossary : undefined}
+              searchHighlight={searchHighlight || undefined}
+              searchSentence={searchSentence || undefined}
+            />
 
-          {/* Word count */}
-          <div className="mt-3 text-xs text-muted-foreground">
-            {content.replace(/<[^>]*>/g, '').trim().split(/\s+/).filter(Boolean).length} words
-          </div>
+            {/* Word count */}
+            <div className="mt-3 text-xs text-muted-foreground">
+              {wordCount} words
+            </div>
+          </CollapsiblePanel>
         </>
       )}
 
