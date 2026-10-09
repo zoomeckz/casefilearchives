@@ -3,11 +3,18 @@ import { RichTextEditor } from "@/components/RichTextEditor";
 import { ImageUploadField } from "@/components/ImageUploadField";
 import { InteractiveReader } from "@/components/interactive/InteractiveReader";
 import {
-  InteractiveGraph, StoryNode, NodeType, Condition, CondOp, Effect, DecisionOption,
+  InteractiveGraph, StoryNode, NodeType, Condition, CondOp, Effect, DecisionOption, NotebookEntry,
   ReplayPolicy, GuestAccess, EndingVisibility,
   uid, validateGraph, removedNodeIds, normalizeGraph,
 } from "@/lib/interactive";
 import { sampleCaseGraph } from "@/lib/interactiveSample";
+import { chainOfCustodyGraph } from "@/lib/cases/chainOfCustody";
+
+/** Ready-made cases the editor can load as a starting point. */
+const TEMPLATES: { id: string; label: string; make: () => InteractiveGraph }[] = [
+  { id: "example", label: "Example case (short demo)", make: sampleCaseGraph },
+  { id: "chain-of-custody", label: "Chain of Custody: intro", make: chainOfCustodyGraph },
+];
 
 // Admin-only (English) editor for Interactive Case Files. Edits the graph that
 // the database functions ic_start / ic_choose enforce for registered readers.
@@ -98,6 +105,32 @@ const EffectList: React.FC<{ value?: Effect[]; onChange: (e: Effect[]) => void }
         </div>
       ))}
       <button type="button" onClick={() => onChange([...list, { var: "", op: "set", value: "true" }])} className="text-xs text-primary hover:underline">+ Set a variable</button>
+    </div>
+  );
+};
+
+const NotebookList: React.FC<{ value?: NotebookEntry[]; onChange: (e: NotebookEntry[]) => void }> = ({ value, onChange }) => {
+  const list = value || [];
+  const set = (i: number, patch: Partial<NotebookEntry>) => onChange(list.map((e, j) => (j === i ? { ...e, ...patch } : e)));
+  return (
+    <div className="space-y-2">
+      {list.length === 0 && <p className="text-xs text-muted-foreground italic">This scene adds nothing to the notebook.</p>}
+      {list.map((e, i) => (
+        <div key={i} className="flex flex-wrap gap-2 items-start">
+          <select value={e.kind} onChange={(ev) => set(i, { kind: ev.target.value as NotebookEntry["kind"] })} className={`${field} w-auto`}>
+            <option value="note">Note</option>
+            <option value="evidence">Evidence</option>
+          </select>
+          <textarea value={e.text} onChange={(ev) => set(i, { text: ev.target.value })} rows={2}
+            placeholder={e.kind === "evidence" ? "Napkin from Ames’s desk: “14 — L”" : "Reyes corrected the log before anyone asked."}
+            className={`${field} flex-1 min-w-[12rem]`} />
+          <button type="button" onClick={() => onChange(list.filter((_, j) => j !== i))} className={smallBtn} aria-label="Remove notebook entry">✕</button>
+        </div>
+      ))}
+      <div className="flex gap-3">
+        <button type="button" onClick={() => onChange([...list, { kind: "note", text: "" }])} className="text-xs text-primary hover:underline">+ Add note</button>
+        <button type="button" onClick={() => onChange([...list, { kind: "evidence", text: "" }])} className="text-xs text-primary hover:underline">+ Add evidence</button>
+      </div>
     </div>
   );
 };
@@ -289,10 +322,12 @@ export const InteractiveEditor: React.FC<Props> = ({ graph, onChange, title, pub
 
   const setSettings = (patch: Partial<InteractiveGraph["settings"]>) => onChange({ ...graph, settings: { ...graph.settings, ...patch } });
 
-  const loadSample = () => {
+  const loadTemplate = (templateId: string) => {
+    const t = TEMPLATES.find((x) => x.id === templateId);
+    if (!t) return;
     const hasWork = graph.nodes.length > 1 || graph.nodes.some((n) => n.content.replace(/<[^>]*>/g, "").trim());
-    if (hasWork && !window.confirm("Replace the current case structure with the example case?")) return;
-    const g = sampleCaseGraph();
+    if (hasWork && !window.confirm(`Replace the current case structure with “${t.label}”?`)) return;
+    const g = t.make();
     onChange(g);
     setSelectedId(g.startNodeId);
   };
@@ -325,7 +360,10 @@ export const InteractiveEditor: React.FC<Props> = ({ graph, onChange, title, pub
         <div className="flex flex-wrap items-center justify-between gap-2 mb-3">
           <h3 className="text-sm font-medium text-foreground">Interactive case settings</h3>
           <div className="flex flex-wrap gap-2">
-            <button type="button" onClick={loadSample} className={smallBtn}>Load example case</button>
+            <select value="" onChange={(e) => loadTemplate(e.target.value)} className={`${smallBtn} bg-transparent [color-scheme:dark]`} aria-label="Load a template">
+              <option value="">Load a template…</option>
+              {TEMPLATES.map((t) => <option key={t.id} value={t.id}>{t.label}</option>)}
+            </select>
             <button type="button" onClick={() => { setJsonDraft(JSON.stringify(graph, null, 2)); setJsonError(null); setShowJson((v) => !v); }} className={smallBtn}>
               {showJson ? "Close JSON" : "Import / export JSON"}
             </button>
@@ -370,6 +408,11 @@ export const InteractiveEditor: React.FC<Props> = ({ graph, onChange, title, pub
           <textarea value={graph.settings.conclusionPrompt ?? ""} onChange={(e) => setSettings({ conclusionPrompt: e.target.value })}
             rows={2} className={field} placeholder="What do you believe really happened?" />
         </div>
+        {varNames.length > 0 && (
+          <p className="mt-3 text-[11px] text-muted-foreground break-words">
+            Variables in this case: <span className="font-mono">{varNames.join(", ")}</span>
+          </p>
+        )}
         {showJson && (
           <div className="mt-4">
             <p className="text-xs text-muted-foreground mb-2">Copy this to back up the case, or paste a saved case and apply it.</p>
@@ -438,6 +481,7 @@ export const InteractiveEditor: React.FC<Props> = ({ graph, onChange, title, pub
                     <span className="font-mono text-foreground">{n.id}</span>
                     {n.id === graph.startNodeId && <span className="ml-1 text-[9px] uppercase text-primary">opening</span>}
                     {(n.conditions?.length || 0) > 0 && <span className="ml-1 text-[9px] uppercase text-muted-foreground">conditional</span>}
+                    {(n.notebook?.length || 0) > 0 && <span className="ml-1 text-[9px] uppercase text-muted-foreground">notebook</span>}
                     {errs > 0 && <span className="ml-1 text-destructive">●</span>}
                     {!errs && warns > 0 && <span className="ml-1 text-accent">●</span>}
                     {(n.title || n.endingTitle) && <span className="block text-muted-foreground truncate">{n.title || n.endingTitle}</span>}
@@ -505,6 +549,10 @@ export const InteractiveEditor: React.FC<Props> = ({ graph, onChange, title, pub
           {/* Scene */}
           {(sel.type || "narrative") === "narrative" && (
             <>
+              <div>
+                <label className={label}>Notebook — added to the reader’s notes and evidence when this scene is shown</label>
+                <NotebookList value={sel.notebook} onChange={(e) => patchSel({ notebook: e.length ? e : undefined })} />
+              </div>
               <div>
                 <label className={label}>Show this scene only if… (otherwise it is skipped)</label>
                 <ConditionList value={sel.conditions} onChange={(c) => patchSel({ conditions: c.length ? c : undefined })} empty="Always shown." />
