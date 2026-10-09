@@ -409,7 +409,7 @@ export const ChapterEditor: React.FC<ChapterEditorProps> = ({ authToken, userId,
     if (isInteractive) {
       const errors = validateGraph(graph).filter((i) => i.level === 'error');
       if (errors.length) {
-        toast.error(`Fix ${errors.length} structure error${errors.length === 1 ? '' : 's'} before publishing: ${errors[0].nodeId ? `${errors[0].nodeId}: ` : ''}${errors[0].message}`);
+        toast.error(`Fix ${errors.length} structure error${errors.length === 1 ? '' : 's'} before publishing: ${errors[0].nodeId ? `${errors[0].nodeId}` : ''}${errors[0].where ? ` › ${errors[0].where}` : ''}${errors[0].nodeId || errors[0].where ? ': ' : ''}${errors[0].message}`);
         return;
       }
       const removed = removedNodeIds(publishedGraph, graph);
