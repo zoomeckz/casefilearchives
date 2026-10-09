@@ -4,7 +4,7 @@ import DOMPurify from "dompurify";
 import type { AuthUser } from "@/hooks/useAuth";
 import {
   InteractiveGraph, PlayState, StoryNode, DecisionOption, GUEST_CHOICE_LIMIT, DEFAULT_SETTINGS,
-  findNode, isOptionLocked, isOptionVisible, startLocal, chooseLocal, parseServerState,
+  findNode, isOptionLocked, isOptionVisible, startLocal, chooseLocal, parseServerState, collectNotebook,
 } from "@/lib/interactive";
 import { notifyActivity } from "@/lib/commendations";
 import { CaseReport, CaseReports } from "@/components/interactive/CaseReport";
@@ -206,6 +206,12 @@ export const InteractiveReader: React.FC<Props> = ({ chapterId, title, graph, us
     return false;
   }, [preview, replayPolicy, reopensAt, user, state]);
 
+  const visitedKey = state?.visited.join("|") ?? "";
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  const notebook = useMemo(() => collectNotebook(graph, state?.visited ?? []), [graphKey, visitedKey]);
+  const notebookEvidence = notebook.filter((e) => e.kind === "evidence");
+  const notebookNotes = notebook.filter((e) => e.kind === "note");
+
   if (loading) return <p className="text-muted-foreground text-sm py-8">{tr("loading", "Retrieving file…")}</p>;
   if (!state) {
     return (
@@ -263,6 +269,42 @@ export const InteractiveReader: React.FC<Props> = ({ chapterId, title, graph, us
           <span className="case-label text-[9px] not-italic mr-2">{tr("consequence", "Consequence logged")}</span>
           {lastConsequence}
         </div>
+      )}
+
+      {notebook.length > 0 && (
+        <details className="mb-8 border border-border bg-card/40 group">
+          <summary className="cursor-pointer select-none px-4 py-3 flex flex-wrap items-center justify-between gap-2">
+            <span className="case-label text-[10px] text-primary">{tr("notebook", "Case notebook")}</span>
+            <span className="case-label text-[9px]">
+              {tr("notebookCount", "{{notes}} notes · {{evidence}} evidence", { notes: notebookNotes.length, evidence: notebookEvidence.length })}
+            </span>
+          </summary>
+          <div className="px-4 pb-4 space-y-5">
+            {notebookEvidence.length > 0 && (
+              <div>
+                <p className="text-[10px] uppercase tracking-wider text-muted-foreground mb-2">{tr("notebookEvidence", "Evidence")}</p>
+                <ol className="space-y-2">
+                  {notebookEvidence.map((e, i) => (
+                    <li key={i} className="border border-border border-l-4 border-l-primary px-3 py-2 text-sm text-foreground">
+                      <span className="case-label text-[9px] block">{tr("notebookItem", "Item")} {String(i + 1).padStart(2, "0")}</span>
+                      {e.text}
+                    </li>
+                  ))}
+                </ol>
+              </div>
+            )}
+            {notebookNotes.length > 0 && (
+              <div>
+                <p className="text-[10px] uppercase tracking-wider text-muted-foreground mb-2">{tr("notebookNotes", "Notes")}</p>
+                <ul className="space-y-2">
+                  {notebookNotes.map((e, i) => (
+                    <li key={i} className="border-l border-border pl-3 text-sm text-foreground/90">{e.text}</li>
+                  ))}
+                </ul>
+              </div>
+            )}
+          </div>
+        </details>
       )}
 
       {strandedByEdit && (
