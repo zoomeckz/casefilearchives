@@ -82,6 +82,9 @@ export interface PlayState {
   /** The reader's written conclusion for this attempt. */
   final_answer?: string | null;
   answered_at?: string | null;
+  /** The archivist's response to the written conclusion (admin panel → Case reports). */
+  admin_feedback?: string | null;
+  feedback_at?: string | null;
   decisions: Decision[];
 }
 
@@ -238,6 +241,8 @@ export function parseServerState(raw: any): PlayState | null {
     reached_at: p.updated_at ?? null,
     final_answer: p.final_answer ?? null,
     answered_at: p.answered_at ?? null,
+    admin_feedback: p.admin_feedback ?? null,
+    feedback_at: p.feedback_at ?? null,
     decisions: Array.isArray(raw.decisions) ? raw.decisions : [],
   };
 }
