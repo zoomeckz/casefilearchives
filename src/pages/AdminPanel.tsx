@@ -17,8 +17,9 @@ import { Input } from "@/components/ui/input";
 import {
   Menu, X, Search, ArrowUpDown, Globe, CheckCircle2, AlertCircle, Loader2, ExternalLink, History,
   ChevronLeft, ChevronRight, ChevronDown, MoreHorizontal, Edit3, Trash2, Eye, Download, FileText,
-  Calendar, AlertTriangle, BookOpen, Sparkles, BarChart3, PanelLeftClose, PanelLeftOpen,
+  Calendar, AlertTriangle, BookOpen, Sparkles, BarChart3, PanelLeftClose, PanelLeftOpen, GitBranch,
 } from "lucide-react";
+import { CaseAnalytics } from "@/components/interactive/CaseAnalytics";
 import {
   DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel,
   DropdownMenuSeparator, DropdownMenuTrigger,
@@ -513,6 +514,7 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ glossary, authToken, use
       items: [
         { id: "dashboard", label: "Dashboard", icon: Icons.Dashboard },
         { id: "analytics", label: "Analytics", icon: BarChart3 },
+        { id: "case-analytics", label: "Case analytics", icon: GitBranch },
       ],
     },
     {
@@ -1116,6 +1118,10 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ glossary, authToken, use
 
             {activeTab === "analytics" && (
               <AnalyticsDashboard authToken={authToken} />
+            )}
+
+            {activeTab === "case-analytics" && (
+              <CaseAnalytics authToken={authToken} />
             )}
 
             {activeTab === "reports" && (
