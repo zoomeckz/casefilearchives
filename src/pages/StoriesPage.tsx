@@ -1,5 +1,6 @@
 import { Check } from "lucide-react";
 import React, { useState, useMemo } from "react";
+import { useSearchParams } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { Icons } from "@/lib/icons";
 import { Chapter } from "@/hooks/useChapters";
@@ -37,7 +38,24 @@ export const StoriesPage: React.FC<StoriesPageProps> = ({
   const { t } = useTranslation();
   const [sort, setSort] = useState<SortOption>("newest");
   const [activeTag, setActiveTag] = useState<string | null>(null);
-  const allTags = useMemo(() => Array.from(new Set(chapters.flatMap((c) => c.tags))).sort(), [chapters]);
+  // Case Files (linear) and Interactive Case Files are kept apart; ?type=interactive opens the second.
+  const [params, setParams] = useSearchParams();
+  const format: "linear" | "interactive" = params.get("type") === "interactive" ? "interactive" : "linear";
+  const setFormat = (f: "linear" | "interactive") => {
+    const next = new URLSearchParams(params);
+    if (f === "interactive") next.set("type", "interactive"); else next.delete("type");
+    setParams(next, { replace: true });
+    setActiveTag(null);
+  };
+  const counts = useMemo(() => ({
+    linear: chapters.filter((c) => c.storyFormat !== "interactive").length,
+    interactive: chapters.filter((c) => c.storyFormat === "interactive").length,
+  }), [chapters]);
+  const inFormat = useMemo(
+    () => chapters.filter((c) => (format === "interactive" ? c.storyFormat === "interactive" : c.storyFormat !== "interactive")),
+    [chapters, format],
+  );
+  const allTags = useMemo(() => Array.from(new Set(inFormat.flatMap((c) => c.tags))).sort(), [inFormat]);
 
   const sortOptions: { value: SortOption; label: string }[] = [
     { value: "newest", label: t("chapters.sortNewest") },
@@ -46,7 +64,7 @@ export const StoriesPage: React.FC<StoriesPageProps> = ({
   ];
 
   const sorted = useMemo(() => {
-    const copy = activeTag ? chapters.filter((c) => c.tags.includes(activeTag)) : [...chapters];
+    const copy = activeTag ? inFormat.filter((c) => c.tags.includes(activeTag)) : [...inFormat];
     switch (sort) {
       case "newest":
         return copy.sort((a, b) => new Date(b.publishedAt).getTime() - new Date(a.publishedAt).getTime());
@@ -57,7 +75,7 @@ export const StoriesPage: React.FC<StoriesPageProps> = ({
       default:
         return copy;
     }
-  }, [chapters, sort, activeTag]);
+  }, [inFormat, sort, activeTag]);
 
   return (
     <div className="min-h-screen py-10 sm:py-16 px-4 sm:px-6">
@@ -72,6 +90,30 @@ export const StoriesPage: React.FC<StoriesPageProps> = ({
         {user && (
           <ReadingStats readCount={readCount} totalCount={chapters.length} />
         )}
+
+        {/* Case Files | Interactive Case Files */}
+        <div role="tablist" aria-label="Story type" className="grid grid-cols-2 gap-0 mb-8 border border-border">
+          {([
+            ["linear", t("caseFiles.tabLinear", { defaultValue: "Case Files" }), t("caseFiles.tabLinearHint", { defaultValue: "Read from start to finish" })],
+            ["interactive", t("caseFiles.tabInteractive", { defaultValue: "Interactive Case Files" }), t("caseFiles.tabInteractiveHint", { defaultValue: "Your decisions decide the outcome" })],
+          ] as const).map(([f, label, hint]) => (
+            <button
+              key={f}
+              role="tab"
+              aria-selected={format === f}
+              onClick={() => setFormat(f)}
+              className={`text-left px-4 sm:px-5 py-3 sm:py-4 transition-colors border-l first:border-l-0 border-border ${
+                format === f ? "bg-primary/10 text-foreground shadow-[inset_0_-3px_0_hsl(var(--primary))]" : "text-muted-foreground hover:text-foreground hover:bg-secondary/40"
+              }`}
+            >
+              <span className="flex items-baseline justify-between gap-2">
+                <span className="font-display text-lg sm:text-xl uppercase">{label}</span>
+                <span className="case-label text-[9px] tabular-nums">{counts[f]}</span>
+              </span>
+              <span className="block text-xs text-muted-foreground mt-0.5">{hint}</span>
+            </button>
+          ))}
+        </div>
 
         {/* Sort buttons */}
         <div className="flex items-center gap-2 mb-6 flex-wrap border-b border-border pb-5">
@@ -107,6 +149,14 @@ export const StoriesPage: React.FC<StoriesPageProps> = ({
                 {tag}
               </button>
             ))}
+          </div>
+        )}
+
+        {sorted.length === 0 && (
+          <div className="case-file p-8 text-center text-muted-foreground">
+            {format === "interactive"
+              ? t("caseFiles.noInteractive", { defaultValue: "No interactive case files have been opened yet." })
+              : t("caseFiles.noLinear", { defaultValue: "No case files yet." })}
           </div>
         )}
 
@@ -167,6 +217,11 @@ export const StoriesPage: React.FC<StoriesPageProps> = ({
                     />
                   )}
                 </div>
+                {chapter.storyFormat === "interactive" && (
+                  <span className="inline-block mb-1 case-label text-[8px] !text-primary border border-primary/60 px-1.5 py-0.5">
+                    {t("caseFiles.interactiveBadge", { defaultValue: "Interactive" })}
+                  </span>
+                )}
                 <h3 className="font-display text-xl uppercase text-foreground group-hover:text-primary transition-colors">
                   {chapter.title}
                 </h3>
