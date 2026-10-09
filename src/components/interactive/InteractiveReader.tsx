@@ -383,16 +383,32 @@ export const InteractiveReader: React.FC<Props> = ({ chapterId, title, graph, us
             </div>
           ) : (
             <ol className="space-y-3">
-              {(current.options || []).filter((o) => isOptionVisible(o, state.variables)).map((o, idx) => {
-                const locked = isOptionLocked(o, state.variables);
+              {(current.options || []).map((o, idx) => {
                 const letter = String.fromCharCode(65 + idx);
+                // A choice the reader cannot take (hidden by a condition, locked, or needing an item
+                // they don't carry) keeps its slot but is redacted: they see that something was
+                // there, never what it was.
+                const unavailable = !isOptionVisible(o, state.variables) || isOptionLocked(o, state.variables);
+                if (unavailable) {
+                  const widths = ["w-40", "w-56", "w-48", "w-64", "w-44", "w-52"];
+                  return (
+                    <li key={o.id}>
+                      <div aria-disabled="true" aria-label={`${letter}. ${tr("redacted", "Redacted. This option is not available to you.")}`}
+                        className="w-full text-left border border-dashed border-border/70 px-4 py-3 opacity-60 cursor-not-allowed select-none">
+                        <span className="font-display mr-3 text-muted-foreground">{letter}.</span>
+                        <span aria-hidden="true" className={`inline-block align-middle h-3.5 max-w-[70%] bg-foreground/80 ${widths[idx % widths.length]}`} />
+                        <span className="block text-[10px] uppercase tracking-wider text-muted-foreground mt-1.5 pl-7">{tr("redactedLabel", "Redacted · unavailable")}</span>
+                      </div>
+                    </li>
+                  );
+                }
                 const item = findItem(graph, o.requiresItem);
                 const ist = item ? itemStyle(item.color) : null;
                 return (
                   <li key={o.id}>
                     <button
                       type="button"
-                      disabled={locked || submitting || remaining === 0}
+                      disabled={submitting || remaining === 0}
                       onClick={() => setPending(o)}
                       className={`w-full text-left border px-4 py-3 transition-colors disabled:opacity-40 disabled:cursor-not-allowed ${ist ? `${ist.border} ${ist.bg} ${ist.hover}` : "border-border hover:border-primary focus-visible:border-primary"}`}
                     >
@@ -404,7 +420,6 @@ export const InteractiveReader: React.FC<Props> = ({ chapterId, title, graph, us
                       <span className={`font-display mr-3 ${ist ? ist.text : "text-primary"}`}>{letter}.</span>
                       <span className="text-foreground">{o.label}</span>
                       {o.description && <span className="block text-sm text-muted-foreground mt-1 pl-7">{o.description}</span>}
-                      {locked && <span className="block text-[10px] uppercase tracking-wider text-muted-foreground mt-1 pl-7">{tr("unavailable", "Unavailable")}</span>}
                     </button>
                   </li>
                 );
