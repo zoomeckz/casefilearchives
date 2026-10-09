@@ -544,6 +544,13 @@ export const InteractiveEditor: React.FC<Props> = ({ graph, onChange, title, pub
                 <input value={sel.warning || ""} onChange={(e) => patchSel({ warning: e.target.value || undefined })}
                   placeholder="This decision will be saved to your account and cannot be changed." className={field} />
               </div>
+              <div>
+                <label className={label}>Time limit in seconds (optional)</label>
+                <input type="number" min={5} max={3600} value={sel.timeLimit ?? ""} placeholder="No limit"
+                  onChange={(e) => { const v = parseInt(e.target.value, 10); patchSel({ timeLimit: Number.isFinite(v) && v > 0 ? v : undefined }); }}
+                  className={`${field} w-40`} />
+                <p className="text-[11px] text-muted-foreground mt-1">The clock starts when the reader reaches this decision. When it runs out, a random available option is filed.</p>
+              </div>
               <div className="space-y-4">
                 {(sel.options || []).map((o, i) => (
                   <div key={o.id} className="p-4 border border-border rounded-lg space-y-3">
