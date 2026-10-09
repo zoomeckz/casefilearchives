@@ -99,6 +99,7 @@ const APP_ROUTES: { path: string }[] = [
   { path: "/stories/:slug" },
   { path: "/user/:userId" },
   { path: "/profile" },
+  { path: "/commendations" },
   { path: "/admin" },
   { path: "/about" },
   { path: "/forum" },
