@@ -2,6 +2,7 @@ import React, { useEffect, useMemo, useRef, useState } from "react";
 import { RichTextEditor } from "@/components/RichTextEditor";
 import { ImageUploadField } from "@/components/ImageUploadField";
 import { InteractiveReader } from "@/components/interactive/InteractiveReader";
+import { Collapse, CollapseButton, usePanelOpen } from "@/components/Collapsible";
 import {
   InteractiveGraph, StoryNode, NodeType, Condition, CondOp, Effect, DecisionOption, NotebookEntry,
   ReplayPolicy, GuestAccess, EndingVisibility,
@@ -62,24 +63,6 @@ function blankOption(): DecisionOption {
 }
 
 // ── Small building blocks ──
-
-/** Open/closed state for an editor panel, remembered in this browser. */
-function usePanelOpen(key: string, initial = true): [boolean, () => void] {
-  const [open, setOpen] = useState<boolean>(() => {
-    try { const v = localStorage.getItem(key); return v == null ? initial : v === "1"; } catch { return initial; }
-  });
-  const toggle = () => setOpen((o) => {
-    try { localStorage.setItem(key, o ? "0" : "1"); } catch { /* ignore */ }
-    return !o;
-  });
-  return [open, toggle];
-}
-
-const CollapseToggle: React.FC<{ open: boolean; onToggle: () => void; what: string }> = ({ open, onToggle, what }) => (
-  <button type="button" onClick={onToggle} aria-expanded={open} className={smallBtn} title={`${open ? "Collapse" : "Expand"} ${what}`}>
-    {open ? "▾ Collapse" : "▸ Expand"}
-  </button>
-);
 
 const ConditionList: React.FC<{ value?: Condition[]; onChange: (c: Condition[]) => void; empty: string }> = ({ value, onChange, empty }) => {
   const list = value || [];
@@ -196,6 +179,17 @@ export const InteractiveEditor: React.FC<Props> = ({ graph, onChange, title, pub
   const [jsonError, setJsonError] = useState<string | null>(null);
   const [settingsOpen, toggleSettings] = usePanelOpen("ic-editor:settings-open");
   const [structureOpen, toggleStructure] = usePanelOpen("ic-editor:structure-open");
+  const [checkOpen, toggleCheck] = usePanelOpen("ic-editor:check-open");
+  const [sectionOpen, toggleSection] = usePanelOpen("ic-editor:section-open");
+  // Option / route cards collapsed in this session, keyed per section.
+  const [collapsedCards, setCollapsedCards] = useState<Set<string>>(() => new Set());
+  const cardOpen = (key: string) => !collapsedCards.has(key);
+  const toggleCard = (key: string) => setCollapsedCards((prev) => {
+    const next = new Set(prev);
+    if (next.has(key)) next.delete(key); else next.add(key);
+    return next;
+  });
+  const [openVars, setOpenVars] = useState<Record<string, boolean>>({});
 
   const issues = useMemo(() => validateGraph(graph), [graph]);
   const errors = issues.filter((i) => i.level === "error");
@@ -394,10 +388,10 @@ export const InteractiveEditor: React.FC<Props> = ({ graph, onChange, title, pub
 
       {/* Settings */}
       <div className={panel}>
-        <div className={`flex flex-wrap items-center justify-between gap-2 ${settingsOpen || showJson ? "mb-3" : ""}`}>
+        <div className="flex flex-wrap items-center justify-between gap-2">
           <div className="flex items-center gap-2">
-            <CollapseToggle open={settingsOpen} onToggle={toggleSettings} what="case settings" />
-            <h3 className="text-sm font-medium text-foreground">Interactive case settings</h3>
+            <CollapseButton open={settingsOpen} onToggle={toggleSettings} label="case settings" />
+            <button type="button" onClick={toggleSettings} className="text-sm font-medium text-foreground text-left">Interactive case settings</button>
           </div>
           <div className="flex flex-wrap gap-2">
             <select value="" onChange={(e) => loadTemplate(e.target.value)} className={`${smallBtn} bg-transparent [color-scheme:dark]`} aria-label="Load a template">
@@ -409,7 +403,8 @@ export const InteractiveEditor: React.FC<Props> = ({ graph, onChange, title, pub
             </button>
           </div>
         </div>
-        {settingsOpen && (<>
+        <Collapse open={settingsOpen}>
+        <div className="pt-3">
         <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-4">
           <div>
             <label className={label}>Replay</label>
@@ -465,7 +460,8 @@ export const InteractiveEditor: React.FC<Props> = ({ graph, onChange, title, pub
             Variables in this case: <span className="font-mono">{varNames.join(", ")}</span>
           </p>
         )}
-        </>)}
+        </div>
+        </Collapse>
         {showJson && (
           <div className="mt-4">
             <p className="text-xs text-muted-foreground mb-2">Copy this to back up the case, or paste a saved case and apply it.</p>
@@ -479,6 +475,8 @@ export const InteractiveEditor: React.FC<Props> = ({ graph, onChange, title, pub
       {/* Validation */}
       <div className={`${panel} ${errors.length ? "border-destructive/50" : ""}`}>
         <div className="flex flex-wrap items-center justify-between gap-2">
+          <div className="flex items-center gap-2 min-w-0">
+          {(issues.length > 0 || removed.length > 0) && <CollapseButton open={checkOpen} onToggle={toggleCheck} label="structure check" />}
           <h3 className="text-sm font-medium text-foreground">
             Structure check:{" "}
             {errors.length === 0 && warnings.length === 0 ? <span className="text-primary">ready to publish</span> : (
@@ -489,10 +487,12 @@ export const InteractiveEditor: React.FC<Props> = ({ graph, onChange, title, pub
               </span>
             )}
           </h3>
+          </div>
           <button type="button" onClick={() => setPreview({ start: graph.startNodeId, key: Date.now() })} className="px-3 py-1.5 bg-accent/20 hover:bg-accent/30 text-accent rounded text-xs">
             Preview from opening
           </button>
         </div>
+        <Collapse open={checkOpen}>
         {(issues.length > 0 || removed.length > 0) && (
           <ul className="mt-3 space-y-1 text-xs max-h-48 overflow-y-auto overscroll-contain" data-lenis-prevent>
             {removed.length > 0 && (
@@ -511,15 +511,18 @@ export const InteractiveEditor: React.FC<Props> = ({ graph, onChange, title, pub
           </ul>
         )}
         {errors.length > 0 && <p className="text-[11px] text-muted-foreground mt-2">Errors must be fixed before the case can be published.</p>}
+        </Collapse>
       </div>
 
-      <div className={`grid grid-cols-1 gap-6 ${structureOpen ? "lg:grid-cols-[18rem_1fr]" : ""}`}>
-        {/* Node list — scrolls on its own so the page stays put */}
-        {structureOpen && (
-        <aside className={`${panel} flex flex-col max-h-[75vh] lg:self-start lg:sticky lg:top-20`}>
+      <div className={`grid grid-cols-1 gap-y-6 transition-[grid-template-columns,column-gap] duration-200 ease-out motion-reduce:transition-none ${structureOpen ? "lg:grid-cols-[18rem_minmax(0,1fr)] lg:gap-x-6" : "lg:grid-cols-[0rem_minmax(0,1fr)] lg:gap-x-0"}`}>
+        {/* Node list — scrolls on its own so the page stays put. On wide screens it
+            slides closed sideways; on narrow screens it folds up. */}
+        <div className={`min-w-0 overflow-clip transition-opacity duration-200 ease-out ${structureOpen ? "opacity-100" : "hidden lg:block opacity-0 pointer-events-none"}`}
+          aria-hidden={!structureOpen} {...(structureOpen ? {} : ({ inert: "" } as Record<string, string>))}>
+        <aside className={`${panel} flex flex-col max-h-[75vh] lg:w-72 lg:sticky lg:top-20`}>
           <div className="flex items-center justify-between gap-2 mb-3">
             <h3 className="text-xs uppercase tracking-wider text-muted-foreground">Structure · {graph.nodes.length}</h3>
-            <CollapseToggle open onToggle={toggleStructure} what="structure" />
+            <CollapseButton open onToggle={toggleStructure} label="structure" />
           </div>
           <div className="flex flex-wrap gap-2 mb-3">
             <button type="button" onClick={() => addNode("narrative")} className={smallBtn}>+ Scene</button>
@@ -549,11 +552,13 @@ export const InteractiveEditor: React.FC<Props> = ({ graph, onChange, title, pub
             })}
           </ol>
         </aside>
-        )}
+        </div>
 
         {/* Node form */}
-        <section className={`${panel} space-y-5 min-w-0`}>
+        <section className={`${panel} min-w-0`}>
           <div className="flex flex-wrap items-center gap-2">
+            <CollapseButton open={sectionOpen} onToggle={toggleSection} label="section" />
+            {!sectionOpen && <span className="font-mono text-xs text-muted-foreground">{sel.id}</span>}
             {!structureOpen && (
               <button type="button" onClick={toggleStructure} aria-expanded={false} className={smallBtn}>▸ Structure ({graph.nodes.length})</button>
             )}
@@ -564,6 +569,8 @@ export const InteractiveEditor: React.FC<Props> = ({ graph, onChange, title, pub
             <button type="button" onClick={() => setPreview({ start: sel.id, key: Date.now() })} className={smallBtn}>Preview from here</button>
             <button type="button" onClick={deleteNode} disabled={sel.id === graph.startNodeId} className={`${smallBtn} ml-auto hover:border-destructive hover:text-destructive`}>Delete</button>
           </div>
+          <Collapse open={sectionOpen}>
+          <div className="space-y-5 pt-5">
           {(incoming.get(sel.id) || []).length > 0 && (
             <p className="text-[11px] text-muted-foreground">Reached from: <span className="font-mono">{[...new Set(incoming.get(sel.id))].join(", ")}</span></p>
           )}
@@ -623,7 +630,14 @@ export const InteractiveEditor: React.FC<Props> = ({ graph, onChange, title, pub
                 <label className={label}>Conditional routes (checked in order, first match wins)</label>
                 <div className="space-y-3">
                   {(sel.routes || []).map((r, i) => (
-                    <div key={i} className="p-3 border border-border rounded-lg space-y-2">
+                    <div key={i} className="p-3 border border-border rounded-lg">
+                      <div className="flex items-center gap-2">
+                        <CollapseButton open={cardOpen(`${sel.id}:route:${i}`)} onToggle={() => toggleCard(`${sel.id}:route:${i}`)} label={`route ${i + 1}`} />
+                        <span className="text-xs text-muted-foreground">Route {i + 1}</span>
+                        {!cardOpen(`${sel.id}:route:${i}`) && <span className="text-xs text-muted-foreground/80 truncate min-w-0">· {(r.conditions || []).length} condition{(r.conditions || []).length === 1 ? "" : "s"} → <span className="font-mono">{r.to || "—"}</span></span>}
+                      </div>
+                      <Collapse open={cardOpen(`${sel.id}:route:${i}`)}>
+                      <div className="space-y-2 pt-2">
                       <ConditionList value={r.conditions} empty="No conditions — this route always matches."
                         onChange={(c) => patchSel({ routes: (sel.routes || []).map((x, j) => (j === i ? { ...x, conditions: c } : x)) })} />
                       <div className="flex gap-2 items-center">
@@ -632,6 +646,8 @@ export const InteractiveEditor: React.FC<Props> = ({ graph, onChange, title, pub
                           onChange={(v) => commitLink(v, (n, id) => ({ ...n, routes: (n.routes || []).map((x, j) => (j === i ? { ...x, to: id } : x)) }))} />
                         <button type="button" onClick={() => patchSel({ routes: (sel.routes || []).filter((_, j) => j !== i) })} className={smallBtn} aria-label="Remove route">✕</button>
                       </div>
+                      </div>
+                      </Collapse>
                     </div>
                   ))}
                   <button type="button" onClick={() => patchSel({ routes: [...(sel.routes || []), { conditions: [{ var: "", op: "truthy" }], to: "" }] })} className="text-xs text-primary hover:underline">
@@ -668,10 +684,13 @@ export const InteractiveEditor: React.FC<Props> = ({ graph, onChange, title, pub
               </div>
               <div className="space-y-4">
                 {(sel.options || []).map((o, i) => (
-                  <div key={o.id} className="p-4 border border-border rounded-lg space-y-3">
-                    <div className="flex items-center gap-2">
+                  <div key={o.id} className="p-4 border border-border rounded-lg">
+                    <div className="flex items-center gap-2 min-w-0">
+                      <CollapseButton open={cardOpen(`${sel.id}:opt:${o.id}`)} onToggle={() => toggleCard(`${sel.id}:opt:${o.id}`)} label={`option ${String.fromCharCode(65 + i)}`} />
                       <span className="font-display text-primary text-lg">{String.fromCharCode(65 + i)}.</span>
-                      <span className="font-mono text-[10px] text-muted-foreground">{o.id}</span>
+                      {cardOpen(`${sel.id}:opt:${o.id}`)
+                        ? <span className="font-mono text-[10px] text-muted-foreground">{o.id}</span>
+                        : <span className="text-xs text-muted-foreground truncate min-w-0">{o.label || <em>No label</em>} → <span className="font-mono">{o.next || "—"}</span></span>}
                       <div className="ml-auto flex gap-1">
                         <button type="button" onClick={() => moveOption(i, -1)} disabled={i === 0} className={smallBtn}>↑</button>
                         <button type="button" onClick={() => moveOption(i, 1)} disabled={i === (sel.options || []).length - 1} className={smallBtn}>↓</button>
@@ -679,6 +698,8 @@ export const InteractiveEditor: React.FC<Props> = ({ graph, onChange, title, pub
                           disabled={(sel.options || []).length <= 2} className={`${smallBtn} hover:border-destructive hover:text-destructive`}>Remove</button>
                       </div>
                     </div>
+                    <Collapse open={cardOpen(`${sel.id}:opt:${o.id}`)}>
+                    <div className="space-y-3 pt-3">
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                       <div>
                         <label className={label}>Option label</label>
@@ -700,13 +721,17 @@ export const InteractiveEditor: React.FC<Props> = ({ graph, onChange, title, pub
                       <input value={o.consequence || ""} onChange={(e) => patchOption(o.id, { consequence: e.target.value || undefined })}
                         placeholder="Mara will remember this." className={field} />
                     </div>
-                    <details className="text-sm" open={!!(o.effects?.length || o.visibleIf?.length || o.lockedIf?.length)}>
-                      <summary className="cursor-pointer text-xs text-muted-foreground select-none">
+                    <div className="text-sm">
+                      <button type="button" onClick={() => setOpenVars((m) => ({ ...m, [o.id]: !(m[o.id] ?? !!(o.effects?.length || o.visibleIf?.length || o.lockedIf?.length)) }))}
+                        aria-expanded={openVars[o.id] ?? !!(o.effects?.length || o.visibleIf?.length || o.lockedIf?.length)}
+                        className="flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground select-none text-left">
+                        <span className={`inline-block transition-transform duration-200 ease-out ${(openVars[o.id] ?? !!(o.effects?.length || o.visibleIf?.length || o.lockedIf?.length)) ? "rotate-90" : ""}`}>▸</span>
                         Variables & conditions
                         {(o.effects?.length || 0) > 0 && ` · sets ${o.effects!.length}`}
                         {(o.visibleIf?.length || 0) > 0 && " · conditional"}
                         {(o.lockedIf?.length || 0) > 0 && " · can lock"}
-                      </summary>
+                      </button>
+                      <Collapse open={openVars[o.id] ?? !!(o.effects?.length || o.visibleIf?.length || o.lockedIf?.length)}>
                       <div className="mt-3 space-y-4 pl-3 border-l border-border">
                         <div>
                           <label className={label}>When chosen</label>
@@ -721,7 +746,10 @@ export const InteractiveEditor: React.FC<Props> = ({ graph, onChange, title, pub
                           <ConditionList value={o.lockedIf} onChange={(c) => patchOption(o.id, { lockedIf: c.length ? c : undefined })} empty="Never locked." />
                         </div>
                       </div>
-                    </details>
+                      </Collapse>
+                    </div>
+                    </div>
+                    </Collapse>
                   </div>
                 ))}
                 {(sel.options || []).length < MAX_OPTIONS && (
@@ -747,6 +775,8 @@ export const InteractiveEditor: React.FC<Props> = ({ graph, onChange, title, pub
               </div>
             </>
           )}
+          </div>
+          </Collapse>
         </section>
       </div>
 
