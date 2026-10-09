@@ -1,4 +1,4 @@
-import React, { useMemo, useRef, useState } from "react";
+import React, { useEffect, useMemo, useRef, useState } from "react";
 import { RichTextEditor } from "@/components/RichTextEditor";
 import { ImageUploadField } from "@/components/ImageUploadField";
 import { InteractiveReader } from "@/components/interactive/InteractiveReader";
@@ -203,6 +203,23 @@ export const InteractiveEditor: React.FC<Props> = ({ graph, onChange, title, pub
   const removed = useMemo(() => removedNodeIds(publishedGraph ?? null, graph), [publishedGraph, graph]);
   // Stable object so unrelated parent re-renders don't restart the preview.
   const previewGraph = useMemo(() => (preview ? { ...graph, startNodeId: preview.start } : null), [graph, preview]);
+
+  // While the route preview is open, freeze the page behind it: pause the global
+  // smooth scroller (Lenis) and hide the page scrollbar, so the overlay is the
+  // only thing that scrolls and the mouse wheel reaches it.
+  const previewOpen = !!preview;
+  useEffect(() => {
+    if (!previewOpen) return;
+    const lenis = (window as any).__lenis;
+    const root = document.documentElement;
+    const prevOverflow = root.style.overflow;
+    lenis?.stop?.();
+    root.style.overflow = "hidden";
+    return () => {
+      root.style.overflow = prevOverflow;
+      lenis?.start?.();
+    };
+  }, [previewOpen]);
 
   const varNames = useMemo(() => {
     const s = new Set<string>();
@@ -477,7 +494,7 @@ export const InteractiveEditor: React.FC<Props> = ({ graph, onChange, title, pub
           </button>
         </div>
         {(issues.length > 0 || removed.length > 0) && (
-          <ul className="mt-3 space-y-1 text-xs max-h-48 overflow-y-auto">
+          <ul className="mt-3 space-y-1 text-xs max-h-48 overflow-y-auto overscroll-contain" data-lenis-prevent>
             {removed.length > 0 && (
               <li className="text-destructive">
                 Removed since last publish: {removed.join(", ")} — readers currently on these sections will be stranded.
@@ -509,7 +526,7 @@ export const InteractiveEditor: React.FC<Props> = ({ graph, onChange, title, pub
             <button type="button" onClick={() => addNode("decision")} className={smallBtn}>+ Decision</button>
             <button type="button" onClick={() => addNode("ending")} className={smallBtn}>+ Ending</button>
           </div>
-          <ol className="space-y-1 flex-1 min-h-0 overflow-y-auto overscroll-contain pr-1">
+          <ol className="space-y-1 flex-1 min-h-0 overflow-y-auto overscroll-contain pr-1" data-lenis-prevent>
             {graph.nodes.map((n) => {
               const active = n.id === sel.id;
               const errs = errorCountFor(n.id);
@@ -735,7 +752,7 @@ export const InteractiveEditor: React.FC<Props> = ({ graph, onChange, title, pub
 
       {/* Route preview — local only, never touches reader progress */}
       {preview && (
-        <div className="fixed inset-0 z-50 bg-background overflow-y-auto">
+        <div className="fixed inset-0 z-50 bg-background overflow-y-auto overscroll-contain" data-lenis-prevent>
           <div className="sticky top-0 z-10 flex flex-wrap items-center justify-between gap-2 px-4 py-3 bg-background/95 backdrop-blur border-b border-border">
             <span className="text-sm text-muted-foreground font-medium">
               Route preview{preview.start !== graph.startNodeId && <> from <span className="font-mono">{preview.start}</span> (variables start empty)</>}
