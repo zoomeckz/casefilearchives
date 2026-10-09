@@ -13,7 +13,7 @@ import { chainOfCustodyGraph } from "@/lib/cases/chainOfCustody";
 /** Ready-made cases the editor can load as a starting point. */
 const TEMPLATES: { id: string; label: string; make: () => InteractiveGraph }[] = [
   { id: "example", label: "Example case (short demo)", make: sampleCaseGraph },
-  { id: "chain-of-custody", label: "Chain of Custody: intro", make: chainOfCustodyGraph },
+  { id: "chain-of-custody", label: "Chain of Custody: Chapter 1 (1974)", make: chainOfCustodyGraph },
 ];
 
 // Admin-only (English) editor for Interactive Case Files. Edits the graph that
