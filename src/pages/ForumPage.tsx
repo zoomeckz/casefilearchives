@@ -209,7 +209,7 @@ export const ForumPage: React.FC<ForumPageProps> = ({ user, authToken, stories, 
         </div>
 
         <div className="grid lg:grid-cols-[260px_1fr] gap-8">
-          <aside className="space-y-6 lg:sticky lg:top-24 self-start" data-lenis-prevent>
+          <aside className="hidden lg:block space-y-6 lg:sticky lg:top-24 self-start" data-lenis-prevent>
             <div className="case-file p-4">
               <p className="case-label text-[9px] mb-3">{tr('filedUnder')}</p>
               <button className={sideBtn(!catFilter)} onClick={() => setFilter("cat", null)}>{tr('allCategories')}</button>
@@ -236,6 +236,26 @@ export const ForumPage: React.FC<ForumPageProps> = ({ user, authToken, stories, 
               </div>
             )}
           </aside>
+
+          {/* Phones and tablets: compact filters instead of the sidebar lists. */}
+          <div className="lg:hidden grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <label className="block">
+              <span className="case-label text-[9px] block mb-1">{tr('filedUnder')}</span>
+              <select value={catFilter || ""} onChange={(e) => setFilter("cat", e.target.value || null)}
+                className="w-full px-3 py-2.5 bg-card border border-border text-foreground text-sm">
+                <option value="">{tr('allCategories')}</option>
+                {CATEGORIES.map((c) => <option key={c.id} value={c.id}>{tr(`cat_${c.id}`)}</option>)}
+              </select>
+            </label>
+            <label className="block">
+              <span className="case-label text-[9px] block mb-1">{tr('byCase')}</span>
+              <select value={caseFilter || ""} onChange={(e) => setFilter("case", e.target.value || null)}
+                className="w-full px-3 py-2.5 bg-card border border-border text-foreground text-sm">
+                <option value="">{tr('allCases')}</option>
+                {stories.map((s) => <option key={s.id} value={s.id}>{s.title} ({caseCounts[s.id] || 0})</option>)}
+              </select>
+            </label>
+          </div>
 
           <section className="min-w-0">
             {composing && !active && (
