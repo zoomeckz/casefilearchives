@@ -277,8 +277,9 @@ export const ReaderPage: React.FC<ReaderPageProps> = ({
         </button>
 
         {/* Reader controls — width slider + cards mode toggle */}
-        <div className="mb-8 flex flex-wrap items-center gap-4 text-xs text-muted-foreground border-y border-border p-3">
-          <label className="flex items-center gap-2 flex-1 min-w-[220px]">
+        {/* The width slider only matters on screens wider than the reading column. */}
+        <div className={`mb-8 ${isInteractive ? "hidden md:flex" : "flex"} flex-wrap items-center gap-4 text-xs text-muted-foreground border-y border-border p-3`}>
+          <label className="hidden md:flex items-center gap-2 flex-1 min-w-[220px]">
             <span className="whitespace-nowrap">{t("reader.pageWidth")}</span>
             <input
               type="range"
