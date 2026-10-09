@@ -46,6 +46,9 @@ export const InteractiveReader: React.FC<Props> = ({ chapterId, title, graph, us
   const preview = mode === "preview";
   const guestAccess = graph.settings.guestAccess;
   const isGuest = !user && !preview;
+  // Callers often rebuild the graph object on every render (e.g. the 30s
+  // chapter poll); only reload the file when its content actually changes.
+  const graphKey = useMemo(() => JSON.stringify(graph), [graph]);
 
   const [state, setState] = useState<PlayState | null>(null);
   const [loading, setLoading] = useState(true);
@@ -83,7 +86,7 @@ export const InteractiveReader: React.FC<Props> = ({ chapterId, title, graph, us
       setError(e.message);
     } finally { setLoading(false); }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [chapterId, user?.id, preview, graph]);
+  }, [chapterId, user?.id, preview, graphKey]);
 
   useEffect(() => { void load(); }, [load]);
 
