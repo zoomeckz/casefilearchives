@@ -57,6 +57,8 @@ const Index = () => {
     else if (page === "admin") go("/admin");
     else if (page === "about") go("/about");
     else if (page === "forum") go("/forum");
+    // "forum?case=<story id>" opens the forum filtered to one case.
+    else if (page.startsWith("forum?")) go(`/forum${page.slice(5)}`);
     else if (page === "reader" && selectedChapter) {
       go(storyPath(selectedChapter));
     }
