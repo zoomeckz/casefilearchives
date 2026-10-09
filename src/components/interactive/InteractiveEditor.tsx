@@ -259,6 +259,43 @@ export const InteractiveEditor: React.FC<Props> = ({ graph, onChange, title, pub
   });
   const [openVars, setOpenVars] = useState<Record<string, boolean>>({});
 
+  /** Jump from a structure-check line to the exact field: select the section, open what is
+   *  folded, scroll there, focus the field and flash it. */
+  const goToIssue = (issue: { nodeId?: string; loc?: string }) => {
+    const loc = issue.loc || "";
+    let target = "";
+    if (loc.startsWith("settings:")) {
+      if (!settingsOpen) toggleSettings();
+      target = loc;
+    } else if (loc === "add:ending") {
+      if (!structureOpen) toggleStructure();
+      target = "add:ending";
+    } else if (issue.nodeId) {
+      setSelectedId(issue.nodeId);
+      if (!sectionOpen) toggleSection();
+      const m = loc.match(/^opt:(\d+):/);
+      if (m) {
+        const node = graph.nodes.find((x) => x.id === issue.nodeId);
+        const opt = node?.options?.[Number(m[1])];
+        if (opt) setCollapsedCards((prev) => { const next = new Set(prev); next.delete(`${issue.nodeId}:opt:${opt.id}`); return next; });
+      }
+      target = !loc ? `${issue.nodeId}|section` : loc.startsWith("notebook:") ? `${issue.nodeId}|notebook` : `${issue.nodeId}|${loc}`;
+    }
+    if (!target) return;
+    // Wait for the section to render and folded boxes to open (~200ms animation).
+    window.setTimeout(() => {
+      const el = document.querySelector<HTMLElement>(`[data-loc="${CSS.escape(target)}"]`);
+      if (!el) return;
+      const lenis = (window as any).__lenis;
+      const top = el.getBoundingClientRect().top + window.scrollY - 140;
+      if (lenis?.scrollTo) lenis.scrollTo(top, { duration: 0.6 }); else window.scrollTo({ top, behavior: "smooth" });
+      const input = el.matches("input,select,textarea,button") ? el : el.querySelector<HTMLElement>("input,select,textarea,[contenteditable=true],button");
+      window.setTimeout(() => input?.focus({ preventScroll: true }), 450);
+      el.classList.add("ic-flash");
+      window.setTimeout(() => el.classList.remove("ic-flash"), 1800);
+    }, 260);
+  };
+
   const issues = useMemo(() => validateGraph(graph), [graph]);
   const errors = issues.filter((i) => i.level === "error");
   const warnings = issues.filter((i) => i.level === "warning");
@@ -552,7 +589,7 @@ export const InteractiveEditor: React.FC<Props> = ({ graph, onChange, title, pub
             </select>
           </div>
         </div>
-        <div className="mt-5">
+        <div className="mt-5" data-loc="settings:items">
           <label className={label}>Inventory items — things readers can pick up through their choices</label>
           <ItemsEditor items={graph.settings.items || []} onChange={(items) => setSettings({ items: items.length ? items : undefined })} />
         </div>
@@ -616,20 +653,34 @@ export const InteractiveEditor: React.FC<Props> = ({ graph, onChange, title, pub
         )}
         <Collapse open={checkOpen}>
         {(issues.length > 0 || removed.length > 0) && (
-          <ul className="mt-3 space-y-1 text-xs max-h-48 overflow-y-auto overscroll-contain" data-lenis-prevent>
+          <ul className="mt-3 space-y-1.5 text-xs max-h-72 overflow-y-auto overscroll-contain pr-1" data-lenis-prevent>
             {removed.length > 0 && (
               <li className="text-destructive">
                 Removed since last publish: {removed.join(", ")} — readers currently on these sections will be stranded.
               </li>
             )}
-            {issues.map((i, k) => (
-              <li key={k} className={i.level === "error" ? "text-destructive" : "text-accent"}>
-                {i.nodeId ? (
-                  <button type="button" onClick={() => setSelectedId(i.nodeId!)} className="underline font-mono mr-1">{i.nodeId}</button>
-                ) : null}
-                {i.message}
-              </li>
-            ))}
+            {[...issues].sort((a, b) => (a.level === b.level ? 0 : a.level === "error" ? -1 : 1)).map((i, k) => {
+              const n = i.nodeId ? graph.nodes.find((x) => x.id === i.nodeId) : undefined;
+              const t = n?.type || "narrative";
+              const name = n ? (n.title || n.endingTitle || "") : "";
+              const canGo = !!(i.nodeId || i.loc);
+              return (
+                <li key={k}>
+                  <button type="button" disabled={!canGo} onClick={() => goToIssue(i)}
+                    className={`group w-full text-left rounded border px-2 py-1.5 transition-colors ${i.level === "error" ? "border-destructive/40 hover:bg-destructive/10" : "border-accent/30 hover:bg-accent/10"} disabled:cursor-default`}>
+                    <span className="flex flex-wrap items-center gap-x-1.5 gap-y-0.5">
+                      <span className={`text-[9px] uppercase tracking-wider px-1 border rounded ${i.level === "error" ? "border-destructive/60 text-destructive" : "border-accent/60 text-accent"}`}>{i.level === "error" ? "Error" : "Warning"}</span>
+                      {n && <span className={`text-[9px] uppercase tracking-wider px-1 border rounded ${TYPE_STYLE[t]}`}>{TYPE_LABEL[t]}</span>}
+                      {n && <span className="font-mono text-foreground">{n.id}</span>}
+                      {name && <span className="text-muted-foreground truncate max-w-[14rem]">“{name}”</span>}
+                      {i.where && <span className="text-foreground">› {i.where}</span>}
+                      {canGo && <span className="ml-auto text-[10px] text-muted-foreground group-hover:text-foreground">Go to →</span>}
+                    </span>
+                    <span className={`block mt-0.5 ${i.level === "error" ? "text-destructive" : "text-accent"}`}>{i.message}</span>
+                  </button>
+                </li>
+              );
+            })}
           </ul>
         )}
         {errors.length > 0 && <p className="text-[11px] text-muted-foreground mt-2">Errors must be fixed before the case can be published.</p>}
@@ -649,7 +700,7 @@ export const InteractiveEditor: React.FC<Props> = ({ graph, onChange, title, pub
           <div className="flex flex-wrap gap-2 mb-3">
             <button type="button" onClick={() => addNode("narrative")} className={smallBtn}>+ Scene</button>
             <button type="button" onClick={() => addNode("decision")} className={smallBtn}>+ Decision</button>
-            <button type="button" onClick={() => addNode("ending")} className={smallBtn}>+ Ending</button>
+            <button type="button" onClick={() => addNode("ending")} className={smallBtn} data-loc="add:ending">+ Ending</button>
           </div>
           <ol className="space-y-1 flex-1 min-h-0 overflow-y-auto overscroll-contain pr-1" data-lenis-prevent>
             {graph.nodes.map((n) => {
@@ -679,7 +730,7 @@ export const InteractiveEditor: React.FC<Props> = ({ graph, onChange, title, pub
         </div>
 
         {/* Node form */}
-        <section className={`${panel} min-w-0`}>
+        <section className={`${panel} min-w-0`} data-loc={`${sel.id}|section`}>
           <div className="flex flex-wrap items-center gap-2">
             <CollapseButton open={sectionOpen} onToggle={toggleSection} label="section" />
             {!sectionOpen && <span className="font-mono text-xs text-muted-foreground">{sel.id}</span>}
@@ -700,7 +751,7 @@ export const InteractiveEditor: React.FC<Props> = ({ graph, onChange, title, pub
           )}
 
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            <div>
+            <div data-loc={`${sel.id}|id`}>
               <label className={label}>Section ID</label>
               <NodeIdField id={sel.id} onRename={renameNode} />
             </div>
@@ -720,14 +771,14 @@ export const InteractiveEditor: React.FC<Props> = ({ graph, onChange, title, pub
 
           {/* Choices — first thing you see on a decision */}
           {sel.type === "decision" && (
-            <div className="rounded-lg border border-primary/40 bg-primary/[0.03] p-4 space-y-4">
+            <div className="rounded-lg border border-primary/40 bg-primary/[0.03] p-4 space-y-4" data-loc={`${sel.id}|choices`}>
               <div className="flex flex-wrap items-end justify-between gap-3">
                 <div>
                   <h4 className="text-sm font-medium text-foreground">Choices</h4>
                   <p className="text-[11px] text-muted-foreground">What the reader can pick. Each choice needs a label and a section it leads to.</p>
                 </div>
                 <div className="flex items-end gap-2">
-                  <div>
+                  <div data-loc={`${sel.id}|timer`}>
                     <label className={label}>⏱ Timer (seconds)</label>
                     <input type="number" min={5} max={3600} value={sel.timeLimit ?? ""} placeholder="No timer"
                       onChange={(e) => { const v = parseInt(e.target.value, 10); patchSel({ timeLimit: Number.isFinite(v) && v > 0 ? v : undefined }); }}
@@ -780,11 +831,11 @@ export const InteractiveEditor: React.FC<Props> = ({ graph, onChange, title, pub
                     <Collapse open={cardOpen(key)}>
                     <div className="space-y-3 pt-3">
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                      <div>
+                      <div data-loc={`${sel.id}|opt:${i}:label`}>
                         <label className={label}>Choice text</label>
                         <input value={o.label} onChange={(e) => patchOption(o.id, { label: e.target.value })} placeholder="e.g. Follow Mara into the kitchen." className={field} />
                       </div>
-                      <div>
+                      <div data-loc={`${sel.id}|opt:${i}:next`}>
                         <label className={label}>Leads to</label>
                         <NodeSelect value={o.next} nodes={graph.nodes} selfId={sel.id} emptyLabel="— choose —"
                           onChange={(v) => commitLink(v, (n, id) => ({ ...n, options: (n.options || []).map((x) => (x.id === o.id ? { ...x, next: id } : x)) }))} />
@@ -802,7 +853,7 @@ export const InteractiveEditor: React.FC<Props> = ({ graph, onChange, title, pub
                     </div>
                     {items.length > 0 ? (
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                        <div>
+                        <div data-loc={`${sel.id}|opt:${i}:item`}>
                           <label className={label}>Item choice — only shown to readers carrying</label>
                           <select value={o.requiresItem || ""} onChange={(e) => setRequires(e.target.value)} className={field}>
                             <option value="">— nobody needs an item (normal red choice) —</option>
@@ -904,7 +955,7 @@ export const InteractiveEditor: React.FC<Props> = ({ graph, onChange, title, pub
           {/* Scene */}
           {(sel.type || "narrative") === "narrative" && (
             <>
-              <div>
+              <div data-loc={`${sel.id}|notebook`}>
                 <label className={label}>Notebook — added to the reader’s notes and evidence when this scene is shown</label>
                 <NotebookList value={sel.notebook} onChange={(e) => patchSel({ notebook: e.length ? e : undefined })} />
               </div>
@@ -916,7 +967,7 @@ export const InteractiveEditor: React.FC<Props> = ({ graph, onChange, title, pub
                 <label className={label}>Conditional routes (checked in order, first match wins)</label>
                 <div className="space-y-3">
                   {(sel.routes || []).map((r, i) => (
-                    <div key={i} className="p-3 border border-border rounded-lg">
+                    <div key={i} className="p-3 border border-border rounded-lg" data-loc={`${sel.id}|route:${i}`}>
                       <div className="flex items-center gap-2">
                         <CollapseButton open={cardOpen(`${sel.id}:route:${i}`)} onToggle={() => toggleCard(`${sel.id}:route:${i}`)} label={`route ${i + 1}`} />
                         <span className="text-xs text-muted-foreground">Route {i + 1}</span>
@@ -941,7 +992,7 @@ export const InteractiveEditor: React.FC<Props> = ({ graph, onChange, title, pub
                   </button>
                 </div>
               </div>
-              <div>
+              <div data-loc={`${sel.id}|next`}>
                 <label className={label}>{(sel.routes || []).length ? "Otherwise, next section" : "Next section"}</label>
                 <NodeSelect value={sel.next} nodes={graph.nodes} selfId={sel.id} emptyLabel="— none (file ends here) —"
                   onChange={(v) => commitLink(v, (n, id) => ({ ...n, next: id || undefined }))} />
@@ -967,7 +1018,7 @@ export const InteractiveEditor: React.FC<Props> = ({ graph, onChange, title, pub
           {/* Ending */}
           {sel.type === "ending" && (
             <>
-              <div>
+              <div data-loc={`${sel.id}|endingTitle`}>
                 <label className={label}>Ending title</label>
                 <input value={sel.endingTitle || ""} onChange={(e) => patchSel({ endingTitle: e.target.value })} placeholder="CASE CLOSED" className={`${field} font-display uppercase`} />
               </div>
