@@ -396,9 +396,9 @@ const nodes: StoryNode[] = [
   },
 
   // ── Endings ──
-  { id: "end_closed", type: "ending", content: "", endingTitle: "Case Closed", endingText: "You identified the real threat and walked out with enough evidence to prove it." },
-  { id: "end_insufficient", type: "ending", content: "", endingTitle: "Insufficient Evidence", endingText: "You survived the night, but nobody believed what happened in the house." },
-  { id: "end_compromised", type: "ending", content: "", endingTitle: "Witness Compromised", endingText: "You trusted the wrong person, and became part of the case yourself." },
+  { id: "end_closed", type: "ending", content: "", endingTitle: "Case Closed", endingText: "You walk out with the evidence you gathered. The file goes to the archive." },
+  { id: "end_insufficient", type: "ending", content: "", endingTitle: "Morning", endingText: "You leave the house at first light. Your report goes on the file." },
+  { id: "end_compromised", type: "ending", content: "", endingTitle: "The Statement", endingText: "You give your statement and sign it. The file goes to the archive." },
   { id: "end_sealed", type: "ending", content: "", endingTitle: "File Sealed", endingText: "You chose to protect the truth rather than reveal it. The door stays locked." },
   { id: "end_missing", type: "ending", content: "", endingTitle: "Subject Missing", endingText: "You got away. The person you came to save was never found." },
   { id: "end_conflicting", type: "ending", content: "", endingTitle: "Conflicting Testimonies", endingText: "Everyone survived. Nobody agrees on what happened." },
