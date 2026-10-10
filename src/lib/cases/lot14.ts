@@ -72,7 +72,7 @@ const nodes: StoryNode[] = [
     option("Kneel down and look at him properly.", "aa_body"),
     option("Talk to the porter who found him.", "ab_teddy"),
     option("Climb to the landing he fell from.", "ac_landing"),
-    option("A drunk man and a dark staircase. Sign it off as an accident.", "end_misadventure"),
+    option("A drunk man and a dark staircase. Sign it off as an accident.", "end_accident"),
   ]),
 
   scene("aa_body", p(
@@ -293,7 +293,7 @@ const nodes: StoryNode[] = [
   decision("d_pim", "The boy at the sink", "Pim is being sent home.", [
     option("Ask Pim for the sketchbook.", "sketchbook"),
     option("Ask him what Teddy is so afraid of.", "teddy_cornered", { effects: [flag("suspect_teddy")] }),
-    option("He has a dead man's belongings and a reason to cry. Take him in.", "end_wrong_man"),
+    option("He has a dead man's belongings and a reason to cry. Take him in.", "end_pim"),
   ], 30),
 
   scene("storage_b2", p(
@@ -341,7 +341,7 @@ const nodes: StoryNode[] = [
   decision("d_hale2", "Everything she suggested", "Hale is telling the truth, or he is very good.", [
     option("Ask where Celeste said the copy was going.", "lobby"),
     option("Show him Felix's letter and ask what Felix was so uneasy about.", "y_gate", { ...needs("letter"), effects: [flag("moth_known")] }),
-    option("He had every reason. Arrest him.", "end_owner"),
+    option("He had every reason. Arrest him.", "end_hale"),
     option("Bring him down to the Lantern Room.", "gathering"),
   ]),
 
@@ -365,7 +365,7 @@ const nodes: StoryNode[] = [
   ), "d_ros", { label: "23:38 · Hotel entrance" }),
 
   decision("d_ros", "A convenient story", "Her taxi is waiting.", [
-    option("She's right. Arrest Augustin Hale.", "end_owner"),
+    option("She's right. Arrest Augustin Hale.", "end_hale"),
     option("Ask her who else makes money if a painting disappears.", "house_ledger", { effects: [flag("premium")] }),
     option("Show her Mrs Fairweather's programme.", "g_ticket", { ...needs("programme"), ...G_LOCK }),
   ]),
@@ -496,7 +496,7 @@ const nodes: StoryNode[] = [
   ), "d_teddy", { label: "23:52 · Teddy Brandt" }),
 
   decision("d_teddy", "The porter", "Scared men either talk or lie.", [
-    option("That's enough. Charge him with Felix Amsel's death.", "end_hired_hand"),
+    option("That's enough. Charge him with Felix Amsel's death.", "end_teddy"),
     option("Show him the last page of Felix's sketchbook.", "teddy_flips", { ...needs("sketch"), effects: [flag("teddy_saw")] }),
     option("Show him the broken watch, and ask what time he really found the body.", "teddy_flips", { ...needs("watch"), effects: [flag("teddy_saw")] }),
     option("Ask him who he works for.", "gathering", { effects: [flag("teddy_lied")] }),
@@ -517,10 +517,10 @@ const nodes: StoryNode[] = [
   ), "d_gather", { label: "00:10 · The Lantern Room" }),
 
   decision("d_gather", "Name the killer", "Everyone is waiting for you to point.", [
-    option("Point at Pim, the waiter who had the dead man's sketchbook.", "end_wrong_man"),
-    option("Point at Augustin Hale.", "end_owner"),
-    option("Point at Teddy Brandt.", "end_hired_hand", { visibleIf: [is("suspect_teddy")] }),
-    option("Tell them it was an accident, and let them all go home.", "end_misadventure"),
+    option("Point at Pim, the waiter who had the dead man's sketchbook.", "end_pim"),
+    option("Point at Augustin Hale.", "end_hale"),
+    option("Point at Teddy Brandt.", "end_teddy", { visibleIf: [is("suspect_teddy")] }),
+    option("Tell them it was an accident, and let them all go home.", "end_accident"),
     option("Name Celeste Varga, and run for the station.", "station", { effects: [flag("alerted")] }),
   ], 60),
 
@@ -537,9 +537,9 @@ const nodes: StoryNode[] = [
   ), "d_platform", { label: "01:09 · Platform 4" }),
 
   decision("d_platform", "Platform 4", "The guard is lifting his whistle.", [
-    option("Lay it out: the luggage ticket, the torn lace, the moth.", "end_mastermind", needs("ticket", [is("item_lace"), is("item_polaroid")])),
-    option("Forget her. Get that trunk off the train.", "end_canvas_only"),
-    option("Accuse her of murder, here, now, and hope she breaks.", "end_last_train"),
+    option("Lay it out: the luggage ticket, the torn lace, the moth.", "end_celeste", needs("ticket", [is("item_lace"), is("item_polaroid")])),
+    option("Forget her. Get that trunk off the train.", "end_trunk"),
+    option("Accuse her of murder, here, now, and hope she breaks.", "end_train"),
   ], 20),
 
   scene("station_empty", p(
@@ -550,7 +550,7 @@ const nodes: StoryNode[] = [
 
   decision("d_empty", "Gone to the sea", "Whatever she's on, it isn't a train.", [
     option("Pier 9. The Santa Lucia.", "harbour", needs("ferry")),
-    option("Wire the coast police and hope.", "end_last_train"),
+    option("Wire the coast police and hope.", "end_train"),
   ], 20),
 
   scene("harbour", p(
@@ -560,47 +560,45 @@ const nodes: StoryNode[] = [
   ), "d_harbour", { label: "01:24 · Pier 9" }),
 
   decision("d_harbour", "Pier 9", "The gangway is rising.", [
-    option("Lay it out: her boarding card, the torn lace, Felix's last page.", "end_mastermind", needs("ferry", [is("item_lace"), is("item_sketch")])),
-    option("Stop the crane. Get the trunk.", "end_canvas_only"),
-    option("Shout her name across the water.", "end_last_train"),
+    option("Lay it out: her boarding card, the torn lace, Felix's last page.", "end_celeste", needs("ferry", [is("item_lace"), is("item_sketch")])),
+    option("Stop the crane. Get the trunk.", "end_trunk"),
+    option("Shout her name across the water.", "end_train"),
   ], 25),
 
   // ════════ ENDINGS (in map order: END 1 … END 7) ════════
-  ending("end_misadventure", "Misadventure",
-    "Felix Amsel's death is recorded as an accident. The auction is a triumph. The real Lantern Girl reaches Lisbon on Sunday.",
-    p("The coroner agrees with the house doctor: a drunk man, a dark staircase. The Meridian sends flowers to a funeral nobody attends.",
-      "Three weeks later a postcard arrives at the hotel with no signature. Just a drawing of a lantern, and a very small moth. Nobody at the Meridian understands it.")),
-  ending("end_wrong_man", "The Wrong Man",
-    "Pim is charged with the death of Felix Amsel. He is released two days later and never works in a hotel again. The killer was never in the room.",
+  ending("end_accident", "Misadventure",
+    "Felix Amsel's death is recorded as an accident. The guests go home. The file is closed.",
+    p("The coroner agrees with the house doctor: a man who had been drinking, a steep staircase, four minutes of darkness. Mr Lindqvist thanks you for your discretion. The Meridian sends flowers to a funeral attended by six people.",
+      "Lot 14 leaves in Erik Brandvold's car before midnight. By morning the Lantern Room has been swept, the gilt chairs stacked, and the service stairs washed down.")),
+  ending("end_pim", "Pim",
+    "Pim is charged with the death of Felix Amsel. The file is closed.",
     p("Pim doesn't cry in the car. He holds Felix's sketchbook on his knees the whole way, the way Felix asked him to.",
-      "At the station house you finally open it. On the last page you read the initials C.V., and by then the 01:15 has been gone for an hour.")),
-  ending("end_hired_hand", "The Hired Hand",
-    "Teddy Brandt is charged with the death of Felix Amsel. He threw a switch and moved a box. He never killed anyone.",
-    p("Teddy doesn't fight it. He doesn't say anything, because nobody asks him the right question.",
-      "At 01:15 a night train leaves for the coast with a steamer trunk in the baggage car, and in first class a woman in black gloves sleeps very well.")),
-  ending("end_last_train", "Last Train",
-    "The Lantern Girl leaves the city, and so does the woman who killed for her.",
-    p("You watch the lights go: a red lamp vanishing into fog, or a ship's stern sliding into the dark.",
-      "Three weeks later a painting matching Clara's description changes hands in Lisbon for a sum the newspapers call undisclosed. Felix Amsel's file stays on your desk until the day you retire.")),
-  ending("end_owner", "The Owner's Debt",
-    "Augustin Hale is arrested for fraud and murder. He did neither. The woman who suggested everything he did sends flowers.",
+      "At the station house the desk sergeant takes it from him, writes EVIDENCE on a brown envelope, and locks it in a drawer.")),
+  ending("end_teddy", "Teddy Brandt",
+    "Teddy Brandt is charged with the death of Felix Amsel. The file is closed.",
+    p("Teddy doesn't fight it. He signs his statement at ten past three in a slow, careful hand, and asks if someone can tell his mother before the newspapers do.",
+      "On Monday the Meridian reopens the service stairs. By the end of the week, Lot 14 hangs in Erik Brandvold's front hall.")),
+  ending("end_train", "Last Train",
+    "Celeste Varga leaves the city before dawn. Nobody is charged tonight.",
+    p("You watch the lights go: a red lamp shrinking into the fog, or a ship's stern sliding out past the breakwater.",
+      "Felix Amsel's file stays on your desk, under the telephone, for a long time.")),
+  ending("end_hale", "Augustin Hale",
+    "Augustin Hale is arrested for fraud and the death of Felix Amsel. The file is closed.",
     p("The newspapers love it: the broke hotelier, the doubled policy, the body in the basement. Rosalind Achter's company pays nothing.",
-      "Hale's lawyers take six months to tear the case apart. By then the Meridian is closed, the painting is in Lisbon, and Celeste Varga has written Hale a very kind letter of sympathy.")),
-  ending("end_mastermind", "The Auctioneer",
-    "Celeste Varga is arrested for the murder of Felix Amsel. The real Lantern Girl comes home. Case closed.",
-    p("You don't raise your voice. You don't need to. You hold each thing up in the light, one after the other, the way she held up lots all evening.",
-      "The thread of lace from the rail where Felix fell, and the torn glove it came from. The trunk she sent ahead under her own account, light as a picture. And Felix's moth, waiting in the dark corner of the copy Brandvold paid forty-one thousand dollars for.",
-      "“He was going to tell Augustin,” she says at last. She says it the way you would mention the weather. “After Lot 14. I asked him to wait on the stairs for one minute so we could talk. One minute.” She peels off her gloves, finger by finger, and hands them to you like a lot she is withdrawing from sale. “Four minutes of darkness, Sergeant. It should have been enough.”",
-      "“It was,” you tell her. “For you to make one mistake.”",
-      "When they open the trunk, Clara is inside, rolled in tissue paper, holding up her lantern on the old quay, waiting for her ship. This time it comes.")),
-  ending("end_canvas_only", "Saved, Not Solved",
-    "You recover the real Lantern Girl from a steamer trunk. The person who killed Felix Amsel walks away.",
-    p("The trunk opens on a roll of old canvas wrapped in an auction catalogue. When you unroll it under the lights, Clara looks up from her quay as if she has been waiting fifty years for exactly you.",
-      "Hale cries when he sees her. Somewhere between here and Lisbon, a woman in black gloves orders a second glass of something cold, and the file on Felix Amsel stays open for eleven years.")),
+      "Hale says very little. His lawyers ask for six months to prepare, and the Meridian closes its doors before Christmas.")),
+  ending("end_celeste", "Celeste Varga",
+    "Celeste Varga is arrested for the death of Felix Amsel. The file is closed.",
+    p("You don't raise your voice. You hold each thing up in the light, one after the other, the way she held up lots all evening: the thread of lace from the rail, the trunk sent ahead on her account, Felix's moths.",
+      "She listens to all of it without interrupting. Then she peels off her gloves, finger by finger, and hands them to you like a lot she is withdrawing from sale. “You'll want these, Sergeant,” she says. It is the last thing she says to you.",
+      "When they open the trunk, there is a roll of old canvas inside, wrapped in tissue paper: a girl on a quay at night, holding up a lantern, waiting for her ship.")),
+  ending("end_trunk", "The Trunk",
+    "You recover a rolled canvas from a steamer trunk. Nobody is charged tonight.",
+    p("The trunk comes open on the cold boards: tissue paper, an auction catalogue, and a roll of old canvas. Unrolled under a lamp, it shows a girl on a dark quay, holding up a lantern.",
+      "By the time you look up, the crowd has thinned to porters and fog. Augustin Hale identifies the painting at four in the morning. The file on Felix Amsel stays open.")),
 ];
 
 // Endings in the order they should read on the map: END 1 … END 7 (END 6 = the truth).
-const ENDING_ORDER = ["end_misadventure", "end_canvas_only", "end_hired_hand", "end_last_train", "end_owner", "end_mastermind", "end_wrong_man"];
+const ENDING_ORDER = ["end_accident", "end_trunk", "end_teddy", "end_train", "end_hale", "end_celeste", "end_pim"];
 
 export function lot14Graph(): InteractiveGraph {
   const body = nodes.filter((n) => n.type !== "ending");
