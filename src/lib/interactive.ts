@@ -57,6 +57,8 @@ export interface StoryNode {
   // ending
   endingTitle?: string;
   endingText?: string;
+  /** Where the node sits in the node editor (ignored by readers). */
+  pos?: { x: number; y: number };
 }
 
 export type ReplayPolicy = "disabled" | "after_completion" | "after_wait" | "admin_only";
