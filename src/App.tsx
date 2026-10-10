@@ -1,4 +1,4 @@
-import { useEffect } from "react";
+import { lazy, Suspense, useEffect } from "react";
 import Lenis from "lenis";
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
@@ -19,6 +19,8 @@ import Index from "./pages/Index";
 import NotFound from "./pages/NotFound";
 import SectionHeaderStory from "./pages/SectionHeaderStory";
 import TestCasePage from "./pages/TestCasePage";
+// Pop-out node editor for Interactive Case Files (admin tool, loaded only when opened).
+const NodeEditorPage = lazy(() => import("./pages/NodeEditorPage"));
 import { useDynamicSeo } from "./hooks/useDynamicSeo";
 
 const queryClient = new QueryClient();
@@ -41,7 +43,8 @@ const LanguageSync = () => {
   useEffect(() => {
     const seg = location.pathname.split("/").filter(Boolean)[0];
     const hasPrefix = (SUPPORTED_LANGUAGES as readonly string[]).includes(seg ?? "");
-    const isAdmin = stripLanguagePrefix(location.pathname).startsWith("/admin");
+    // Admin pages and stand-alone tools (tester links, the node editor) never get a language prefix.
+    const isAdmin = /^\/(admin|node-editor|test-case)(\/|$)/.test(stripLanguagePrefix(location.pathname));
 
     let lang: SupportedLanguage = detectLanguageFromPath(location.pathname);
     if (hasPrefix) {
@@ -111,6 +114,8 @@ const LEGACY_ROUTES = ["/characters", "/manga", "/leaderboard", "/world", "/rewa
 
 const App = () => {
   useEffect(() => {
+    // The pop-out node editor pans and zooms its own canvas; no smooth page scrolling there.
+    if (window.location.pathname.startsWith("/node-editor")) return;
     const lenis = new Lenis({
       duration: 1.2,
       easing: (t: number) => Math.min(1, 1.001 - Math.pow(2, -10 * t)),
@@ -186,6 +191,7 @@ const App = () => {
           <Route path="/dev/section-header" element={<SectionHeaderStory />} />
           {/* Tester links for unpublished Interactive Case Files (snapshot from the editor). */}
           <Route path="/test-case/:id" element={<TestCasePage />} />
+          <Route path="/node-editor" element={<Suspense fallback={null}><NodeEditorPage /></Suspense>} />
           {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
           <Route path="*" element={<NotFound />} />
         </Routes>
