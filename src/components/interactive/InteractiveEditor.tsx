@@ -14,6 +14,7 @@ import { ITEM_STYLE, itemStyle } from "@/lib/itemColors";
 import { toast } from "sonner";
 import { sampleCaseGraph } from "@/lib/interactiveSample";
 import { chainOfCustodyGraph } from "@/lib/cases/chainOfCustody";
+import { NODE_CHANNEL_PREFIX, type NodeMsg } from "@/lib/nodeChannel";
 
 /** Ready-made cases the editor can load as a starting point ("blank" empties the case). */
 const TEMPLATES: { id: string; label: string; make: () => InteractiveGraph | Promise<InteractiveGraph> }[] = [
@@ -32,6 +33,8 @@ interface Props {
   title: string;
   /** Graph as last published — used to warn about edits that strand readers. */
   publishedGraph?: InteractiveGraph | null;
+  /** When the case structure was last saved (shown in the node editor window). */
+  savedAt?: number | null;
 }
 
 const field = "w-full px-3 py-2 bg-card/50 border border-border rounded-lg text-foreground text-sm focus:outline-none focus:border-primary transition-colors [color-scheme:dark]";
@@ -242,7 +245,7 @@ const QuestionsEditor: React.FC<{ questions: string[]; onChange: (q: string[]) =
 
 // ── Editor ──
 
-export const InteractiveEditor: React.FC<Props> = ({ graph, onChange, title, publishedGraph }) => {
+export const InteractiveEditor: React.FC<Props> = ({ graph, onChange, title, publishedGraph, savedAt }) => {
   const [selectedId, setSelectedId] = useState<string>(graph.startNodeId || graph.nodes[0]?.id || "");
   const [preview, setPreview] = useState<{ start: string; key: number } | null>(null);
   const [showJson, setShowJson] = useState(false);
@@ -359,6 +362,54 @@ export const InteractiveEditor: React.FC<Props> = ({ graph, onChange, title, pub
   const setContentFor = (nodeId: string, html: string) => {
     const g = graphRef.current;
     onChange({ ...g, nodes: g.nodes.map((n) => (n.id === nodeId ? { ...n, content: html } : n)) });
+  };
+
+  // ── Pop-out node editor ──
+  // The node window talks to this editor over a BroadcastChannel: it asks for the
+  // case, sends every edit back (saved by the story editor like any other change),
+  // and node clicks are mirrored both ways.
+  const nodeChannelKey = useMemo(() => uid("ch"), []);
+  const nodeChan = useRef<BroadcastChannel | null>(null);
+  const fromNodeWindow = useRef(new WeakSet<InteractiveGraph>());
+  const remoteSelect = useRef<string | null>(null);
+  const nodeHandlers = useRef({ graph, title, selectedId, onUpdate: (_g: InteractiveGraph) => {}, onSelect: (_id: string) => {} });
+  nodeHandlers.current = {
+    graph, title, selectedId,
+    onUpdate: (g: InteractiveGraph) => { fromNodeWindow.current.add(g); onChange(g); },
+    onSelect: (id: string) => { remoteSelect.current = id; if (graphRef.current.nodes.some((n) => n.id === id)) goToIssue({ nodeId: id }); },
+  };
+  useEffect(() => {
+    if (typeof BroadcastChannel === "undefined") return;
+    const chan = new BroadcastChannel(`${NODE_CHANNEL_PREFIX}${nodeChannelKey}`);
+    nodeChan.current = chan;
+    chan.onmessage = (e: MessageEvent<NodeMsg>) => {
+      const m = e.data;
+      const h = nodeHandlers.current;
+      if (!m || typeof m !== "object") return;
+      if (m.t === "hello") chan.postMessage({ t: "state", graph: h.graph, title: h.title, selectedId: h.selectedId } satisfies NodeMsg);
+      else if (m.t === "ping") chan.postMessage({ t: "pong" } satisfies NodeMsg);
+      else if (m.t === "update" && m.graph && Array.isArray(m.graph.nodes)) h.onUpdate(m.graph);
+      else if (m.t === "select" && m.id) h.onSelect(m.id);
+    };
+    const bye = () => chan.postMessage({ t: "bye" } satisfies NodeMsg);
+    window.addEventListener("pagehide", bye);
+    return () => { window.removeEventListener("pagehide", bye); bye(); chan.close(); nodeChan.current = null; };
+  }, [nodeChannelKey]);
+  useEffect(() => {
+    if (fromNodeWindow.current.has(graph)) return;
+    nodeChan.current?.postMessage({ t: "state", graph, title } satisfies NodeMsg);
+  }, [graph, title]);
+  useEffect(() => {
+    if (remoteSelect.current === selectedId) { remoteSelect.current = null; return; }
+    if (selectedId) nodeChan.current?.postMessage({ t: "select", id: selectedId } satisfies NodeMsg);
+  }, [selectedId]);
+  useEffect(() => {
+    if (savedAt) nodeChan.current?.postMessage({ t: "saved", at: savedAt } satisfies NodeMsg);
+  }, [savedAt]);
+  const openNodeEditor = () => {
+    const w = window.open(`/node-editor?ch=${nodeChannelKey}`, "ic-node-editor", "popup=yes,width=1480,height=920");
+    if (!w) toast.error("The pop-up was blocked. Allow pop-ups for this site and press the button again.");
+    else w.focus();
   };
 
   const setNodes = (nodes: StoryNode[], extra: Partial<InteractiveGraph> = {}) => onChange({ ...graphRef.current, ...extra, nodes });
@@ -551,6 +602,9 @@ export const InteractiveEditor: React.FC<Props> = ({ graph, onChange, title, pub
             <button type="button" onClick={toggleSettings} className="text-sm font-medium text-foreground text-left">Interactive case settings</button>
           </div>
           <div className="flex flex-wrap gap-2">
+            <button type="button" onClick={openNodeEditor} className={`${smallBtn} border-primary/60 text-primary`} title="Opens the visual node editor in its own window. Edits there show up here and save straight away.">
+              Open node editor ↗
+            </button>
             <select value="" onChange={(e) => loadTemplate(e.target.value)} className={`${smallBtn} bg-transparent [color-scheme:dark]`} aria-label="Load a template">
               <option value="">Load a template or clear…</option>
               {TEMPLATES.map((t) => <option key={t.id} value={t.id}>{t.label}</option>)}
@@ -1053,12 +1107,13 @@ export const InteractiveEditor: React.FC<Props> = ({ graph, onChange, title, pub
             <>
               <div data-loc={`${sel.id}|endingTitle`}>
                 <label className={label}>Ending title</label>
-                <input value={sel.endingTitle || ""} onChange={(e) => patchSel({ endingTitle: e.target.value })} placeholder="CASE CLOSED" className={`${field} font-display uppercase`} />
+                <input value={sel.endingTitle || ""} onChange={(e) => patchSel({ endingTitle: e.target.value })} placeholder="PLATFORM 4" className={`${field} font-display uppercase`} />
               </div>
               <div>
                 <label className={label}>Outcome description</label>
                 <textarea value={sel.endingText || ""} onChange={(e) => patchSel({ endingText: e.target.value })} rows={3}
-                  placeholder="You identified the real threat and escaped with enough evidence." className={field} />
+                  placeholder="Celeste Varga is arrested on Platform 4. The file is closed." className={field} />
+                <p className="text-[11px] text-muted-foreground mt-1">Describe what happens, never whether the reader was right. The written conclusion and your review do that.</p>
               </div>
             </>
           )}
