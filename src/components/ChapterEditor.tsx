@@ -202,6 +202,10 @@ export const ChapterEditor: React.FC<ChapterEditorProps> = ({ authToken, userId,
   const [publishedGraph, setPublishedGraph] = useState<InteractiveGraph | null>(null);
   const [publishedFormat, setPublishedFormat] = useState<StoryFormat>('linear');
   const isInteractive = storyFormat === 'interactive' && !isLegacy;
+  // Every change to the case structure is kept in this browser straight away (per story),
+  // until it is published. Readers only see it after Publish / Update.
+  const backupKey = editChapterId ? `ic-editor-backup:${editChapterId}` : IC_BACKUP_KEY;
+  const [structureSavedAt, setStructureSavedAt] = useState<number | null>(null);
 
   const switchEditLang = (next: SupportedLanguage) => {
     if (next === editLang) return;
@@ -267,8 +271,23 @@ export const ChapterEditor: React.FC<ChapterEditorProps> = ({ authToken, userId,
           setTags(Array.isArray(data[0].tags) ? data[0].tags : []);
           if (data[0].interactive_graph) {
             const g = normalizeGraph(data[0].interactive_graph);
-            setGraph(g);
             setPublishedGraph(g);
+            // Unpublished changes saved in this browser win over the published version.
+            let restored: InteractiveGraph | null = null;
+            try {
+              const raw = localStorage.getItem(`ic-editor-backup:${editChapterId}`);
+              if (raw) {
+                const b = normalizeGraph(JSON.parse(raw));
+                if (JSON.stringify(b) !== JSON.stringify(g)) restored = b;
+              }
+            } catch { /* ignore */ }
+            setGraph(restored || g);
+            if (restored) {
+              toast.info('Restored your unpublished changes to this case (saved in this browser).', {
+                duration: 12000,
+                action: { label: 'Use published version', onClick: () => setGraph(g) },
+              });
+            }
           }
           if (data[0].story_format === 'interactive') {
             setStoryFormat('interactive');
@@ -330,11 +349,32 @@ export const ChapterEditor: React.FC<ChapterEditorProps> = ({ authToken, userId,
     }
   }, [editChapterId, authToken, resumeDraftId]);
 
-  // Back up an unpublished interactive case structure in this browser.
+  // Save the case structure in this browser as soon as it changes (new and published cases).
   useEffect(() => {
-    if (editChapterId || !isInteractive) return;
-    try { localStorage.setItem(IC_BACKUP_KEY, JSON.stringify(graph)); } catch { /* ignore */ }
-  }, [graph, isInteractive, editChapterId]);
+    if (!isInteractive || loadingChapter) return;
+    const t = window.setTimeout(() => {
+      try {
+        localStorage.setItem(backupKey, JSON.stringify(graph));
+        setStructureSavedAt(Date.now());
+      } catch { /* storage full or blocked */ }
+    }, 250);
+    return () => window.clearTimeout(t);
+  }, [graph, isInteractive, loadingChapter, backupKey]);
+
+  // Clear the story text and the whole case structure (title, tags, cover and schedule stay).
+  const handleClearStory = () => {
+    const hasText = content.replace(/<[^>]*>/g, '').trim().length > 0;
+    const hasCase = graph.nodes.length > 1 || graph.nodes.some((n) => (n.content || '').replace(/<[^>]*>/g, '').trim());
+    if (!hasText && !hasCase) { toast.info('The story is already empty.'); return; }
+    if (!window.confirm('Clear the story? This empties the story text and the whole interactive case structure. Title, tags, cover and schedule stay. You can undo right after.')) return;
+    const before = { content, graph };
+    setContent('');
+    setGraph(emptyGraph());
+    toast.success('Story cleared.', {
+      duration: 12000,
+      action: { label: 'Undo', onClick: () => { setContent(before.content); setGraph(before.graph); } },
+    });
+  };
 
   // Auto-save draft every 10 seconds when content changes
   const autoSave = useCallback(async () => {
@@ -469,6 +509,7 @@ export const ChapterEditor: React.FC<ChapterEditorProps> = ({ authToken, userId,
             : await dbFetch('chapter_translations', { method: 'POST', body: { ...trBody, chapter_id: editChapterId, language_code: lang }, token: authToken });
           if (res.error) throw new Error(`${LANGUAGE_LABELS[lang]}: ${res.error}`);
         }
+        try { localStorage.removeItem(backupKey); } catch { /* ignore */ }
         toast.success(normalizedScheduledAt ? `${isLegacy ? 'Chapter' : 'Story'} scheduled for ${normalizedScheduledAt.replace('T', ' ')} (Swedish time)` : `${isLegacy ? 'Chapter' : 'Story'} updated!`);
       } else {
         // Always reserve a fresh internal number at save time — drafts can hold a stale one.
@@ -532,6 +573,17 @@ export const ChapterEditor: React.FC<ChapterEditorProps> = ({ authToken, userId,
           {draftStatus && (
             <span className="text-xs text-muted-foreground">{draftStatus}</span>
           )}
+          {isInteractive && structureSavedAt && (
+            <span className="text-xs text-muted-foreground" title="Kept in this browser. Readers see changes after you publish or update.">
+              Case saved {new Date(structureSavedAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' })}
+            </span>
+          )}
+          <button
+            onClick={handleClearStory}
+            className="px-4 py-2 border border-border hover:border-destructive hover:text-destructive text-muted-foreground rounded-lg text-sm transition-colors"
+          >
+            Clear Story
+          </button>
           {!editChapterId && (
             <button
               onClick={handleSaveDraft}
@@ -817,7 +869,7 @@ export const ChapterEditor: React.FC<ChapterEditorProps> = ({ authToken, userId,
 
       {/* Editor */}
       {isInteractive ? (
-        <InteractiveEditor graph={graph} onChange={setGraph} title={title} publishedGraph={publishedFormat === 'interactive' ? publishedGraph : null} />
+        <InteractiveEditor graph={graph} onChange={setGraph} title={title} publishedGraph={publishedFormat === 'interactive' ? publishedGraph : null} savedAt={structureSavedAt} />
       ) : (
         <>
           <CollapsiblePanel title="Story text" summary={`${wordCount} words`} storageKey="chapter-editor:text-open">
