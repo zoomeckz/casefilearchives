@@ -7,7 +7,7 @@ import { CaseMap } from "@/components/interactive/CaseMap";
 import {
   InteractiveGraph, StoryNode, NodeType, Condition, CondOp, Effect, DecisionOption, NotebookEntry,
   ReplayPolicy, GuestAccess, EndingVisibility, InventoryItem, ItemColor,
-  uid, validateGraph, removedNodeIds, normalizeGraph, nextNodeId, getConclusionQuestions, findItem,
+  uid, validateGraph, removedNodeIds, normalizeGraph, nextNodeId, getConclusionQuestions, findItem, emptyGraph,
   ITEM_COLORS, ITEM_PREFIX, itemVar,
 } from "@/lib/interactive";
 import { ITEM_STYLE, itemStyle } from "@/lib/itemColors";
@@ -15,10 +15,12 @@ import { toast } from "sonner";
 import { sampleCaseGraph } from "@/lib/interactiveSample";
 import { chainOfCustodyGraph } from "@/lib/cases/chainOfCustody";
 
-/** Ready-made cases the editor can load as a starting point. */
-const TEMPLATES: { id: string; label: string; make: () => InteractiveGraph }[] = [
-  { id: "example", label: "Example case (short demo)", make: sampleCaseGraph },
+/** Ready-made cases the editor can load as a starting point ("blank" empties the case). */
+const TEMPLATES: { id: string; label: string; make: () => InteractiveGraph | Promise<InteractiveGraph> }[] = [
+  { id: "blank", label: "Blank case (start empty)", make: emptyGraph },
+  { id: "lot-14", label: "Lights Out at the Meridian: Lot 14 (1974, 7 endings)", make: () => import("@/lib/cases/lot14").then((m) => m.lot14Graph()) },
   { id: "chain-of-custody", label: "Chain of Custody: Chapter 1 (1974)", make: chainOfCustodyGraph },
+  { id: "example", label: "Example case (short demo)", make: sampleCaseGraph },
 ];
 
 // Admin-only (English) editor for Interactive Case Files. Edits the graph that
@@ -494,14 +496,29 @@ export const InteractiveEditor: React.FC<Props> = ({ graph, onChange, title, pub
     } finally { setMakingLink(false); }
   };
 
-  const loadTemplate = (templateId: string) => {
+  /** Swap in a whole new graph, with an Undo in the toast so nothing is lost by accident. */
+  const replaceGraph = (g: InteractiveGraph, message: string) => {
+    const before = graphRef.current;
+    onChange(g);
+    setSelectedId(g.startNodeId);
+    toast.success(message, {
+      duration: 10000,
+      action: { label: "Undo", onClick: () => { onChange(before); setSelectedId(before.startNodeId); } },
+    });
+  };
+
+  const loadTemplate = async (templateId: string) => {
     const t = TEMPLATES.find((x) => x.id === templateId);
     if (!t) return;
     const hasWork = graph.nodes.length > 1 || graph.nodes.some((n) => n.content.replace(/<[^>]*>/g, "").trim());
-    if (hasWork && !window.confirm(`Replace the current case structure with “${t.label}”?`)) return;
-    const g = t.make();
-    onChange(g);
-    setSelectedId(g.startNodeId);
+    const question = t.id === "blank" ? "Clear the whole case and start empty?" : `Replace the current case structure with “${t.label}”?`;
+    if (hasWork && !window.confirm(question)) return;
+    try {
+      const g = await t.make();
+      replaceGraph(g, t.id === "blank" ? "Case cleared." : `Loaded “${t.label}”.`);
+    } catch {
+      toast.error("Could not load that template. Try again.");
+    }
   };
 
   const applyJson = () => {
@@ -509,8 +526,7 @@ export const InteractiveEditor: React.FC<Props> = ({ graph, onChange, title, pub
       const parsed = JSON.parse(jsonDraft);
       if (!parsed || !Array.isArray(parsed.nodes)) throw new Error("JSON must contain a \"nodes\" array.");
       const g = normalizeGraph(parsed);
-      onChange(g);
-      setSelectedId(g.startNodeId);
+      replaceGraph(g, "JSON applied.");
       setJsonError(null);
       setShowJson(false);
     } catch (e: any) {
@@ -536,7 +552,7 @@ export const InteractiveEditor: React.FC<Props> = ({ graph, onChange, title, pub
           </div>
           <div className="flex flex-wrap gap-2">
             <select value="" onChange={(e) => loadTemplate(e.target.value)} className={`${smallBtn} bg-transparent [color-scheme:dark]`} aria-label="Load a template">
-              <option value="">Load a template…</option>
+              <option value="">Load a template or clear…</option>
               {TEMPLATES.map((t) => <option key={t.id} value={t.id}>{t.label}</option>)}
             </select>
             <button type="button" onClick={() => { setJsonDraft(JSON.stringify(graph, null, 2)); setJsonError(null); setShowJson((v) => !v); }} className={smallBtn}>
