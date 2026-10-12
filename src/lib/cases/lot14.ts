@@ -6,10 +6,10 @@ import {
 // "Lights Out at the Meridian: Lot 14". Interactive Case File, rebuilt to the
 // neon route map: 3 openings, 9 first leads, item diamonds and locks, the Y/Z
 // fork (the moth, or the warning), the G luggage ticket, 7 endings.
-// END 6 (The Auctioneer) is the true solution. Loaded from the admin editor's
-// template menu (lazy-loaded, so readers never download it); every line,
-// choice, item and lock stays editable there. Note: this repository is public,
-// so the solution can be read here by anyone browsing the source.
+// Loaded from the admin editor's template menu (lazy-loaded, so readers never
+// download it); every line, choice, item and lock stays editable there.
+// This repository is public: the solution is deliberately NOT written here.
+// Keep it in the private story bible.
 
 const p = (...paras: string[]) => paras.map((t) => `<p>${t}</p>`).join("");
 const is = (v: string): Condition => ({ var: v, op: "truthy" });
@@ -169,7 +169,6 @@ const nodes: StoryNode[] = [
   decision("d_bb", "Lot 14", "The crate lid is coming down.", [
     option("Put your nose to the canvas.", "brandvold", { effects: [flag("fresh_paint")] }),
     option("Ask the porters who handled the easel tonight.", "corridor", { effects: [flag("suspect_teddy")] }),
-    option("Look closely at the darkest corner of the water.", "y_gate", { visibleIf: [is("moth_known")] }),
   ], 40),
 
   scene("bc_celeste", p(
@@ -597,7 +596,7 @@ const nodes: StoryNode[] = [
       "By the time you look up, the crowd has thinned to porters and fog. Augustin Hale identifies the painting at four in the morning. The file on Felix Amsel stays open.")),
 ];
 
-// Endings in the order they should read on the map: END 1 … END 7 (END 6 = the truth).
+// Endings in the order they should read on the map: END 1 … END 7.
 const ENDING_ORDER = ["end_accident", "end_trunk", "end_teddy", "end_train", "end_hale", "end_celeste", "end_pim"];
 
 export function lot14Graph(): InteractiveGraph {
@@ -607,8 +606,8 @@ export function lot14Graph(): InteractiveGraph {
     startNodeId: "opening",
     settings: {
       ...DEFAULT_SETTINGS,
-      replay: "after_wait",
-      replayWaitHours: 168,
+      // One attempt per calendar month; the lock lifts on the 1st (Stockholm time).
+      replay: "monthly",
       guestAccess: "two_choices",
       endingVisibility: "count",
       items: [
