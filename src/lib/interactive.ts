@@ -3,6 +3,8 @@
 // ic_choose) so guest reads and admin previews behave exactly like the
 // server-enforced path for registered readers.
 
+import { swedishToUTC, utcToSwedishDateTimeLocal } from "@/lib/timezone";
+
 export type CondOp = "eq" | "neq" | "gt" | "gte" | "lt" | "lte" | "truthy" | "falsy";
 export interface Condition { var: string; op: CondOp; value?: string }
 export interface Effect { var: string; op: "set" | "add"; value: string }
@@ -61,7 +63,21 @@ export interface StoryNode {
   pos?: { x: number; y: number };
 }
 
-export type ReplayPolicy = "disabled" | "after_completion" | "after_wait" | "admin_only";
+/** monthly = one attempt per calendar month; the lock lifts on the 1st (Stockholm time). */
+export type ReplayPolicy = "disabled" | "after_completion" | "after_wait" | "monthly" | "admin_only";
+
+/** When a "monthly" case reopens: midnight on the 1st of the month after the attempt
+ *  was started, Stockholm time (the same rule the database enforces in ic_start). */
+export function monthlyReopenAt(startedIso: string | null | undefined): number | null {
+  const local = utcToSwedishDateTimeLocal(startedIso);
+  const m = local.match(/^(\d{4})-(\d{2})/);
+  if (!m) return null;
+  const year = Number(m[1]);
+  const month = Number(m[2]);
+  const nextYear = month === 12 ? year + 1 : year;
+  const nextMonth = month === 12 ? 1 : month + 1;
+  return Date.parse(swedishToUTC(`${nextYear}-${String(nextMonth).padStart(2, "0")}-01T00:00`));
+}
 export type GuestAccess = "opening" | "two_choices" | "full_nosave";
 export type EndingVisibility = "own" | "count" | "index";
 
@@ -96,6 +112,8 @@ export interface PlayState {
   visited: string[];
   ending_node: string | null;
   completed_at?: string | null;
+  /** When this attempt was started (ISO); the "monthly" replay lock counts from it. */
+  started_at?: string | null;
   attempt?: number;
   /** When the current decision was reached (ISO); starts the clock on timed decisions. */
   reached_at?: string | null;
@@ -250,6 +268,7 @@ export function startLocal(g: InteractiveGraph): PlayState {
     visited: r.visited,
     ending_node: r.ending,
     completed_at: r.terminal ? new Date().toISOString() : null,
+    started_at: new Date().toISOString(),
     reached_at: new Date().toISOString(),
     decisions: [],
   };
@@ -289,6 +308,7 @@ export function parseServerState(raw: any): PlayState | null {
     visited: Array.isArray(p.visited) ? p.visited : [],
     ending_node: p.ending_node,
     completed_at: p.completed_at,
+    started_at: p.started_at ?? null,
     attempt: p.attempt,
     reached_at: p.updated_at ?? null,
     final_answer: p.final_answer ?? null,
