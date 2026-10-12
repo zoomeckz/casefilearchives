@@ -1,6 +1,6 @@
 import React, { useCallback, useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
-import { collectNotebook, findNode, normalizeGraph, type Decision, type InteractiveGraph } from "@/lib/interactive";
+import { chooseLocal, collectNotebook, findNode, normalizeGraph, startLocal, type Decision, type InteractiveGraph } from "@/lib/interactive";
 import { storyPath } from "@/lib/slug";
 import { CaseReport } from "@/components/interactive/CaseReport";
 import { CaseMap } from "@/components/interactive/CaseMap";
@@ -31,9 +31,56 @@ interface ReportRow {
   variables: Record<string, string>;
   visited: string[];
   decisions: Decision[];
+  /** Filed while the server could not record decisions: kept in the reader's browser, answer saved as a reading event. */
+  local?: boolean;
 }
 
-interface CaseMeta { graph: InteractiveGraph; path: string }
+interface CaseMeta { graph: InteractiveGraph; path: string; title: string }
+
+/** Answers filed from a reader's browser (see InteractiveReader: SERVER_CHOICE_BROKEN). */
+async function loadLocalReports(token?: string): Promise<ReportRow[]> {
+  if (!token) return [];
+  const headers = { apikey: ANON, Authorization: `Bearer ${token}` };
+  const res = await fetch(
+    `${SUPA_URL}/rest/v1/interactive_events?select=id,case_key,user_id,attempt,node_id,meta,created_at&kind=eq.answer&meta->>local=eq.true&case_key=not.like.test:*&order=created_at.desc&limit=500`,
+    { headers },
+  );
+  if (!res.ok) return [];
+  const events: any[] = await res.json();
+  const ids = [...new Set(events.map((e) => e.user_id).filter(Boolean))];
+  const names: Record<string, string> = {};
+  if (ids.length) {
+    const r = await fetch(`${SUPA_URL}/rest/v1/rpc/get_public_profiles?select=user_id,name&user_id=in.(${ids.join(",")})`, { headers });
+    if (r.ok) for (const p of await r.json()) names[p.user_id] = p.name;
+  }
+  return events.map((e) => ({
+    playthrough_id: `local:${e.id}`,
+    chapter_id: e.case_key,
+    case_title: "",
+    reader_id: e.user_id,
+    reader_name: names[e.user_id] || "Reader",
+    attempt: e.attempt || 1,
+    ending_node: e.node_id,
+    completed_at: e.meta?.at || null,
+    final_answer: e.meta?.text || "",
+    answered_at: e.created_at,
+    admin_feedback: null,
+    feedback_at: null,
+    variables: e.meta?.v || {},
+    visited: [],
+    decisions: Array.isArray(e.meta?.d) ? e.meta.d.map(([node_id, option_id]: [string, string]) => ({ node_id, option_id })) : [],
+    local: true,
+  }));
+}
+
+/** Sections a route went through, replayed from its decisions (browser-kept reports carry no list). */
+function replayVisited(graph: InteractiveGraph, decisions: Decision[]): string[] {
+  try {
+    let s = startLocal(graph);
+    for (const d of decisions) s = chooseLocal(graph, s, d.node_id, d.option_id);
+    return s.visited;
+  } catch { return []; }
+}
 
 async function rpc<T>(fn: string, body: unknown, token?: string): Promise<T> {
   if (!token) throw new Error("Sign in again to load case reports.");
@@ -70,6 +117,15 @@ const FeedbackForm: React.FC<{ row: ReportRow; meta?: CaseMeta; token?: string; 
       toast.error(e.message || "The response could not be sent.");
     } finally { setSaving(false); }
   };
+
+  if (row.local) {
+    return (
+      <p className="text-xs text-muted-foreground border border-dashed border-border rounded px-3 py-2">
+        This reader finished while the server could not record decisions, so their playthrough was kept in their browser.
+        Replies can't be sent to it from here.
+      </p>
+    );
+  }
 
   if (!editing && row.admin_feedback) {
     return (
@@ -122,8 +178,12 @@ export const CaseReportsInbox: React.FC<{ authToken?: string }> = ({ authToken }
   const load = useCallback(async () => {
     setRows(null); setError(null);
     try {
-      const data = await rpc<ReportRow[]>("ic_admin_reports", { _status: status }, authToken);
-      const list = Array.isArray(data) ? data : [];
+      const [data, local] = await Promise.all([
+        rpc<ReportRow[]>("ic_admin_reports", { _status: status }, authToken),
+        status === "answered" ? Promise.resolve([] as ReportRow[]) : loadLocalReports(authToken).catch(() => [] as ReportRow[]),
+      ]);
+      const list = [...(Array.isArray(data) ? data : []), ...local]
+        .sort((a, b) => Date.parse(b.answered_at || "") - Date.parse(a.answered_at || ""));
       const ids = [...new Set(list.map((r) => r.chapter_id))];
       const metas: Record<string, CaseMeta> = {};
       if (ids.length) {
@@ -136,11 +196,16 @@ export const CaseReportsInbox: React.FC<{ authToken?: string }> = ({ authToken }
           metas[c.id] = {
             graph: normalizeGraph(c.interactive_graph),
             path: storyPath({ title: c.title, chapterNumber: c.chapter_number, isArchived: c.is_archived }),
+            title: c.title,
           };
         }
       }
       setCases(metas);
-      setRows(list);
+      setRows(list.map((r) => (r.local ? {
+        ...r,
+        case_title: metas[r.chapter_id]?.title || "Interactive case",
+        visited: metas[r.chapter_id] ? replayVisited(metas[r.chapter_id].graph, r.decisions) : [],
+      } : r)));
     } catch (e: any) {
       setError(e.message || "Case reports could not be loaded.");
       setRows([]);
@@ -211,7 +276,7 @@ export const CaseReportsInbox: React.FC<{ authToken?: string }> = ({ authToken }
                   </p>
                 </div>
                 <span className={`case-label text-[9px] ${r.admin_feedback ? "" : "!text-primary"}`}>
-                  {r.admin_feedback ? "Answered" : "Awaiting response"} · filed {fmt(r.answered_at)}
+                  {r.local ? "Saved from the reader's browser" : r.admin_feedback ? "Answered" : "Awaiting response"} · filed {fmt(r.answered_at)}
                 </span>
               </div>
 
