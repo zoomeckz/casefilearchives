@@ -120,7 +120,7 @@ export const CaseMap: React.FC<CaseMapProps> = ({ graph, decisions, endingNode, 
           }
           const c = BRANCH_COLORS[n.branch % BRANCH_COLORS.length];
           const stroke = hidden ? "#475569" : c;
-          const letter = incomingLetter[n.id] || "";
+          const letter = n.code ?? incomingLetter[n.id] ?? "";
           const heatR = heat && nodeHeat ? R + 4 + (nodeHeat / maxNode) * 8 : 0;
           return (
             <g key={n.id} onClick={click} style={{ cursor: click ? "pointer" : undefined }} opacity={isOn ? 1 : 0.25}
@@ -129,7 +129,7 @@ export const CaseMap: React.FC<CaseMapProps> = ({ graph, decisions, endingNode, 
               {n.givesItem
                 ? <rect x={n.x - R * 0.9} y={n.y - R * 0.9} width={R * 1.8} height={R * 1.8} transform={`rotate(45 ${n.x} ${n.y})`} fill="#07090d" stroke={stroke} strokeWidth={sel ? 3 : 1.8} />
                 : <circle cx={n.x} cy={n.y} r={R} fill="#07090d" stroke={stroke} strokeWidth={sel ? 3 : 1.8} />}
-              {!hidden && <text x={n.x} y={n.y + 5} textAnchor="middle" fill={c} fontSize={14} fontWeight={700}>{letter}</text>}
+              {!hidden && <text x={n.x} y={n.y + 5} textAnchor="middle" fill={c} fontSize={letter.length > 1 ? 12 : 14} fontWeight={700}>{letter}</text>}
               {n.timed && !hidden && (
                 <g>
                   <circle cx={n.x + R - 2} cy={n.y - R + 2} r={6.5} fill="#07090d" stroke="#f87171" strokeWidth={1.2} />
