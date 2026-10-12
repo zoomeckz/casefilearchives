@@ -7,6 +7,7 @@ import {
   InteractiveGraph, StoryNode, NodeType, Condition, CondOp, Effect, DecisionOption, NotebookEntry,
   ReplayPolicy, GuestAccess, EndingVisibility, InventoryItem, ItemColor,
   uid, validateGraph, removedNodeIds, normalizeGraph, nextNodeId, getConclusionQuestions, findItem, emptyGraph,
+  closingStyle, AGREE_DEFAULTS, type ClosingStyle,
   ITEM_COLORS, ITEM_PREFIX, itemVar,
 } from "@/lib/interactive";
 import { ITEM_STYLE, itemStyle } from "@/lib/itemColors";
@@ -674,12 +675,39 @@ export const InteractiveEditor: React.FC<Props> = ({ graph, onChange, title, pub
           <label className={label}>Inventory items — things readers can pick up through their choices</label>
           <ItemsEditor items={graph.settings.items || []} onChange={(items) => setSettings({ items: items.length ? items : undefined })} />
         </div>
-        <div className="mt-5">
-          <label className={label}>Closing questions — readers answer each one in writing after the ending (none = no written conclusion)</label>
-          <QuestionsEditor
-            questions={questions}
-            onChange={(qs) => setSettings({ conclusionQuestions: qs, conclusionPrompt: qs.find((q) => q.trim()) || "" })}
-          />
+        <div className="mt-5" data-loc="settings:closing">
+          <label className={label}>After any ending, ask readers — answers arrive in Admin → Case reports</label>
+          <select value={closingStyle(graph.settings)} onChange={(e) => setSettings({ closing: e.target.value as ClosingStyle })} className={field}>
+            <option value="agree">Whether they agree with their conclusion (Yes → thanks · No → one follow-up question → thanks)</option>
+            <option value="questions">Written closing questions</option>
+          </select>
+          {closingStyle(graph.settings) === "agree" ? (
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 mt-3">
+              <div>
+                <label className={label}>Question</label>
+                <input value={graph.settings.agreeQuestion ?? ""} placeholder={AGREE_DEFAULTS.agreeQuestion}
+                  onChange={(e) => setSettings({ agreeQuestion: e.target.value || undefined })} className={field} />
+              </div>
+              <div>
+                <label className={label}>If they answer No, ask</label>
+                <input value={graph.settings.disagreeQuestion ?? ""} placeholder={AGREE_DEFAULTS.disagreeQuestion}
+                  onChange={(e) => setSettings({ disagreeQuestion: e.target.value || undefined })} className={field} />
+              </div>
+              <div>
+                <label className={label}>Then say</label>
+                <input value={graph.settings.closingThanks ?? ""} placeholder={AGREE_DEFAULTS.closingThanks}
+                  onChange={(e) => setSettings({ closingThanks: e.target.value || undefined })} className={field} />
+              </div>
+            </div>
+          ) : (
+            <div className="mt-3">
+              <label className={label}>Closing questions — readers answer each one in writing after the ending (none = no written conclusion)</label>
+              <QuestionsEditor
+                questions={questions}
+                onChange={(qs) => setSettings({ conclusionQuestions: qs, conclusionPrompt: qs.find((q) => q.trim()) || "" })}
+              />
+            </div>
+          )}
         </div>
         {varNames.length > 0 && (
           <p className="mt-3 text-[11px] text-muted-foreground break-words">
