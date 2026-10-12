@@ -252,17 +252,21 @@ export function useAuth() {
     setUser(authUser);
   };
 
-  const signUp = async (email: string, password: string, name: string) => {
+  /** Email sign-ups must be confirmed first: then no session comes back and the reader is told to check
+   *  their inbox. An existing address comes back with no identities (the server does not say so outright). */
+  const signUp = async (email: string, password: string, name: string): Promise<{ needsConfirmation: boolean; alreadyRegistered: boolean }> => {
     const { data, error } = await dbAuth('signup', { email, password, name });
     if (error) throw new Error(error);
 
-    // If auto-confirm is off, there won't be a session
     if (data?.access_token) {
       const stored = storeSession(data);
       setSession(stored);
       const authUser = await fetchUserProfile(stored.user.id, stored.user.email, stored.access_token);
       setUser(authUser);
+      return { needsConfirmation: false, alreadyRegistered: false };
     }
+    const account = data?.user ?? data;
+    return { needsConfirmation: true, alreadyRegistered: Array.isArray(account?.identities) && account.identities.length === 0 };
   };
 
   const signOut = async () => {
