@@ -8,6 +8,13 @@
       "when": 1791438943057,
       "tag": "0000_interactive_case_files",
       "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "7",
+      "when": 1791784566843,
+      "tag": "0001_apply_pending_migrations",
+      "breakpoints": true
     }
   ]
 }
