@@ -75,13 +75,17 @@ export async function dbFetch<T = any>(
   }
 }
 
+/** Where links in sign-up and password emails lead back to (the page the reader is on). */
+const returnTo = (path?: string) =>
+  typeof window === 'undefined' ? '' : `?redirect_to=${encodeURIComponent(window.location.origin + (path ?? window.location.pathname))}`;
+
 export async function dbAuth(action: 'signin' | 'signup', payload: {
   email: string;
   password: string;
   name?: string;
 }): Promise<{ data: any; error: string | null }> {
   const endpoint = action === 'signup'
-    ? `${url}/auth/v1/signup`
+    ? `${url}/auth/v1/signup${returnTo()}`
     : `${url}/auth/v1/token?grant_type=password`;
 
   const body: any = {
@@ -112,6 +116,26 @@ export async function dbAuth(action: 'signin' | 'signup', payload: {
     return { data, error: null };
   } catch (err: any) {
     return { data: null, error: err.message || 'Network error' };
+  }
+}
+
+/** Email actions: "resend" sends the confirmation email again, "recover" sends a password-reset link. */
+export async function dbAuthEmail(action: 'resend' | 'recover', email: string): Promise<{ error: string | null }> {
+  const endpoint = action === 'resend'
+    ? `${url}/auth/v1/resend${returnTo()}`
+    : `${url}/auth/v1/recover${returnTo('/reset-password')}`;
+  const body = action === 'resend' ? { type: 'signup', email } : { email };
+  try {
+    const response = await fetch(endpoint, {
+      method: 'POST',
+      headers: { 'apikey': key, 'Content-Type': 'application/json' },
+      body: JSON.stringify(body),
+    });
+    if (response.ok) return { error: null };
+    const data = await response.json().catch(() => ({}));
+    return { error: data.error_description || data.msg || data.message || 'Request failed' };
+  } catch (err: any) {
+    return { error: err.message || 'Network error' };
   }
 }
 
