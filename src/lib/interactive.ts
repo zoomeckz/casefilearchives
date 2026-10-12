@@ -95,7 +95,13 @@ export interface InteractiveSettings {
   conclusionQuestions?: string[];
   /** Items readers can pick up through their choices. */
   items?: InventoryItem[];
+  /** Hand-placed Story map, keyed by section id ("__start" for the start pill). It is used
+   *  only while it covers every decision and ending; otherwise the map lays itself out. */
+  map?: Record<string, MapPlacement>;
 }
+
+/** One cell of a hand-placed Story map: grid row and column, plus an optional short code (e.g. "AA", "Y"). */
+export interface MapPlacement { row: number; col: number; code?: string }
 
 export interface InteractiveGraph {
   startNodeId: string;
