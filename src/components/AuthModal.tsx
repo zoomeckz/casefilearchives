@@ -1,16 +1,35 @@
 import React, { useState } from "react";
 import { Icons } from "@/lib/icons";
 import { lovable } from "@/integrations/lovable/index";
+import { dbAuthEmail } from "@/lib/dbFetch";
 import i18n from "i18next";
 const t = (k: string) => i18n.t(`ui.${k}`);
 
+const NAME_MAX = 40;
+const PASSWORD_MIN = 8;
+
+type SignUpResult = void | { needsConfirmation?: boolean; alreadyRegistered?: boolean };
 
 interface AuthModalProps {
   isOpen: boolean;
   onClose: () => void;
   onSuccess: () => void;
   onSignIn: (email: string, password: string) => Promise<void>;
-  onSignUp: (email: string, password: string, name: string) => Promise<void>;
+  onSignUp: (email: string, password: string, name: string) => Promise<SignUpResult>;
+}
+
+/** login / register; "forgot" asks for a reset link; "sent" tells the reader to check their inbox. */
+type Mode = "login" | "register" | "forgot" | "sent";
+
+/** Server messages in plain words. */
+function friendly(message: string): { text: string; unconfirmed?: boolean } {
+  if (/email not confirmed/i.test(message)) return { text: "Confirm your email address first. We sent you a link when you registered.", unconfirmed: true };
+  if (/invalid login credentials/i.test(message)) return { text: "Wrong email or password." };
+  if (/already registered|already exists/i.test(message)) return { text: "An account with this email already exists. Sign in instead, or reset your password." };
+  if (/password should be at least|weak password/i.test(message)) return { text: `Choose a longer password (at least ${PASSWORD_MIN} characters).` };
+  if (/rate limit|too many|security purposes/i.test(message)) return { text: "Too many attempts. Wait a minute and try again." };
+  if (/invalid.*email|unable to validate email/i.test(message)) return { text: "That email address doesn't look right." };
+  return { text: message };
 }
 
 export const AuthModal: React.FC<AuthModalProps> = ({
@@ -20,16 +39,31 @@ export const AuthModal: React.FC<AuthModalProps> = ({
   onSignIn,
   onSignUp,
 }) => {
-  const [mode, setMode] = useState<"login" | "register">("login");
+  const [mode, setMode] = useState<Mode>("login");
   const [formData, setFormData] = useState({
     email: "",
     password: "",
     name: "",
   });
   const [error, setError] = useState("");
+  const [unconfirmed, setUnconfirmed] = useState(false);
+  const [notice, setNotice] = useState("");
+  const [sentKind, setSentKind] = useState<"confirm" | "reset">("confirm");
   const [loading, setLoading] = useState(false);
 
   if (!isOpen) return null;
+
+  const go = (next: Mode) => {
+    setMode(next);
+    setError("");
+    setNotice("");
+    setUnconfirmed(false);
+  };
+
+  const close = () => {
+    go("login");
+    onClose();
+  };
 
   const handleGoogleSignIn = async () => {
     setError("");
@@ -46,148 +80,255 @@ export const AuthModal: React.FC<AuthModalProps> = ({
     }
   };
 
+  const resendConfirmation = async () => {
+    if (!formData.email) return;
+    setLoading(true);
+    const { error: err } = await dbAuthEmail("resend", formData.email.trim());
+    setLoading(false);
+    if (err) setError(friendly(err).text);
+    else { setError(""); setUnconfirmed(false); setNotice("A new confirmation link is on its way. Check your inbox (and the spam folder)."); }
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError("");
+    setNotice("");
+    setUnconfirmed(false);
     setLoading(true);
+    const email = formData.email.trim();
 
     try {
-      if (!formData.email || !formData.password) {
+      if (mode === "forgot") {
+        if (!email) throw new Error("Enter the email address you registered with.");
+        const { error: err } = await dbAuthEmail("recover", email);
+        if (err) throw new Error(err);
+        setSentKind("reset");
+        setMode("sent");
+        setLoading(false);
+        return;
+      }
+
+      if (!email || !formData.password) {
         throw new Error("Please fill in all fields");
       }
 
       if (mode === "register") {
-        if (!formData.name) {
-          throw new Error("Please enter your name");
+        const name = formData.name.trim();
+        if (!name) throw new Error("Please enter your name");
+        if (formData.password.length < PASSWORD_MIN) throw new Error(`Choose a password of at least ${PASSWORD_MIN} characters.`);
+        const result = await onSignUp(email, formData.password, name.slice(0, NAME_MAX));
+        if (result && result.alreadyRegistered) {
+          throw new Error("An account with this email already exists. Sign in instead, or reset your password.");
         }
-        await onSignUp(formData.email, formData.password, formData.name);
+        if (result && result.needsConfirmation) {
+          // No session until the email address is confirmed: say so instead of closing quietly.
+          setFormData({ ...formData, password: "" });
+          setSentKind("confirm");
+          setMode("sent");
+          setLoading(false);
+          return;
+        }
       } else {
-        await onSignIn(formData.email, formData.password);
+        await onSignIn(email, formData.password);
       }
 
       setFormData({ email: "", password: "", name: "" });
       setLoading(false);
       onSuccess();
-      onClose();
+      close();
     } catch (err: any) {
       console.error("Auth error:", err);
-      setError(err.message || "An error occurred");
+      const f = friendly(err.message || "An error occurred");
+      setError(f.text);
+      setUnconfirmed(!!f.unconfirmed);
       setLoading(false);
     }
   };
+
+  const field = "w-full px-4 py-3 bg-background border border-border rounded-none text-foreground focus:outline-none focus:border-primary transition-colors";
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
       <div
         className="absolute inset-0 bg-foreground/70 backdrop-blur-sm"
-        onClick={onClose}
+        onClick={close}
       />
-      <div className="case-file relative bg-card w-full max-w-md p-8 animate-fade-in">
+      <div className="case-file relative bg-card w-full max-w-md p-8 animate-fade-in" role="dialog" aria-modal="true" aria-labelledby="auth-title">
         <button
-          onClick={onClose}
+          onClick={close}
+          aria-label="Close"
           className="absolute top-4 right-4 text-muted-foreground hover:text-foreground"
         >
           <Icons.Close />
         </button>
 
         <p className="case-label text-[9px] mb-2">{t('identity')}</p>
-        <h2 className="font-display text-2xl text-foreground mb-2 uppercase">
-          {mode === "login" ? "Welcome Back" : "Join the Community"}
-        </h2>
-        <p className="text-muted-foreground mb-6">
-          {mode === "login"
-            ? "Sign in to save stories and contribute to reader statistics"
-            : "Create an account to save your reading history and preferences"}
-        </p>
 
-        <button
-          onClick={handleGoogleSignIn}
-          disabled={loading}
-          className="w-full flex items-center justify-center gap-3 py-3 bg-foreground hover:bg-foreground/85 disabled:opacity-50 text-background rounded-none font-medium transition-colors mb-6"
-        >
-          <Icons.Google className="w-5 h-5" />
-          Continue with Google
-        </button>
-
-        <div className="relative mb-6">
-          <div className="absolute inset-0 flex items-center">
-            <div className="w-full border-t border-border"></div>
-          </div>
-          <div className="relative flex justify-center text-sm">
-            <span className="px-4 bg-card text-muted-foreground">or</span>
-          </div>
-        </div>
-
-        <form onSubmit={handleSubmit} className="space-y-4">
-          {mode === "register" && (
-            <div>
-              <label className="block text-foreground text-sm mb-2">{t('name')}</label>
-              <input
-                type="text"
-                value={formData.name}
-                onChange={(e) =>
-                  setFormData({ ...formData, name: e.target.value })
-                }
-                className="w-full px-4 py-3 bg-background border border-border rounded-none text-foreground focus:outline-none focus:border-primary transition-colors"
-                placeholder={t('yourName')}
-                disabled={loading}
-              />
+        {mode === "sent" ? (
+          <div aria-live="polite">
+            <h2 id="auth-title" className="font-display text-2xl text-foreground mb-2 uppercase">Check your inbox</h2>
+            <p className="text-muted-foreground mb-4">
+              {sentKind === "confirm"
+                ? <>We sent a confirmation link to <span className="text-foreground break-all">{formData.email.trim()}</span>. Open it to activate your account; it signs you in and brings you back here.</>
+                : <>If an account exists for <span className="text-foreground break-all">{formData.email.trim()}</span>, a link to choose a new password is on its way.</>}
+            </p>
+            <p className="text-xs text-muted-foreground mb-6">Nothing after a few minutes? Check the spam folder.</p>
+            {notice && <p className="text-sm text-foreground mb-4">{notice}</p>}
+            {error && <p className="text-red-400 text-sm mb-4">{error}</p>}
+            <div className="flex flex-wrap gap-3">
+              {sentKind === "confirm" && (
+                <button type="button" onClick={resendConfirmation} disabled={loading}
+                  className="px-4 py-2 border border-border text-sm hover:border-primary hover:text-primary disabled:opacity-50">
+                  {loading ? "Sending…" : "Send the link again"}
+                </button>
+              )}
+              <button type="button" onClick={() => go("login")} className="px-4 py-2 bg-primary text-primary-foreground text-sm uppercase tracking-widest">
+                Back to sign in
+              </button>
             </div>
-          )}
-
-          <div>
-            <label className="block text-foreground text-sm mb-2">{t('email')}</label>
-            <input
-              type="email"
-              value={formData.email}
-              onChange={(e) =>
-                setFormData({ ...formData, email: e.target.value })
-              }
-              className="w-full px-4 py-3 bg-background border border-border rounded-none text-foreground focus:outline-none focus:border-primary transition-colors"
-              placeholder="your@email.com"
-              disabled={loading}
-            />
           </div>
+        ) : (
+          <>
+            <h2 id="auth-title" className="font-display text-2xl text-foreground mb-2 uppercase">
+              {mode === "login" ? "Welcome Back" : mode === "register" ? "Join the Community" : "Reset your password"}
+            </h2>
+            <p className="text-muted-foreground mb-6">
+              {mode === "login"
+                ? "Sign in to save stories and contribute to reader statistics"
+                : mode === "register"
+                  ? "Create an account to save your reading history and preferences"
+                  : "Enter the email you registered with and we'll send you a link to choose a new password."}
+            </p>
 
-          <div>
-            <label className="block text-foreground text-sm mb-2">
-              Password
-            </label>
-            <input
-              type="password"
-              value={formData.password}
-              onChange={(e) =>
-                setFormData({ ...formData, password: e.target.value })
-              }
-              className="w-full px-4 py-3 bg-background border border-border rounded-none text-foreground focus:outline-none focus:border-primary transition-colors"
-              placeholder="••••••••"
-              disabled={loading}
-            />
-          </div>
+            {mode !== "forgot" && (
+              <>
+                <button
+                  onClick={handleGoogleSignIn}
+                  disabled={loading}
+                  className="w-full flex items-center justify-center gap-3 py-3 bg-foreground hover:bg-foreground/85 disabled:opacity-50 text-background rounded-none font-medium transition-colors mb-6"
+                >
+                  <Icons.Google className="w-5 h-5" />
+                  Continue with Google
+                </button>
 
-          {error && <p className="text-red-400 text-sm">{error}</p>}
+                <div className="relative mb-6">
+                  <div className="absolute inset-0 flex items-center">
+                    <div className="w-full border-t border-border"></div>
+                  </div>
+                  <div className="relative flex justify-center text-sm">
+                    <span className="px-4 bg-card text-muted-foreground">or</span>
+                  </div>
+                </div>
+              </>
+            )}
 
-          <button
-            type="submit"
-            disabled={loading}
-            className="w-full py-3 bg-primary hover:bg-primary/90 disabled:opacity-50 text-primary-foreground rounded-none font-medium uppercase tracking-widest transition-colors"
-          >
-            {loading ? "Please wait..." : mode === "login" ? "Sign In" : "Create Account"}
-          </button>
-        </form>
+            <form onSubmit={handleSubmit} className="space-y-4" noValidate>
+              {mode === "register" && (
+                <div>
+                  <label htmlFor="auth-name" className="block text-foreground text-sm mb-2">{t('name')}</label>
+                  <input
+                    id="auth-name"
+                    type="text"
+                    autoComplete="nickname"
+                    maxLength={NAME_MAX}
+                    value={formData.name}
+                    onChange={(e) =>
+                      setFormData({ ...formData, name: e.target.value })
+                    }
+                    className={field}
+                    placeholder={t('yourName')}
+                    disabled={loading}
+                  />
+                  <p className="text-[11px] text-muted-foreground mt-1">Shown on your comments and forum posts.</p>
+                </div>
+              )}
 
-        <p className="text-center text-muted-foreground mt-6">
-          {mode === "login"
-            ? "Don't have an account? "
-            : "Already have an account? "}
-          <button
-            onClick={() => setMode(mode === "login" ? "register" : "login")}
-            className="text-primary hover:text-primary/80"
-            disabled={loading}
-          >
-            {mode === "login" ? "Sign up" : "Sign in"}
-          </button>
-        </p>
+              <div>
+                <label htmlFor="auth-email" className="block text-foreground text-sm mb-2">{t('email')}</label>
+                <input
+                  id="auth-email"
+                  type="email"
+                  autoComplete="email"
+                  value={formData.email}
+                  onChange={(e) =>
+                    setFormData({ ...formData, email: e.target.value })
+                  }
+                  className={field}
+                  placeholder="your@email.com"
+                  disabled={loading}
+                />
+              </div>
+
+              {mode !== "forgot" && (
+                <div>
+                  <div className="flex items-baseline justify-between gap-3 mb-2">
+                    <label htmlFor="auth-password" className="block text-foreground text-sm">
+                      Password
+                    </label>
+                    {mode === "login" && (
+                      <button type="button" onClick={() => go("forgot")} className="text-xs text-muted-foreground hover:text-primary" disabled={loading}>
+                        Forgot password?
+                      </button>
+                    )}
+                  </div>
+                  <input
+                    id="auth-password"
+                    type="password"
+                    autoComplete={mode === "register" ? "new-password" : "current-password"}
+                    minLength={mode === "register" ? PASSWORD_MIN : undefined}
+                    value={formData.password}
+                    onChange={(e) =>
+                      setFormData({ ...formData, password: e.target.value })
+                    }
+                    className={field}
+                    placeholder="••••••••"
+                    disabled={loading}
+                  />
+                  {mode === "register" && <p className="text-[11px] text-muted-foreground mt-1">At least {PASSWORD_MIN} characters.</p>}
+                </div>
+              )}
+
+              {error && (
+                <div className="text-sm" aria-live="assertive">
+                  <p className="text-red-400">{error}</p>
+                  {unconfirmed && (
+                    <button type="button" onClick={resendConfirmation} disabled={loading} className="mt-2 text-primary hover:text-primary/80">
+                      Send the confirmation link again
+                    </button>
+                  )}
+                </div>
+              )}
+              {notice && <p className="text-sm text-foreground" aria-live="polite">{notice}</p>}
+
+              <button
+                type="submit"
+                disabled={loading}
+                className="w-full py-3 bg-primary hover:bg-primary/90 disabled:opacity-50 text-primary-foreground rounded-none font-medium uppercase tracking-widest transition-colors"
+              >
+                {loading ? "Please wait..." : mode === "login" ? "Sign In" : mode === "register" ? "Create Account" : "Send reset link"}
+              </button>
+            </form>
+
+            <p className="text-center text-muted-foreground mt-6">
+              {mode === "forgot" ? (
+                <button onClick={() => go("login")} className="text-primary hover:text-primary/80" disabled={loading}>Back to sign in</button>
+              ) : (
+                <>
+                  {mode === "login"
+                    ? "Don't have an account? "
+                    : "Already have an account? "}
+                  <button
+                    onClick={() => go(mode === "login" ? "register" : "login")}
+                    className="text-primary hover:text-primary/80"
+                    disabled={loading}
+                  >
+                    {mode === "login" ? "Sign up" : "Sign in"}
+                  </button>
+                </>
+              )}
+            </p>
+          </>
+        )}
       </div>
     </div>
   );
