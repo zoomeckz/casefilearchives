@@ -3,7 +3,6 @@ import { RichTextEditor } from "@/components/RichTextEditor";
 import { ImageUploadField } from "@/components/ImageUploadField";
 import { InteractiveReader } from "@/components/interactive/InteractiveReader";
 import { Collapse, CollapseButton, usePanelOpen } from "@/components/Collapsible";
-import { CaseMap } from "@/components/interactive/CaseMap";
 import {
   InteractiveGraph, StoryNode, NodeType, Condition, CondOp, Effect, DecisionOption, NotebookEntry,
   ReplayPolicy, GuestAccess, EndingVisibility, InventoryItem, ItemColor,
@@ -17,7 +16,7 @@ import { NODE_CHANNEL_PREFIX, type NodeMsg } from "@/lib/nodeChannel";
 /** Ready-made cases the editor can load as a starting point ("blank" empties the case). */
 const TEMPLATES: { id: string; label: string; make: () => InteractiveGraph | Promise<InteractiveGraph> }[] = [
   { id: "blank", label: "Blank case (start empty)", make: emptyGraph },
-  { id: "lot-14", label: "Lights Out at the Meridian: Lot 14 (1974, 7 endings)", make: () => import("@/lib/cases/lot14").then((m) => m.lot14Graph()) },
+  { id: "lot-14", label: "Lights Out at the Meridian: Lot 14 (1974, 4 paths, 10 endings)", make: () => import("@/lib/cases/lot14").then((m) => m.lot14Graph()) },
   // Templates load only when picked, so their text never ships to readers.
   { id: "chain-of-custody", label: "Chain of Custody: Chapter 1 (1974)", make: () => import("@/lib/cases/chainOfCustody").then((m) => m.chainOfCustodyGraph()) },
   { id: "example", label: "Example case (short demo)", make: () => import("@/lib/interactiveSample").then((m) => m.sampleCaseGraph()) },
@@ -254,7 +253,6 @@ export const InteractiveEditor: React.FC<Props> = ({ graph, onChange, title, pub
   const [structureOpen, toggleStructure] = usePanelOpen("ic-editor:structure-open");
   const [checkOpen, toggleCheck] = usePanelOpen("ic-editor:check-open");
   const [sectionOpen, toggleSection] = usePanelOpen("ic-editor:section-open");
-  const [mapOpen, toggleMap] = usePanelOpen("ic-editor:map-open", false);
   // Option / route cards collapsed in this session, keyed per section.
   const [collapsedCards, setCollapsedCards] = useState<Set<string>>(() => new Set());
   const cardOpen = (key: string) => !collapsedCards.has(key);
@@ -405,11 +403,14 @@ export const InteractiveEditor: React.FC<Props> = ({ graph, onChange, title, pub
   useEffect(() => {
     if (savedAt) nodeChan.current?.postMessage({ t: "saved", at: savedAt } satisfies NodeMsg);
   }, [savedAt]);
-  const openNodeEditor = () => {
-    const w = window.open(`/node-editor?ch=${nodeChannelKey}`, "ic-node-editor", "popup=yes,width=1480,height=920");
+  const openPopout = (url: string, name: string) => {
+    const w = window.open(url, name, "popup=yes,width=1480,height=920");
     if (!w) toast.error("The pop-up was blocked. Allow pop-ups for this site and press the button again.");
     else w.focus();
   };
+  const openNodeEditor = () => openPopout(`/node-editor?ch=${nodeChannelKey}`, "ic-node-editor");
+  // Same window and channel as the node editor, opened on its Story map view (both can be open at once).
+  const openStoryMap = () => openPopout(`/node-editor?ch=${nodeChannelKey}&view=map`, "ic-story-map");
 
   const setNodes = (nodes: StoryNode[], extra: Partial<InteractiveGraph> = {}) => onChange({ ...graphRef.current, ...extra, nodes });
   const patchSel = (patch: Partial<StoryNode>) => {
@@ -601,6 +602,9 @@ export const InteractiveEditor: React.FC<Props> = ({ graph, onChange, title, pub
             <button type="button" onClick={toggleSettings} className="text-sm font-medium text-foreground text-left">Interactive case settings</button>
           </div>
           <div className="flex flex-wrap gap-2">
+            <button type="button" onClick={openStoryMap} className={`${smallBtn} border-primary/60 text-primary`} title="Opens the Story map in its own window, editable like a canvas. Edits there show up here and save straight away.">
+              Open story map ↗
+            </button>
             <button type="button" onClick={openNodeEditor} className={`${smallBtn} border-primary/60 text-primary`} title="Opens the visual node editor in its own window. Edits there show up here and save straight away.">
               Open node editor ↗
             </button>
@@ -764,19 +768,11 @@ export const InteractiveEditor: React.FC<Props> = ({ graph, onChange, title, pub
         </Collapse>
       </div>
 
-      {/* Story map */}
-      <div className={panel}>
-        <div className="flex items-center gap-2">
-          <CollapseButton open={mapOpen} onToggle={toggleMap} label="story map" />
-          <button type="button" onClick={toggleMap} className="text-sm font-medium text-foreground text-left">Story map</button>
-          {!mapOpen && <span className="text-xs text-muted-foreground">· every decision and ending as a flowchart</span>}
-        </div>
-        <Collapse open={mapOpen}>
-          <div className="pt-3">
-            {mapOpen && <CaseMap graph={graph} selected={sel?.id} onSelect={(id) => goToIssue({ nodeId: id })} />}
-            <p className="text-[11px] text-muted-foreground mt-2">Click a decision or ending to open it below. Scenes are folded into the arrows between decisions.</p>
-          </div>
-        </Collapse>
+      {/* Story map: opens in its own window */}
+      <div className={`${panel} flex flex-wrap items-center gap-x-3 gap-y-2`}>
+        <span className="text-sm font-medium text-foreground">Story map</span>
+        <span className="text-xs text-muted-foreground flex-1 min-w-[14rem]">Every decision and ending as a flowchart, in its own window. Move, add, connect and edit sections there; it is the map readers see.</span>
+        <button type="button" onClick={openStoryMap} className={`${smallBtn} border-primary/60 text-primary`}>Open story map ↗</button>
       </div>
 
       <div className={`grid grid-cols-1 gap-y-6 transition-[grid-template-columns,column-gap] duration-200 ease-out motion-reduce:transition-none ${structureOpen ? "lg:grid-cols-[18rem_minmax(0,1fr)] lg:gap-x-6" : "lg:grid-cols-[0rem_minmax(0,1fr)] lg:gap-x-0"}`}>
