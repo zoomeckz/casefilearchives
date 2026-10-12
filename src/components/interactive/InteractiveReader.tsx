@@ -195,12 +195,15 @@ export const InteractiveReader: React.FC<Props> = ({ chapterId, title, graph, us
       tracker.current?.choose(state.current_node, option.id, { timedOut, filedOptionId: filed.id });
       if (!preview) notifyActivity();
     } catch (e: any) {
+      // Close the confirmation so the reader sees what went wrong instead of the same popup again
+      // (the reload clears errors, so the message is set again once it is done).
+      setPending(null);
       setError(e.message);
-      if (user && !preview) void load();
+      if (user && !preview) void load().then(() => setError(e.message));
     } finally { setSubmitting(false); }
   };
 
-  const confirm = () => { if (pending) void fileDecision(pending); };
+  const confirm =() => { if (pending) void fileDecision(pending); };
 
   useEffect(() => {
     if (!timeLimit || !state || state.status !== "in_progress" || !state.current_node) { setRemaining(null); return; }
