@@ -48,7 +48,10 @@ export const CaseMap: React.FC<CaseMapProps> = ({ graph, decisions, endingNode, 
   const reader = mode === "reader";
 
   return (
-    <div className={`overflow-auto overscroll-contain rounded-lg bg-[#07090d] border border-border ${className}`} data-lenis-prevent>
+    // No data-lenis-prevent: the map never scrolls up and down by itself, so the mouse
+    // wheel over it has to keep scrolling the page (wide maps scroll sideways by touch,
+    // the scrollbar or Shift + wheel).
+    <div className={`overflow-x-auto overflow-y-hidden rounded-lg bg-[#07090d] border border-border ${className}`}>
       <svg viewBox={`0 0 ${layout.width} ${layout.height}`} width="100%" style={{ minWidth: Math.min(layout.width, 640) }} role="img"
         aria-label={hasPath ? "Story map with the chosen route highlighted" : "Story map"}>
         <defs>
