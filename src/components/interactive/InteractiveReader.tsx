@@ -6,6 +6,7 @@ import {
   InteractiveGraph, PlayState, StoryNode, DecisionOption, GUEST_CHOICE_LIMIT, DEFAULT_SETTINGS,
   findNode, isOptionLocked, isOptionVisible, startLocal, chooseLocal, parseServerState, collectNotebook,
   getConclusionQuestions, formatConclusion, heldItems, findItem, monthlyReopenAt,
+  closingStyle, getAgreeCheck, formatAgreeAnswer,
 } from "@/lib/interactive";
 import { itemStyle } from "@/lib/itemColors";
 import { startTracking, type Tracker } from "@/lib/icTracking";
@@ -79,6 +80,11 @@ export const InteractiveReader: React.FC<Props> = ({ chapterId, title, graph, us
   const allAnswered = questions.length > 0 && questions.every((_, i) => (answers[i] || "").trim());
   const [confirmAnswer, setConfirmAnswer] = useState(false);
   const [showHistory, setShowHistory] = useState(false);
+  // Closing check after any ending: "Do you agree with your conclusion?" (Yes → thanks; No → follow-up box).
+  const closing = closingStyle(graph.settings);
+  const agreeCheck = getAgreeCheck(graph.settings);
+  const [disagreeing, setDisagreeing] = useState(false);
+  const [followUp, setFollowUp] = useState("");
 
   const readGuest = (): PlayState | null => {
     if (guestAccess === "full_nosave") return null;
@@ -217,10 +223,10 @@ export const InteractiveReader: React.FC<Props> = ({ chapterId, title, graph, us
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [timeLimit, state]);
 
-  /** The written conclusion: filed once per attempt, locked afterwards. */
-  const fileAnswer = async () => {
-    const text = answer.trim().slice(0, ANSWER_MAX);
-    if (!text || !allAnswered || !state) return;
+  /** Files the reader's closing answer: once per attempt, locked afterwards (Admin → Case reports). */
+  const submitAnswer = async (raw: string, questionCount: number) => {
+    const text = raw.trim().slice(0, ANSWER_MAX);
+    if (!text || !state) return false;
     setSubmitting(true); setError(null);
     try {
       if (preview) {
@@ -230,13 +236,27 @@ export const InteractiveReader: React.FC<Props> = ({ chapterId, title, graph, us
         if (next) setState(next);
         notifyActivity();
       }
-      setConfirmAnswer(false);
-      tracker.current?.answer(text.length, questions.length);
-      setAnswers([]);
+      tracker.current?.answer(text.length, questionCount);
+      return true;
     } catch (e: any) {
       setError(e.message);
-      setConfirmAnswer(false);
+      return false;
     } finally { setSubmitting(false); }
+  };
+
+  /** The written conclusion ("questions" closing). */
+  const fileAnswer = async () => {
+    if (!allAnswered) return;
+    const ok = await submitAnswer(answer, questions.length);
+    setConfirmAnswer(false);
+    if (ok) setAnswers([]);
+  };
+
+  /** The "agree" closing: Yes files straight away; No files together with the follow-up answer. */
+  const fileAgree = async (agrees: boolean) => {
+    if (!agrees && !followUp.trim()) return;
+    const ok = await submitAnswer(formatAgreeAnswer(agreeCheck, agrees, followUp.slice(0, ANSWER_MAX - 200)), agrees ? 1 : 2);
+    if (ok) { setDisagreeing(false); setFollowUp(""); }
   };
 
   const replay = async () => {
@@ -500,8 +520,73 @@ export const InteractiveReader: React.FC<Props> = ({ chapterId, title, graph, us
             )}
           </div>
 
+          {/* Closing check: do you agree with your conclusion? */}
+          {closing === "agree" && (
+            <div className="mt-8 border-t border-border pt-6" aria-live="polite">
+              <p className="case-label text-[10px] text-primary">{tr("closingKicker", "Before you close the file")}</p>
+              {state.final_answer ? (
+                <>
+                  <p className="font-display text-2xl text-foreground mt-2">{agreeCheck.thanks}</p>
+                  <details className="mt-4">
+                    <summary className="cursor-pointer select-none case-label text-[9px]">
+                      {tr("yourAnswer", "Your answer")}{state.answered_at ? ` · ${new Date(state.answered_at).toLocaleDateString()}` : ""}
+                    </summary>
+                    <blockquote className="mt-2 border-l-4 border-primary pl-4 italic text-foreground/85 whitespace-pre-line break-words">{state.final_answer}</blockquote>
+                  </details>
+                  {state.admin_feedback && (
+                    <div className="mt-5 border border-border border-l-4 border-l-accent bg-card/40 px-4 py-3">
+                      <p className="case-label text-[9px] !text-accent">
+                        {tr("archivistResponse", "The archivist’s response")}{state.feedback_at ? ` · ${new Date(state.feedback_at).toLocaleDateString()}` : ""}
+                      </p>
+                      <p className="mt-2 text-foreground/90 whitespace-pre-line break-words">{state.admin_feedback}</p>
+                    </div>
+                  )}
+                </>
+              ) : isGuest ? (
+                <div className="mt-3 text-sm">
+                  <p className="font-display text-lg text-foreground">{agreeCheck.question}</p>
+                  <p className="text-muted-foreground mt-2">{tr("closingSignIn", "Register or sign in to answer.")}</p>
+                  <button onClick={() => setShowAuthModal?.(true)} className="mt-3 px-4 py-2 bg-primary text-primary-foreground text-xs uppercase tracking-wider">
+                    {tr("signIn", "Register or sign in")}
+                  </button>
+                </div>
+              ) : (
+                <>
+                  <p className="font-display text-lg text-foreground mt-1">{agreeCheck.question}</p>
+                  <div className="mt-4 flex flex-wrap gap-3" role="group" aria-label={agreeCheck.question}>
+                    <button type="button" disabled={submitting} onClick={() => { setDisagreeing(false); void fileAgree(true); }}
+                      className="min-w-[6rem] px-5 py-2 border border-primary text-primary text-xs uppercase tracking-wider hover:bg-primary hover:text-primary-foreground transition-colors disabled:opacity-50">
+                      {tr("yes", "Yes")}
+                    </button>
+                    <button type="button" disabled={submitting} onClick={() => setDisagreeing(true)} aria-expanded={disagreeing}
+                      className={`min-w-[6rem] px-5 py-2 border text-xs uppercase tracking-wider transition-colors disabled:opacity-50 ${disagreeing ? "border-foreground text-foreground" : "border-border hover:border-foreground"}`}>
+                      {tr("no", "No")}
+                    </button>
+                  </div>
+                  {disagreeing && (
+                    <div className="mt-6 border border-border bg-card/40 p-4">
+                      <label htmlFor="ic-followup" className="font-display text-lg text-foreground">{agreeCheck.followUp}</label>
+                      <textarea id="ic-followup" autoFocus value={followUp} rows={5}
+                        onChange={(e) => setFollowUp(e.target.value.slice(0, ANSWER_MAX - 200))}
+                        placeholder={tr("followUpPlaceholder", "Write what you believe happened…")}
+                        className="mt-3 w-full px-3 py-2 bg-background border border-border text-foreground focus:outline-none focus:border-primary resize-y" />
+                      <div className="flex flex-wrap items-center justify-between gap-3 mt-2">
+                        <span className="case-label text-[9px] tabular-nums">{followUp.length}/{ANSWER_MAX - 200}</span>
+                        <button type="button" disabled={!followUp.trim() || submitting} onClick={() => void fileAgree(false)}
+                          className="px-4 py-2 bg-primary text-primary-foreground text-xs uppercase tracking-wider disabled:opacity-50">
+                          {submitting ? "…" : tr("send", "Send")}
+                        </button>
+                      </div>
+                      <p className="text-[11px] text-muted-foreground mt-2">{tr("answerOnce", "You can answer once per attempt.")}</p>
+                    </div>
+                  )}
+                </>
+              )}
+            </div>
+          )}
+
           {/* Written conclusion */}
-          {conclusionPrompt && (
+          {closing === "questions" && conclusionPrompt && (
             <div className="mt-8 border-t border-border pt-6">
               <p className="case-label text-[10px] text-primary">{tr("conclusionKicker", "Your conclusion")}</p>
               <p className="font-display text-lg text-foreground mt-1">{conclusionPrompt}</p>
