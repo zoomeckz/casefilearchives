@@ -21,7 +21,16 @@ import SectionHeaderStory from "./pages/SectionHeaderStory";
 import TestCasePage from "./pages/TestCasePage";
 // Pop-out node editor for Interactive Case Files (admin tool, loaded only when opened).
 const NodeEditorPage = lazy(() => import("./pages/NodeEditorPage"));
+// Where "Forgot password?" emails lead.
+const ResetPasswordPage = lazy(() => import("./pages/ResetPasswordPage"));
 import { useDynamicSeo } from "./hooks/useDynamicSeo";
+
+// A password-reset link can land on any page (e.g. the home page, if /reset-password
+// is not on the auth redirect list). Show the reset form there instead; the link
+// itself stays in the URL for the auth client to read.
+if (typeof window !== "undefined" && /(?:^#|&)type=recovery(?:&|$)/.test(window.location.hash) && !window.location.pathname.startsWith("/reset-password")) {
+  window.history.replaceState(window.history.state, "", `/reset-password${window.location.hash}`);
+}
 
 const queryClient = new QueryClient();
 
@@ -43,8 +52,8 @@ const LanguageSync = () => {
   useEffect(() => {
     const seg = location.pathname.split("/").filter(Boolean)[0];
     const hasPrefix = (SUPPORTED_LANGUAGES as readonly string[]).includes(seg ?? "");
-    // Admin pages and stand-alone tools (tester links, the node editor) never get a language prefix.
-    const isAdmin = /^\/(admin|node-editor|test-case)(\/|$)/.test(stripLanguagePrefix(location.pathname));
+    // Admin pages and stand-alone tools (tester links, the node editor, password reset) never get a language prefix.
+    const isAdmin = /^\/(admin|node-editor|test-case|reset-password)(\/|$)/.test(stripLanguagePrefix(location.pathname));
 
     let lang: SupportedLanguage = detectLanguageFromPath(location.pathname);
     if (hasPrefix) {
@@ -192,6 +201,7 @@ const App = () => {
           {/* Tester links for unpublished Interactive Case Files (snapshot from the editor). */}
           <Route path="/test-case/:id" element={<TestCasePage />} />
           <Route path="/node-editor" element={<Suspense fallback={null}><NodeEditorPage /></Suspense>} />
+          <Route path="/reset-password" element={<Suspense fallback={null}><ResetPasswordPage /></Suspense>} />
           {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
           <Route path="*" element={<NotFound />} />
         </Routes>
