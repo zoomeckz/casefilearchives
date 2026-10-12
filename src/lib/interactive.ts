@@ -95,8 +95,9 @@ export interface InteractiveSettings {
   conclusionQuestions?: string[];
   /** Items readers can pick up through their choices. */
   items?: InventoryItem[];
-  /** Hand-placed Story map, keyed by section id ("__start" for the start pill). It is used
-   *  only while it covers every decision and ending; otherwise the map lays itself out. */
+  /** Hand-placed Story map, keyed by section id ("__start" for the start pill). Decisions and
+   *  endings missing from it get the nearest free cell below what leads to them. Written by
+   *  the Story map window when nodes are moved there. */
   map?: Record<string, MapPlacement>;
 }
 
