@@ -38,6 +38,18 @@ interface Thread {
 }
 interface Reply { id: string; content: string; userId: string; createdAt: string; updatedAt: string | null; }
 
+// Limits the database enforces too (forum guard triggers).
+const TITLE_MAX = 140;
+const POST_MAX = 10000;
+const REPLY_MAX = 5000;
+
+/** The database's refusals in plain words. */
+const postError = (error: string | null, fallback: string) =>
+  /slow_down/.test(error || "") ? "You're posting quickly. Wait a few minutes and try again."
+    : /thread_closed/.test(error || "") ? "This thread is closed for new replies."
+      : /invalid_(title|content)/.test(error || "") ? "That post is empty or too long."
+        : fallback;
+
 const slugify = (t: string) => t.toLowerCase().replace(/[^\w\s-]/g, "").trim().replace(/\s+/g, "-").slice(0, 60);
 const threadUrl = (t: { id: string; title: string }) => `/forum/${slugify(t.title)}--${t.id.slice(0, 8)}`;
 const fmt = (iso: string) => new Date(iso).toLocaleDateString("en-GB", { day: "2-digit", month: "short", year: "numeric" }).toUpperCase();
@@ -153,7 +165,7 @@ export const ForumPage: React.FC<ForumPageProps> = ({ user, authToken, stories, 
       body: { title: title.trim(), content: normalizePlainTextFormatting(body), category, story_id: storyId || null, user_id: user!.id },
     });
     setBusy(false);
-    if (error || !data?.[0]) return alert("Could not open the thread. Please try again.");
+    if (error || !data?.[0]) return alert(postError(error, "Could not open the thread. Please try again."));
     notifyActivity();
     setTitle(""); setBody(""); setComposing(false);
     await loadThreads();
@@ -169,7 +181,7 @@ export const ForumPage: React.FC<ForumPageProps> = ({ user, authToken, stories, 
       body: { post_id: active.id, user_id: user!.id, content: normalizePlainTextFormatting(replyText) },
     });
     setBusy(false);
-    if (error) return alert("Could not post your reply.");
+    if (error) return alert(postError(error, "Could not post your reply."));
     setReplyText("");
     loadReplies(active.id);
     setThreads((p) => p.map((t) => (t.id === active.id ? { ...t, replyCount: t.replyCount + 1 } : t)));
@@ -275,7 +287,7 @@ export const ForumPage: React.FC<ForumPageProps> = ({ user, authToken, stories, 
             {composing && !active && (
               <form onSubmit={submitThread} className="case-file p-5 mb-8 space-y-3">
                 <p className="case-label text-[9px]">{tr('newThread')}</p>
-                <input value={title} onChange={(e) => setTitle(e.target.value)} maxLength={140} placeholder={tr('threadTitle')}
+                <input value={title} onChange={(e) => setTitle(e.target.value)} maxLength={TITLE_MAX} placeholder={tr('threadTitle')}
                   className="w-full px-3 py-2 bg-background border border-border text-foreground focus:outline-none focus:border-primary" />
                 <div className="grid sm:grid-cols-2 gap-3">
                   <select value={category} onChange={(e) => setCategory(e.target.value)} className="px-3 py-2 bg-background border border-border text-foreground">
@@ -291,7 +303,7 @@ export const ForumPage: React.FC<ForumPageProps> = ({ user, authToken, stories, 
                   </select>
                 </div>
                 <FormatToolbar textareaRef={bodyRef} value={body} onChange={setBody} />
-                <textarea ref={bodyRef} value={body} onChange={(e) => setBody(e.target.value)} rows={6} placeholder={tr('mind')}
+                <textarea ref={bodyRef} value={body} onChange={(e) => setBody(e.target.value)} rows={6} maxLength={POST_MAX} placeholder={tr('mind')}
                   className="w-full px-3 py-2 bg-background border border-border text-foreground focus:outline-none focus:border-primary resize-y" />
                 <div className="flex gap-3">
                   <button disabled={busy || !title.trim() || !body.trim()} className="px-4 py-2 bg-primary text-primary-foreground text-sm disabled:opacity-50">
@@ -346,7 +358,7 @@ export const ForumPage: React.FC<ForumPageProps> = ({ user, authToken, stories, 
                 <form onSubmit={submitReply} className="case-file p-5 space-y-3">
                   <p className="case-label text-[9px]">{tr('addReply')}</p>
                   <FormatToolbar textareaRef={replyRef} value={replyText} onChange={setReplyText} />
-                  <textarea ref={replyRef} value={replyText} onChange={(e) => setReplyText(e.target.value)} rows={4}
+                  <textarea ref={replyRef} value={replyText} onChange={(e) => setReplyText(e.target.value)} rows={4} maxLength={REPLY_MAX}
                     onFocus={() => { if (!user) setShowAuthModal(true); }}
                     placeholder={user ? "Write a reply..." : "Sign in to reply"}
                     className="w-full px-3 py-2 bg-background border border-border text-foreground focus:outline-none focus:border-primary resize-y" />
