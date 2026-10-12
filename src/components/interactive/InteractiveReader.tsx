@@ -5,7 +5,7 @@ import type { AuthUser } from "@/hooks/useAuth";
 import {
   InteractiveGraph, PlayState, StoryNode, DecisionOption, GUEST_CHOICE_LIMIT, DEFAULT_SETTINGS,
   findNode, isOptionLocked, isOptionVisible, startLocal, chooseLocal, parseServerState, collectNotebook,
-  getConclusionQuestions, formatConclusion, heldItems, findItem,
+  getConclusionQuestions, formatConclusion, heldItems, findItem, monthlyReopenAt,
 } from "@/lib/interactive";
 import { itemStyle } from "@/lib/itemColors";
 import { startTracking, type Tracker } from "@/lib/icTracking";
@@ -252,7 +252,9 @@ export const InteractiveReader: React.FC<Props> = ({ chapterId, title, graph, us
   const waitHours = graph.settings.replayWaitHours || DEFAULT_SETTINGS.replayWaitHours || 168;
   const reopensAt = replayPolicy === "after_wait" && state?.completed_at
     ? Date.parse(state.completed_at) + waitHours * 3600_000
-    : null;
+    : replayPolicy === "monthly" && state?.status === "completed"
+      ? monthlyReopenAt(state.started_at || state.completed_at)
+      : null;
 
   // Optional cap on total playthroughs per account (the server enforces the same rule).
   const maxAttempts = Number(graph.settings.maxAttempts) || 0;
@@ -265,6 +267,7 @@ export const InteractiveReader: React.FC<Props> = ({ chapterId, title, graph, us
     if (replayPolicy === "after_completion") return true;
     if (replayPolicy === "admin_only") return !!user.isAdmin;
     if (replayPolicy === "after_wait" && reopensAt) return reopensAt <= Date.now();
+    if (replayPolicy === "monthly") return !!user.isAdmin || (!!reopensAt && reopensAt <= Date.now());
     return false;
   }, [preview, attemptsUsedUp, replayPolicy, reopensAt, user, state]);
 
@@ -595,7 +598,14 @@ export const InteractiveReader: React.FC<Props> = ({ chapterId, title, graph, us
               {tr("attemptsUsed", "You have used all {{n}} attempts for this file. Your record is final.", { n: maxAttempts })}
             </p>
           )}
-          {!canReplay && !preview && !attemptsUsedUp && reopensAt && (
+          {!canReplay && !preview && !attemptsUsedUp && reopensAt && replayPolicy === "monthly" && (
+            <p className="text-xs text-muted-foreground mt-4 text-center">
+              {tr("reopensMonthly", "This file can be attempted once per calendar month. Your next attempt opens on {{date}}.", {
+                date: new Date(reopensAt).toLocaleDateString(undefined, { dateStyle: "long" }),
+              })}
+            </p>
+          )}
+          {!canReplay && !preview && !attemptsUsedUp && reopensAt && replayPolicy !== "monthly" && (
             <p className="text-xs text-muted-foreground mt-4 text-center">
               {tr("reopens", "This record is locked. The case reopens for another attempt on {{date}}.", { date: fmtDate(reopensAt) })}
             </p>
