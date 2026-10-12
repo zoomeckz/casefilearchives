@@ -80,6 +80,7 @@ export function monthlyReopenAt(startedIso: string | null | undefined): number |
 }
 export type GuestAccess = "opening" | "two_choices" | "full_nosave";
 export type EndingVisibility = "own" | "count" | "index";
+export type ClosingStyle = "agree" | "questions";
 
 export interface InteractiveSettings {
   replay: ReplayPolicy;
@@ -91,8 +92,17 @@ export interface InteractiveSettings {
   /** Question readers answer in writing after the ending. Empty = no written conclusion.
    *  Superseded by conclusionQuestions; kept for older cases (and set to the first question). */
   conclusionPrompt?: string;
-  /** Questions readers answer in writing after the ending (e.g. "Who did it?", "Why?"). */
+  /** Questions readers answer in writing after the ending (e.g. "Who did it?", "Why?").
+   *  Only asked when `closing` is "questions". */
   conclusionQuestions?: string[];
+  /** What readers are asked after any ending. "agree" (the default): "Do you agree with your
+   *  conclusion?" Yes → thanks; No → one follow-up question, then thanks. "questions": the
+   *  written closing questions above. Either way the answer lands in Admin → Case reports. */
+  closing?: ClosingStyle;
+  /** Texts of the "agree" check; empty = AGREE_DEFAULTS. */
+  agreeQuestion?: string;
+  disagreeQuestion?: string;
+  closingThanks?: string;
   /** Items readers can pick up through their choices. */
   items?: InventoryItem[];
   /** Hand-placed Story map, keyed by section id ("__start" for the start pill). Decisions and
@@ -150,6 +160,30 @@ export function getConclusionQuestions(settings: InteractiveSettings): string[] 
     ? settings.conclusionQuestions
     : [settings.conclusionPrompt ?? DEFAULT_SETTINGS.conclusionPrompt ?? ""];
   return list.map((q) => (q || "").trim()).filter(Boolean);
+}
+
+export const AGREE_DEFAULTS = {
+  agreeQuestion: "Do you agree with your conclusion?",
+  disagreeQuestion: "How do you think they did it?",
+  closingThanks: "Thank you for reading.",
+};
+
+export const closingStyle = (settings: InteractiveSettings): ClosingStyle => (settings.closing === "questions" ? "questions" : "agree");
+
+/** The "agree" check's texts, with the defaults filled in. */
+export function getAgreeCheck(settings: InteractiveSettings) {
+  return {
+    question: settings.agreeQuestion?.trim() || AGREE_DEFAULTS.agreeQuestion,
+    followUp: settings.disagreeQuestion?.trim() || AGREE_DEFAULTS.disagreeQuestion,
+    thanks: settings.closingThanks?.trim() || AGREE_DEFAULTS.closingThanks,
+  };
+}
+
+/** The stored answer of the "agree" check, written so it reads on its own in Case reports. */
+export function formatAgreeAnswer(check: ReturnType<typeof getAgreeCheck>, agrees: boolean, followUp = ""): string {
+  return agrees
+    ? `1. ${check.question}\nYes`
+    : `1. ${check.question}\nNo\n\n2. ${check.followUp}\n${followUp.trim() || "—"}`;
 }
 
 /** One stored text for all answers (the database keeps a single conclusion per attempt). */
