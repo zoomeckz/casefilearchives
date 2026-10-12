@@ -12,16 +12,15 @@ import {
 } from "@/lib/interactive";
 import { ITEM_STYLE, itemStyle } from "@/lib/itemColors";
 import { toast } from "sonner";
-import { sampleCaseGraph } from "@/lib/interactiveSample";
-import { chainOfCustodyGraph } from "@/lib/cases/chainOfCustody";
 import { NODE_CHANNEL_PREFIX, type NodeMsg } from "@/lib/nodeChannel";
 
 /** Ready-made cases the editor can load as a starting point ("blank" empties the case). */
 const TEMPLATES: { id: string; label: string; make: () => InteractiveGraph | Promise<InteractiveGraph> }[] = [
   { id: "blank", label: "Blank case (start empty)", make: emptyGraph },
   { id: "lot-14", label: "Lights Out at the Meridian: Lot 14 (1974, 7 endings)", make: () => import("@/lib/cases/lot14").then((m) => m.lot14Graph()) },
-  { id: "chain-of-custody", label: "Chain of Custody: Chapter 1 (1974)", make: chainOfCustodyGraph },
-  { id: "example", label: "Example case (short demo)", make: sampleCaseGraph },
+  // Templates load only when picked, so their text never ships to readers.
+  { id: "chain-of-custody", label: "Chain of Custody: Chapter 1 (1974)", make: () => import("@/lib/cases/chainOfCustody").then((m) => m.chainOfCustodyGraph()) },
+  { id: "example", label: "Example case (short demo)", make: () => import("@/lib/interactiveSample").then((m) => m.sampleCaseGraph()) },
 ];
 
 // Admin-only (English) editor for Interactive Case Files. Edits the graph that
@@ -623,6 +622,7 @@ export const InteractiveEditor: React.FC<Props> = ({ graph, onChange, title, pub
               <option value="disabled">Disabled — the record is permanent</option>
               <option value="after_completion">Allowed after completion</option>
               <option value="after_wait">Allowed after a waiting period (default: one week)</option>
+              <option value="monthly">Once per calendar month (reopens on the 1st)</option>
               <option value="admin_only">Admin testing only</option>
             </select>
             {graph.settings.replay === "after_wait" && (
@@ -631,6 +631,11 @@ export const InteractiveEditor: React.FC<Props> = ({ graph, onChange, title, pub
                   onChange={(e) => setSettings({ replayWaitHours: Math.max(1, parseInt(e.target.value) || 168) })} className={`${field} w-24`} />
                 <span className="text-xs text-muted-foreground">hours after completion (168 = one week)</span>
               </div>
+            )}
+            {graph.settings.replay === "monthly" && (
+              <p className="text-[11px] text-muted-foreground mt-2">
+                One attempt per calendar month. A reader who plays on the 30th can try again on the 1st (Stockholm time). Admins can always replay.
+              </p>
             )}
           </div>
           <div>
