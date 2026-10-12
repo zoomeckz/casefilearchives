@@ -1,4 +1,4 @@
-import { findNode, type Decision, type InteractiveGraph, type StoryNode } from "@/lib/interactive";
+import { findNode, type Decision, type InteractiveGraph, type MapPlacement, type StoryNode } from "@/lib/interactive";
 
 // Story map: turns an interactive case into a layered graph of decisions and
 // endings (scenes are folded into the arrows between them), laid out top to
@@ -13,6 +13,8 @@ export interface MapNode {
   title: string;
   layer: number;
   order: number;
+  /** Grid column (hand-placed maps; half columns on automatic ones). Row = layer. */
+  col?: number;
   x: number;
   y: number;
   /** Which opening choice first reaches this node (drives the colour). */
@@ -45,6 +47,8 @@ export interface CaseMapLayout {
   width: number;
   height: number;
   byId: Record<string, MapNode>;
+  /** Laid out from settings.map (hand-placed) rather than automatically. */
+  manual?: boolean;
 }
 
 const LAYER_GAP = 96;
@@ -71,7 +75,40 @@ function stepTargets(g: InteractiveGraph, id: string | undefined, seen = new Set
 
 const short = (s: string, n = 28) => (s.length > n ? `${s.slice(0, n - 1)}…` : s);
 
-export function buildCaseMap(g: InteractiveGraph): CaseMapLayout {
+/** Cells for every decision and ending of a hand-placed map: placed ones as they are, anything
+ *  added since in the nearest free cell below what leads to it (new endings join the endings'
+ *  row). Null when the case has no hand-placed map. */
+function fillCells(g: InteractiveGraph, ids: string[], edges: MapEdge[], topo: string[], isEnding: (id: string) => boolean): Record<string, MapPlacement> | null {
+  const manual = g.settings.map;
+  if (!manual || !ids.some((id) => manual[id])) return null;
+  const cells: Record<string, MapPlacement> = {};
+  const used = new Set<string>();
+  const key = (row: number, col: number) => `${row}:${col}`;
+  for (const id of ids) if (manual[id]) { cells[id] = manual[id]; used.add(key(manual[id].row, manual[id].col)); }
+  const start = manual[START_ID];
+  if (start) used.add(key(start.row, start.col));
+  let maxRow = Math.max(0, ...Object.values(cells).map((c) => c.row));
+  const endingRows = ids.filter((id) => cells[id] && isEnding(id)).map((id) => cells[id].row);
+  const freeCol = (row: number, col: number) => {
+    for (let d = 0; d < 40; d++) for (const c of d ? [col + d, col - d] : [col]) if (c >= 0 && !used.has(key(row, c))) return c;
+    return null;
+  };
+  const wanted = new Set(ids);
+  for (const id of topo) {
+    if (!wanted.has(id) || cells[id]) continue;
+    const parents = edges.filter((e) => e.to === id).map((e) => (e.from === START_ID ? start || { row: 0, col: 0 } : cells[e.from])).filter(Boolean) as MapPlacement[];
+    let row = isEnding(id) && endingRows.length ? Math.max(...endingRows) : parents.length ? Math.max(...parents.map((p) => p.row)) + 1 : maxRow + 1;
+    const col0 = parents.length ? Math.round(parents.reduce((a, p) => a + p.col, 0) / parents.length) : 0;
+    let col = freeCol(row, col0);
+    while (col == null) col = freeCol(++row, col0);
+    cells[id] = { row, col };
+    used.add(key(row, col));
+    maxRow = Math.max(maxRow, row);
+  }
+  return cells;
+}
+
+export function buildCaseMap(g: InteractiveGraph, opts: { keepBackEdges?: boolean } = {}): CaseMapLayout {
   const nodeIds = new Set<string>([START_ID]);
   const meta = new Map<string, StoryNode | undefined>();
   const edges: MapEdge[] = [];
@@ -147,11 +184,12 @@ export function buildCaseMap(g: InteractiveGraph): CaseMapLayout {
   }
   for (const e of edges) e.branch = branch.get(e.from) || branch.get(e.to) || 0;
 
-  // Hand-placed map (settings.map): used only while it covers every decision and ending,
-  // so a section added later never disappears; the map simply lays itself out again.
-  const manual = g.settings.map;
-  if (manual && [...nodeIds].every((id) => id === START_ID || manual[id])) {
-    const cells = [...nodeIds].map((id) => ({ id, cell: manual[id] }));
+  // Hand-placed map (settings.map). Sections added since it was placed get the nearest
+  // free cell below what leads to them, so nothing disappears and nothing else moves.
+  const filled = fillCells(g, [...nodeIds].filter((id) => id !== START_ID), edges, topo, (id) => meta.get(id)?.type === "ending");
+  if (filled) {
+    const manual = g.settings.map || {};
+    const cells = [...nodeIds].map((id) => ({ id, cell: filled[id] }));
     const maxCol = Math.max(0, ...cells.filter((c) => c.cell).map((c) => c.cell!.col));
     const startCell = manual[START_ID] || { row: 0, col: maxCol / 2 };
     const maxRow = Math.max(startCell.row, ...cells.filter((c) => c.cell).map((c) => c.cell!.row));
@@ -166,6 +204,7 @@ export function buildCaseMap(g: InteractiveGraph): CaseMapLayout {
         title: isStart ? "Start" : short(n?.type === "ending" ? n.endingTitle || n.id : n?.title || n?.id || id, 22),
         layer: c.row,
         order: c.col,
+        col: c.col,
         x: PAD_X + c.col * MANUAL_COL_GAP,
         y: PAD_Y + c.row * LAYER_GAP,
         branch: branch.get(id) || 0,
@@ -178,8 +217,8 @@ export function buildCaseMap(g: InteractiveGraph): CaseMapLayout {
     const mById = Object.fromEntries(mNodes.map((n) => [n.id, n]));
     // A hand-placed map reads top to bottom, so it only draws arrows that go down the page.
     // (Repeatable rounds, like examining a body three times, would otherwise loop back on themselves.)
-    const forward = edges.filter((e) => mById[e.from] && mById[e.to] && mById[e.to].y > mById[e.from].y);
-    return { nodes: mNodes, edges: forward, width: mWidth, height: PAD_Y * 2 + maxRow * LAYER_GAP, byId: mById };
+    const forward = edges.filter((e) => mById[e.from] && mById[e.to] && (opts.keepBackEdges || mById[e.to].y > mById[e.from].y));
+    return { nodes: mNodes, edges: forward, width: mWidth, height: PAD_Y * 2 + maxRow * LAYER_GAP, byId: mById, manual: true };
   }
 
   // Rows, ordered to reduce crossings (barycentre sweeps).
@@ -235,6 +274,7 @@ export function buildCaseMap(g: InteractiveGraph): CaseMapLayout {
         title: isStart ? "Start" : short(n?.type === "ending" ? n.endingTitle || n.id : n?.title || n?.id || id),
         layer: l,
         order: i,
+        col: Math.round(((width / 2 - span / 2 + i * COL_GAP - PAD_X) / COL_GAP) * 2) / 2,
         x: width / 2 - span / 2 + i * COL_GAP,
         y: PAD_Y + l * LAYER_GAP,
         branch: branch.get(id) || 0,
