@@ -19,6 +19,8 @@ export interface MapNode {
   branch: number;
   /** 1-based number for endings (END 1, END 2…). */
   endingNo?: number;
+  /** Short code drawn inside the node on a hand-placed map (e.g. "AA", "Y"). */
+  code?: string;
   timed: boolean;
   /** A choice here hands out an inventory item. */
   givesItem: boolean;
@@ -47,6 +49,8 @@ export interface CaseMapLayout {
 
 const LAYER_GAP = 96;
 const COL_GAP = 92;
+/** Hand-placed maps keep their columns wider so every title fits under its node. */
+const MANUAL_COL_GAP = 118;
 const PAD_X = 60;
 const PAD_Y = 48;
 
@@ -142,6 +146,41 @@ export function buildCaseMap(g: InteractiveGraph): CaseMapLayout {
     for (const e of out.get(id) || []) if (!branch.has(e.to)) { branch.set(e.to, branch.get(id)!); queue.push(e.to); }
   }
   for (const e of edges) e.branch = branch.get(e.from) || branch.get(e.to) || 0;
+
+  // Hand-placed map (settings.map): used only while it covers every decision and ending,
+  // so a section added later never disappears; the map simply lays itself out again.
+  const manual = g.settings.map;
+  if (manual && [...nodeIds].every((id) => id === START_ID || manual[id])) {
+    const cells = [...nodeIds].map((id) => ({ id, cell: manual[id] }));
+    const maxCol = Math.max(0, ...cells.filter((c) => c.cell).map((c) => c.cell!.col));
+    const startCell = manual[START_ID] || { row: 0, col: maxCol / 2 };
+    const maxRow = Math.max(startCell.row, ...cells.filter((c) => c.cell).map((c) => c.cell!.row));
+    const mWidth = Math.max(420, PAD_X * 2 + maxCol * MANUAL_COL_GAP);
+    const mNodes: MapNode[] = cells.map(({ id, cell }) => {
+      const n = meta.get(id);
+      const isStart = id === START_ID;
+      const c = isStart ? startCell : cell!;
+      return {
+        id,
+        kind: isStart ? "start" : n?.type === "ending" ? "ending" : "decision",
+        title: isStart ? "Start" : short(n?.type === "ending" ? n.endingTitle || n.id : n?.title || n?.id || id, 22),
+        layer: c.row,
+        order: c.col,
+        x: PAD_X + c.col * MANUAL_COL_GAP,
+        y: PAD_Y + c.row * LAYER_GAP,
+        branch: branch.get(id) || 0,
+        endingNo: n?.type === "ending" ? endings.findIndex((e) => e.id === id) + 1 : undefined,
+        code: isStart ? undefined : c.code,
+        timed: !!n?.timeLimit,
+        givesItem: !!n?.options?.some((o) => (o.effects || []).some((e) => e.var.startsWith("item_") && e.value !== "0" && e.value !== "")),
+      };
+    });
+    const mById = Object.fromEntries(mNodes.map((n) => [n.id, n]));
+    // A hand-placed map reads top to bottom, so it only draws arrows that go down the page.
+    // (Repeatable rounds, like examining a body three times, would otherwise loop back on themselves.)
+    const forward = edges.filter((e) => mById[e.from] && mById[e.to] && mById[e.to].y > mById[e.from].y);
+    return { nodes: mNodes, edges: forward, width: mWidth, height: PAD_Y * 2 + maxRow * LAYER_GAP, byId: mById };
+  }
 
   // Rows, ordered to reduce crossings (barycentre sweeps).
   const rows = new Map<number, string[]>();
