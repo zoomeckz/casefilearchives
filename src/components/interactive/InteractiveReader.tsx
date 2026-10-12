@@ -17,6 +17,7 @@ import { CaseReport, CaseReports } from "@/components/interactive/CaseReport";
 const SUPA_URL = import.meta.env.VITE_SUPABASE_URL;
 const ANON = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY;
 const ANSWER_MAX = 2000;
+const FOLLOW_UP_MAX = 1200; // the "No" box of the closing check
 
 function getToken(): string | null {
   try { return JSON.parse(localStorage.getItem("app-auth-session") || "null")?.access_token || null; } catch { return null; }
@@ -49,6 +50,41 @@ interface Props {
 }
 
 const guestKey = (id: string) => `ic-guest:${id}`;
+
+// Until the database fix for ic_choose (migration 20261012140000) is applied,
+// the server refuses every decision with this error. Signed-in readers then carry
+// on in their browser (like guests), and their closing answer is filed as a
+// reading event that Admin → Case reports also shows.
+const SERVER_CHOICE_BROKEN = /column "visited"/;
+const LOCAL_TEXT_MAX = 1300; // reading events keep at most ~2 KB of details
+const localKey = (chapterId: string, userId: string) => `ic-local:${chapterId}:${userId}`;
+const randomId = () => Math.random().toString(36).slice(2) + Date.now().toString(36);
+function deviceId(): string {
+  try {
+    let id = localStorage.getItem("ic-device-id");
+    if (!id) { id = randomId(); localStorage.setItem("ic-device-id", id); }
+    return id;
+  } catch { return randomId(); }
+}
+
+/** Files a closing answer as a reading event (works while the server cannot record decisions). */
+async function fileLocalReport(chapterId: string, userId: string, s: PlayState, text: string): Promise<void> {
+  const token = getToken();
+  if (!token) throw new Error("auth_required");
+  const post = (meta: Record<string, unknown>) => fetch(`${SUPA_URL}/rest/v1/interactive_events`, {
+    method: "POST",
+    headers: { apikey: ANON, Authorization: `Bearer ${token}`, "Content-Type": "application/json", Prefer: "return=minimal" },
+    body: JSON.stringify({
+      case_key: chapterId, user_id: userId, device_id: deviceId(), session_id: randomId(), attempt: s.attempt ?? 1,
+      kind: "answer", node_id: s.ending_node, client_ts: new Date().toISOString(), meta,
+    }),
+  });
+  const full = { local: true, text, at: s.completed_at, d: s.decisions.map((d) => [d.node_id, d.option_id]), v: s.variables };
+  let res = await post(full);
+  // Too big with the route attached: send the answer on its own.
+  if (!res.ok) res = await post({ local: true, text, at: s.completed_at });
+  if (!res.ok) throw new Error("report_not_saved");
+}
 
 /** 75 → "1:15" */
 const clock = (s: number) => {
@@ -94,6 +130,16 @@ export const InteractiveReader: React.FC<Props> = ({ chapterId, title, graph, us
     if (guestAccess === "full_nosave") return;
     try { localStorage.setItem(guestKey(chapterId), JSON.stringify(s)); } catch {}
   };
+  // Signed-in playthrough kept in this browser while the server cannot file decisions.
+  const [onDevice, setOnDevice] = useState(false);
+  const readLocal = (): PlayState | null => {
+    if (!user) return null;
+    try { const s = JSON.parse(localStorage.getItem(localKey(chapterId, user.id)) || "null"); return s && Array.isArray(s.visited) ? s : null; } catch { return null; }
+  };
+  const writeLocal = (s: PlayState) => {
+    if (!user) return;
+    try { localStorage.setItem(localKey(chapterId, user.id), JSON.stringify(s)); } catch {}
+  };
 
   // Load: preview → fresh local; guest → device-stored; user → server (importing guest picks once).
   const load = useCallback(async () => {
@@ -106,15 +152,34 @@ export const InteractiveReader: React.FC<Props> = ({ chapterId, title, graph, us
         return;
       }
       if (!user) { setState(readGuest() || startLocal(graph)); return; }
+      const local = readLocal();
+      if (local) {
+        setOnDevice(true);
+        setState(local);
+        try { localStorage.removeItem(guestKey(chapterId)); } catch {}
+        return;
+      }
       let s = parseServerState(await rpc("ic_start", { _chapter_id: chapterId, _replay: false }));
       const guest = readGuest();
       if (s && guest && s.decisions.length === 0 && guest.decisions.length > 0) {
         for (const d of guest.decisions) {
           try { s = parseServerState(await rpc("ic_choose", { _chapter_id: chapterId, _node_id: d.node_id, _option_id: d.option_id })) || s; }
-          catch { break; }
+          catch (e: any) {
+            if (SERVER_CHOICE_BROKEN.test(e?.message || "")) {
+              // Keep the choices made as a guest, in this browser.
+              const carried: PlayState = { ...guest, attempt: s.attempt ?? 1 };
+              writeLocal(carried);
+              try { localStorage.removeItem(guestKey(chapterId)); } catch {}
+              setOnDevice(true);
+              setState(carried);
+              return;
+            }
+            break;
+          }
         }
       }
       try { localStorage.removeItem(guestKey(chapterId)); } catch {}
+      setOnDevice(false);
       setState(s);
     } catch (e: any) {
       setError(e.message);
@@ -181,8 +246,19 @@ export const InteractiveReader: React.FC<Props> = ({ chapterId, title, graph, us
       if (preview || !user) {
         next = chooseLocal(graph, state, state.current_node, option.id);
         if (!preview) writeGuest(next);
+      } else if (onDevice) {
+        next = chooseLocal(graph, state, state.current_node, option.id);
+        writeLocal(next);
       } else {
-        next = parseServerState(await rpc("ic_choose", { _chapter_id: chapterId, _node_id: state.current_node, _option_id: option.id }));
+        try {
+          next = parseServerState(await rpc("ic_choose", { _chapter_id: chapterId, _node_id: state.current_node, _option_id: option.id }));
+        } catch (e: any) {
+          if (!SERVER_CHOICE_BROKEN.test(e?.message || "")) throw e;
+          // The server cannot file decisions yet: carry on in this browser.
+          next = chooseLocal(graph, state, state.current_node, option.id);
+          writeLocal(next);
+          setOnDevice(true);
+        }
       }
       // The server files a random option instead if the time limit had already passed.
       const filedId = next?.decisions.find((d) => d.node_id === state.current_node)?.option_id;
@@ -234,6 +310,13 @@ export const InteractiveReader: React.FC<Props> = ({ chapterId, title, graph, us
     try {
       if (preview) {
         setState({ ...state, final_answer: text, answered_at: new Date().toISOString() });
+      } else if (onDevice && user) {
+        const short = text.slice(0, LOCAL_TEXT_MAX);
+        await fileLocalReport(chapterId, user.id, state, short);
+        const next = { ...state, final_answer: short, answered_at: new Date().toISOString() };
+        writeLocal(next);
+        setState(next);
+        notifyActivity();
       } else {
         const next = parseServerState(await rpc("ic_answer", { _chapter_id: chapterId, _answer: text }));
         if (next) setState(next);
@@ -258,7 +341,7 @@ export const InteractiveReader: React.FC<Props> = ({ chapterId, title, graph, us
   /** The "agree" closing: Yes files straight away; No files together with the follow-up answer. */
   const fileAgree = async (agrees: boolean) => {
     if (!agrees && !followUp.trim()) return;
-    const ok = await submitAnswer(formatAgreeAnswer(agreeCheck, agrees, followUp.slice(0, ANSWER_MAX - 200)), agrees ? 1 : 2);
+    const ok = await submitAnswer(formatAgreeAnswer(agreeCheck, agrees, followUp.slice(0, FOLLOW_UP_MAX)), agrees ? 1 : 2);
     if (ok) { setDisagreeing(false); setFollowUp(""); }
   };
 
@@ -267,6 +350,13 @@ export const InteractiveReader: React.FC<Props> = ({ chapterId, title, graph, us
     setLastConsequence(null);
     setShowHistory(false);
     if (preview) { setState(startLocal(graph)); return; }
+    if (onDevice && user) {
+      // Start over through the server; if it still cannot file decisions, the next choice moves back here.
+      try { localStorage.removeItem(localKey(chapterId, user.id)); } catch {}
+      setOnDevice(false);
+      await load();
+      return;
+    }
     try { setState(parseServerState(await rpc("ic_start", { _chapter_id: chapterId, _replay: true }))); }
     catch (e: any) { setError(e.message); }
   };
@@ -570,11 +660,11 @@ export const InteractiveReader: React.FC<Props> = ({ chapterId, title, graph, us
                     <div className="mt-6 border border-border bg-card/40 p-4">
                       <label htmlFor="ic-followup" className="font-display text-lg text-foreground">{agreeCheck.followUp}</label>
                       <textarea id="ic-followup" autoFocus value={followUp} rows={5}
-                        onChange={(e) => setFollowUp(e.target.value.slice(0, ANSWER_MAX - 200))}
+                        onChange={(e) => setFollowUp(e.target.value.slice(0, FOLLOW_UP_MAX))}
                         placeholder={tr("followUpPlaceholder", "Write what you believe happened…")}
                         className="mt-3 w-full px-3 py-2 bg-background border border-border text-foreground focus:outline-none focus:border-primary resize-y" />
                       <div className="flex flex-wrap items-center justify-between gap-3 mt-2">
-                        <span className="case-label text-[9px] tabular-nums">{followUp.length}/{ANSWER_MAX - 200}</span>
+                        <span className="case-label text-[9px] tabular-nums">{followUp.length}/{FOLLOW_UP_MAX}</span>
                         <button type="button" disabled={!followUp.trim() || submitting} onClick={() => void fileAgree(false)}
                           className="px-4 py-2 bg-primary text-primary-foreground text-xs uppercase tracking-wider disabled:opacity-50">
                           {submitting ? "…" : tr("send", "Send")}
