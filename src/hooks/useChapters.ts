@@ -13,8 +13,12 @@ export interface Chapter {
   isArchived: boolean;
   tags: string[];
   storyFormat: 'linear' | 'interactive';
-  interactiveGraph: any | null;
 }
+
+// The chapter list is downloaded on every page, so it leaves out the
+// interactive case structure (every branch and ending). The reader page loads
+// one case's structure only when that case is opened (useCaseGraph).
+const CHAPTER_COLUMNS = 'id,title,content,chapter_number,published_at,views,scheduled_at,cover_image_url,is_archived,tags,story_format';
 
 function mapChapter(c: any): Chapter {
   return {
@@ -29,7 +33,6 @@ function mapChapter(c: any): Chapter {
     isArchived: c.is_archived === true,
     tags: Array.isArray(c.tags) ? c.tags : [],
     storyFormat: c.story_format === 'interactive' ? 'interactive' : 'linear',
-    interactiveGraph: c.interactive_graph ?? null,
   };
 }
 
@@ -77,7 +80,7 @@ function isChapterPublished(chapter: Chapter, nowMs: number): boolean {
 function buildChaptersUrl(isAdmin: boolean): string {
   const url = new URL(`${import.meta.env.VITE_SUPABASE_URL}/rest/v1/chapters`);
 
-  url.searchParams.set('select', '*');
+  url.searchParams.set('select', CHAPTER_COLUMNS);
   url.searchParams.set('order', 'chapter_number.asc');
 
   if (!isAdmin) {
@@ -87,6 +90,30 @@ function buildChaptersUrl(isAdmin: boolean): string {
   }
 
   return url.toString();
+}
+
+/** One interactive case's structure, fetched only while that case is open. */
+export function useCaseGraph(chapterId: string | null | undefined, enabled: boolean) {
+  const [state, setState] = useState<{ id: string | null; graph: any | null; failed: boolean }>({ id: null, graph: null, failed: false });
+
+  useEffect(() => {
+    if (!enabled || !chapterId) return;
+    let cancelled = false;
+    setState({ id: chapterId, graph: null, failed: false });
+    const url = new URL(`${import.meta.env.VITE_SUPABASE_URL}/rest/v1/chapters`);
+    url.searchParams.set('select', 'interactive_graph');
+    url.searchParams.set('id', `eq.${chapterId}`);
+    fetch(url.toString(), {
+      headers: { apikey: import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY, Authorization: `Bearer ${getAuthToken()}` },
+    })
+      .then((r) => (r.ok ? r.json() : Promise.reject(new Error(String(r.status)))))
+      .then((rows) => { if (!cancelled) setState({ id: chapterId, graph: rows?.[0]?.interactive_graph ?? null, failed: !rows?.[0]?.interactive_graph }); })
+      .catch(() => { if (!cancelled) setState({ id: chapterId, graph: null, failed: true }); });
+    return () => { cancelled = true; };
+  }, [chapterId, enabled]);
+
+  const current = state.id === chapterId;
+  return { graph: current ? state.graph : null, loading: enabled && !!chapterId && (!current || (!state.graph && !state.failed)), failed: current && state.failed };
 }
 
 export function useChapters(isAdmin = false) {
