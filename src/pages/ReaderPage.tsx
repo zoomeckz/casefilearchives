@@ -3,7 +3,7 @@ import React, { useEffect, useRef, useState, useMemo } from "react";
 import { useTranslation } from "react-i18next";
 import { Link } from "react-router-dom";
 import { Icons } from "@/lib/icons";
-import { Chapter } from "@/hooks/useChapters";
+import { Chapter, useCaseGraph } from "@/hooks/useChapters";
 import { GlossaryEntry } from "@/lib/data";
 import DOMPurify from "dompurify";
 import { CommentsSection } from "@/components/CommentsSection";
@@ -64,6 +64,9 @@ export const ReaderPage: React.FC<ReaderPageProps> = ({
     () => (sourceChapter ? { ...sourceChapter, title: translation.title, content: translation.content } : null),
     [sourceChapter, translation.title, translation.content],
   );
+  // Interactive cases: the structure is fetched only for the case being read.
+  const caseGraph = useCaseGraph(sourceChapter?.id, sourceChapter?.storyFormat === "interactive");
+  const caseStructure = useMemo(() => (caseGraph.graph ? normalizeGraph(caseGraph.graph) : null), [caseGraph.graph]);
   const discussionPrompts = [
     t("reader.prompt1", "What stayed with you after reading this story?"),
     t("reader.prompt2", "Which character stood out most in this story?"),
@@ -220,7 +223,7 @@ export const ReaderPage: React.FC<ReaderPageProps> = ({
   const prevChapter = currentIndex > 0 ? chapters[currentIndex - 1] : null;
   const nextChapter = currentIndex < chapters.length - 1 ? chapters[currentIndex + 1] : null;
   const readTime = estimateReadingTime(chapter.content);
-  const isInteractive = chapter.storyFormat === "interactive" && !!chapter.interactiveGraph;
+  const isInteractive = chapter.storyFormat === "interactive";
 
   if (cardsMode && !isInteractive) {
     return (
@@ -359,14 +362,22 @@ export const ReaderPage: React.FC<ReaderPageProps> = ({
           className="mb-12 border-y border-border py-8 sm:py-12"
         >
           {isInteractive ? (
-            <InteractiveReader
-              chapterId={chapter.id}
-              title={chapter.title}
-              graph={normalizeGraph(chapter.interactiveGraph)}
-              user={user}
-              setShowAuthModal={setShowAuthModal}
-              onDiscuss={() => setCurrentPage(`forum?case=${chapter.id}`)}
-            />
+            caseStructure ? (
+              <InteractiveReader
+                chapterId={chapter.id}
+                title={chapter.title}
+                graph={caseStructure}
+                user={user}
+                setShowAuthModal={setShowAuthModal}
+                onDiscuss={() => setCurrentPage(`forum?case=${chapter.id}`)}
+              />
+            ) : (
+              <p className="text-muted-foreground text-sm py-8">
+                {caseGraph.failed
+                  ? t("interactive.loadError", { defaultValue: "This case file could not be opened." })
+                  : t("interactive.loading", { defaultValue: "Retrieving file…" })}
+              </p>
+            )
           ) : (
           <div
             className="prose-story chapter-content"
