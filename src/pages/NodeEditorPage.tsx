@@ -1,20 +1,25 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { NodeCanvas } from "@/components/interactive/NodeCanvas";
+import { StoryMapCanvas } from "@/components/interactive/StoryMapCanvas";
 import { normalizeGraph, type InteractiveGraph } from "@/lib/interactive";
 import { ensurePositions } from "@/lib/nodeGraph";
 import { NODE_CHANNEL_PREFIX, type NodeMsg } from "@/lib/nodeChannel";
 
 /**
- * Pop-out node editor: /node-editor?ch=<channel>.
- * Opened from the Interactive Case editor. It holds no data of its own: the
- * main window sends the case over a BroadcastChannel, every edit made here is
- * sent straight back (and saved there), and clicking a node in either window
- * selects it in the other.
+ * Pop-out editor: /node-editor?ch=<channel>[&view=map].
+ * Opened from the Interactive Case editor, as the node editor or the Story map
+ * (two views of the same case; switch at the top left). It holds no data of its
+ * own: the main window sends the case over a BroadcastChannel, every edit made
+ * here is sent straight back (and saved there) and to any other open pop-out,
+ * and clicking a node in any window selects it in the others.
  */
 const MAX_HISTORY = 150;
+type View = "nodes" | "map";
 
 const NodeEditorPage = () => {
-  const ch = new URLSearchParams(window.location.search).get("ch") || "";
+  const params = new URLSearchParams(window.location.search);
+  const ch = params.get("ch") || "";
+  const [view, setView] = useState<View>(params.get("view") === "map" ? "map" : "nodes");
   const [graph, setGraph] = useState<InteractiveGraph | null>(null);
   const [title, setTitle] = useState("");
   const [selectedId, setSelectedId] = useState<string | null>(null);
@@ -46,7 +51,18 @@ const NodeEditorPage = () => {
     return () => { root.style.overflow = prev; document.body.style.overflow = ""; meta.remove(); };
   }, []);
 
-  useEffect(() => { document.title = title ? `Nodes · ${title}` : "Node editor"; }, [title]);
+  useEffect(() => {
+    const name = view === "map" ? "Story map" : "Nodes";
+    document.title = title ? `${name} · ${title}` : view === "map" ? "Story map" : "Node editor";
+  }, [title, view]);
+
+  const switchView = (v: View) => {
+    setView(v);
+    const url = new URL(window.location.href);
+    if (v === "map") url.searchParams.set("view", "map"); else url.searchParams.delete("view");
+    window.history.replaceState(null, "", url.toString());
+    if (selectedId) setFocus((f) => ({ id: selectedId, n: (f?.n || 0) + 1 }));
+  };
 
   useEffect(() => {
     if (!ch || typeof BroadcastChannel === "undefined") return;
@@ -65,6 +81,9 @@ const NodeEditorPage = () => {
         if (m.selectedId) setSelectedId(m.selectedId);
         // Nodes added in the main window get a spot on the canvas; send the positions back once.
         if (laid !== incoming) chan.postMessage({ t: "update", graph: laid } satisfies NodeMsg);
+      } else if (m.t === "update" && m.graph && Array.isArray(m.graph.nodes)) {
+        // An edit made in another pop-out (the Story map and the node editor can both be open).
+        setGraph(ensurePositions(normalizeGraph(m.graph)));
       } else if (m.t === "select") {
         setSelectedId(m.id);
         setFocus((f) => ({ id: m.id, n: (f?.n || 0) + 1 }));
@@ -83,9 +102,11 @@ const NodeEditorPage = () => {
     return () => { window.clearInterval(ping); chan.close(); chanRef.current = null; };
   }, [ch]);
 
-  const commit = useCallback((next: InteractiveGraph, coalesce?: string) => {
+  const commit = useCallback((edited: InteractiveGraph, coalesce?: string) => {
     const cur = graphRef.current;
-    if (!cur || next === cur) return;
+    if (!cur || edited === cur) return;
+    // Sections added on the Story map get a spot in the node view too.
+    const next = ensurePositions(edited);
     const now = Date.now();
     const lc = lastCoalesce.current;
     if (!(coalesce && lc && lc.key === coalesce && now - lc.at < 1200)) {
@@ -143,22 +164,34 @@ const NodeEditorPage = () => {
     </span>
   );
 
+  const switcher = (
+    <div className="flex rounded border border-border overflow-hidden text-xs" role="tablist" aria-label="View">
+      {([["map", "Story map"], ["nodes", "Nodes"]] as [View, string][]).map(([v, label]) => (
+        <button key={v} type="button" role="tab" aria-selected={view === v} onClick={() => switchView(v)}
+          className={`h-8 px-2.5 transition-colors ${view === v ? "bg-primary text-primary-foreground" : "bg-card/90 hover:text-primary"}`}>{label}</button>
+      ))}
+    </div>
+  );
+
+  const canvasProps = {
+    graph: graph as InteractiveGraph,
+    onChange: commit,
+    selectedId,
+    onSelect,
+    focus,
+    onUndo: doUndo,
+    onRedo: doRedo,
+    canUndo: undo.current.length > 0,
+    canRedo: redo.current.length > 0,
+    status,
+    title,
+    switcher,
+  };
+
   return (
     <div className="fixed inset-0 bg-background">
       {graph ? (
-        <NodeCanvas
-          graph={graph}
-          onChange={commit}
-          selectedId={selectedId}
-          onSelect={onSelect}
-          focus={focus}
-          onUndo={doUndo}
-          onRedo={doRedo}
-          canUndo={undo.current.length > 0}
-          canRedo={redo.current.length > 0}
-          status={status}
-          title={title}
-        />
+        view === "map" ? <StoryMapCanvas key="map" {...canvasProps} /> : <NodeCanvas key="nodes" {...canvasProps} />
       ) : (
         <div className="h-full grid place-items-center text-muted-foreground text-sm">Connecting to the editor…</div>
       )}
