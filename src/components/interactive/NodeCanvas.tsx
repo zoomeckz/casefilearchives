@@ -1,7 +1,7 @@
 import React, { memo, useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import {
-  validateGraph, ITEM_COLORS,
-  type InteractiveGraph, type InventoryItem, type ItemColor, type NodeType, type StoryNode,
+  validateGraph, ITEM_COLORS, ITEM_PREFIX,
+  type Condition, type CondOp, type DecisionOption, type Effect, type InteractiveGraph, type InventoryItem, type ItemColor, type NodeType, type NotebookEntry, type StoryNode,
 } from "@/lib/interactive";
 import { itemStyle } from "@/lib/itemColors";
 import {
@@ -18,8 +18,8 @@ import {
 // connect, drop a wire on empty space to create the next node, hover a wire to
 // insert a node into it or cut it. Every edit goes through onChange right away.
 
-const ITEM_HEX: Record<ItemColor, string> = { blue: "#38bdf8", green: "#34d399", amber: "#f59e0b", violet: "#a78bfa", cyan: "#22d3ee", pink: "#f472b6" };
-const TONE: Record<NodeType, { label: string; border: string; head: string; text: string; hex: string }> = {
+export const ITEM_HEX: Record<ItemColor, string> = { blue: "#38bdf8", green: "#34d399", amber: "#f59e0b", violet: "#a78bfa", cyan: "#22d3ee", pink: "#f472b6" };
+export const TONE: Record<NodeType, { label: string; border: string; head: string; text: string; hex: string }> = {
   narrative: { label: "Scene", border: "border-sky-500/50", head: "bg-sky-500/10", text: "text-sky-400", hex: "#38bdf8" },
   decision: { label: "Decision", border: "border-primary/70", head: "bg-primary/15", text: "text-primary", hex: "#dc2626" },
   ending: { label: "Ending", border: "border-amber-400/60", head: "bg-amber-400/10", text: "text-amber-400", hex: "#f59e0b" },
@@ -53,9 +53,11 @@ interface Props {
   canRedo: boolean;
   status?: React.ReactNode;
   title?: string;
+  /** Shown first in the top bar (the Nodes / Story map switch). */
+  switcher?: React.ReactNode;
 }
 
-const isTyping = (el: EventTarget | null) => {
+export const isTyping = (el: EventTarget | null) => {
   const t = el as HTMLElement | null;
   return !!t && (t.tagName === "INPUT" || t.tagName === "TEXTAREA" || t.tagName === "SELECT" || t.isContentEditable);
 };
@@ -74,7 +76,7 @@ function bezier(a: Pos, b: Pos) {
   return { d: `M${a.x},${a.y} C${c1.x},${c1.y} ${c2.x},${c2.y} ${b.x},${b.y}`, at };
 }
 
-export const NodeCanvas: React.FC<Props> = ({ graph, onChange, selectedId, onSelect, focus, onUndo, onRedo, canUndo, canRedo, status, title }) => {
+export const NodeCanvas: React.FC<Props> = ({ graph, onChange, selectedId, onSelect, focus, onUndo, onRedo, canUndo, canRedo, status, title, switcher }) => {
   const vpRef = useRef<HTMLDivElement>(null);
   const worldRef = useRef<HTMLDivElement>(null);
   const view = useRef({ x: 80, y: 300, k: 0.8 });
@@ -581,6 +583,7 @@ export const NodeCanvas: React.FC<Props> = ({ graph, onChange, selectedId, onSel
       {/* Top bar */}
       <div className="absolute left-3 right-3 top-3 flex flex-wrap items-center gap-2 pointer-events-none">
         <div className="pointer-events-auto flex flex-wrap items-center gap-1.5 bg-card/80 backdrop-blur border border-border rounded-lg p-1.5">
+          {switcher}
           {title && <span className="px-2 text-xs font-medium truncate max-w-[16rem]" title={title}>{title}</span>}
           <button type="button" className={btn} onClick={() => createAtCenter("narrative")} title="Add a scene (S)">+ Scene</button>
           <button type="button" className={btn} onClick={() => createAtCenter("decision")} title="Add a decision (D)">+ Decision</button>
@@ -844,13 +847,136 @@ function ParagraphField({ html, onChange, rows = 6, placeholder }: { html: strin
   );
 }
 
-function Inspector({ graph, node: n, onChange, onSelect, onDelete }: { graph: InteractiveGraph; node: StoryNode; onChange: (g: InteractiveGraph, coalesce?: string) => void; onSelect: (id: string) => void; onDelete: () => void }) {
+const OPS: { v: CondOp; l: string }[] = [
+  { v: "truthy", l: "is set" }, { v: "falsy", l: "is not set" }, { v: "eq", l: "=" }, { v: "neq", l: "≠" },
+  { v: "gte", l: "≥" }, { v: "gt", l: ">" }, { v: "lte", l: "≤" }, { v: "lt", l: "<" },
+];
+const rowBtn = "px-1 text-muted-foreground hover:text-destructive";
+
+/** Rules: variable, test, value. All must match. */
+function CondRows({ value, onChange, add }: { value: Condition[]; onChange: (c: Condition[]) => void; add: string }) {
+  const set = (i: number, patch: Partial<Condition>) => onChange(value.map((c, j) => (j === i ? { ...c, ...patch } : c)));
+  return (
+    <div className="space-y-1">
+      {value.map((c, i) => (
+        <div key={i} className="flex gap-1">
+          <input list="ic-canvas-vars" value={c.var} placeholder="variable" className={`${fieldCls} !px-1.5`} onChange={(e) => set(i, { var: e.target.value.trim() })} />
+          <select value={c.op || "eq"} className={`${fieldCls} !w-[5.5rem] shrink-0 !px-1`} onChange={(e) => set(i, { op: e.target.value as CondOp })}>
+            {OPS.map((o) => <option key={o.v} value={o.v}>{o.l}</option>)}
+          </select>
+          {c.op !== "truthy" && c.op !== "falsy" && (
+            <input value={c.value ?? ""} placeholder="value" className={`${fieldCls} !w-16 shrink-0 !px-1.5`} onChange={(e) => set(i, { value: e.target.value })} />
+          )}
+          <button type="button" className={rowBtn} onClick={() => onChange(value.filter((_, j) => j !== i))} aria-label="Remove rule">✕</button>
+        </div>
+      ))}
+      <button type="button" className="text-[11px] text-primary hover:underline" onClick={() => onChange([...value, { var: "", op: "truthy" }])}>{add}</button>
+    </div>
+  );
+}
+
+/** Events: variables a choice sets or adds to when it is picked. */
+function EffectRows({ value, onChange }: { value: Effect[]; onChange: (e: Effect[]) => void }) {
+  const set = (i: number, patch: Partial<Effect>) => onChange(value.map((e, j) => (j === i ? { ...e, ...patch } : e)));
+  return (
+    <div className="space-y-1">
+      {value.map((e, i) => (
+        <div key={i} className="flex gap-1">
+          <input list="ic-canvas-vars" value={e.var} placeholder="variable" className={`${fieldCls} !px-1.5`} onChange={(ev) => set(i, { var: ev.target.value.trim() })} />
+          <select value={e.op} className={`${fieldCls} !w-[5.5rem] shrink-0 !px-1`} onChange={(ev) => set(i, { op: ev.target.value as Effect["op"] })}>
+            <option value="set">set to</option>
+            <option value="add">add</option>
+          </select>
+          <input value={e.value} placeholder={e.op === "add" ? "1" : "true"} className={`${fieldCls} !w-16 shrink-0 !px-1.5`} onChange={(ev) => set(i, { value: ev.target.value })} />
+          <button type="button" className={rowBtn} onClick={() => onChange(value.filter((_, j) => j !== i))} aria-label="Remove event">✕</button>
+        </div>
+      ))}
+      <button type="button" className="text-[11px] text-primary hover:underline" onClick={() => onChange([...value, { var: "", op: "set", value: "true" }])}>+ event</button>
+    </div>
+  );
+}
+
+function NotebookRows({ value, onChange }: { value: NotebookEntry[]; onChange: (e: NotebookEntry[]) => void }) {
+  const set = (i: number, patch: Partial<NotebookEntry>) => onChange(value.map((e, j) => (j === i ? { ...e, ...patch } : e)));
+  return (
+    <div className="space-y-1.5">
+      {value.map((e, i) => (
+        <div key={i} className="flex gap-1 items-start">
+          <select value={e.kind} className={`${fieldCls} !w-[5.5rem] shrink-0 !px-1`} onChange={(ev) => set(i, { kind: ev.target.value as NotebookEntry["kind"] })}>
+            <option value="note">Note</option>
+            <option value="evidence">Evidence</option>
+          </select>
+          <textarea value={e.text} rows={2} className={`${fieldCls} resize-y`} onChange={(ev) => set(i, { text: ev.target.value })} />
+          <button type="button" className={`${rowBtn} pt-1.5`} onClick={() => onChange(value.filter((_, j) => j !== i))} aria-label="Remove notebook entry">✕</button>
+        </div>
+      ))}
+      <div className="flex gap-3">
+        <button type="button" className="text-[11px] text-primary hover:underline" onClick={() => onChange([...value, { kind: "note", text: "" }])}>+ note</button>
+        <button type="button" className="text-[11px] text-primary hover:underline" onClick={() => onChange([...value, { kind: "evidence", text: "" }])}>+ evidence</button>
+      </div>
+    </div>
+  );
+}
+
+/** A choice's events (variables it sets) and its show / lock rules. Item rules stay with Needs / Gives. */
+function ChoiceRules({ graph, nodeId, o, onChange }: { graph: InteractiveGraph; nodeId: string; o: DecisionOption; onChange: (g: InteractiveGraph, coalesce?: string) => void }) {
+  const itemFx = (o.effects || []).filter((e) => e.var.startsWith(ITEM_PREFIX));
+  const events = (o.effects || []).filter((e) => !e.var.startsWith(ITEM_PREFIX));
+  const isItemRule = (c: Condition) => !!o.requiresItem && c.var === `${ITEM_PREFIX}${o.requiresItem}`;
+  const itemVis = (o.visibleIf || []).filter(isItemRule);
+  const vis = (o.visibleIf || []).filter((c) => !isItemRule(c));
+  const locks = o.lockedIf || [];
+  const count = events.length + vis.length + locks.length;
+  const patch = (p: Partial<DecisionOption>, field: string) => onChange(patchOption(graph, nodeId, o.id, p), `${nodeId}:${o.id}:${field}`);
+  return (
+    <details className="text-[11px] group" open={count > 0}>
+      <summary className="cursor-pointer select-none text-muted-foreground hover:text-foreground">
+        Events and rules{count ? ` (${count})` : ""}
+      </summary>
+      <div className="mt-1.5 space-y-2 pl-1">
+        <div>
+          <p className="text-[10px] text-muted-foreground mb-1">When picked</p>
+          <EffectRows value={events} onChange={(ev) => { const all = [...itemFx, ...ev]; patch({ effects: all.length ? all : undefined }, "fx"); }} />
+        </div>
+        <div>
+          <p className="text-[10px] text-muted-foreground mb-1">Only show if</p>
+          <CondRows value={vis} add="+ show rule" onChange={(c) => { const all = [...itemVis, ...c]; patch({ visibleIf: all.length ? all : undefined }, "vis"); }} />
+        </div>
+        <div>
+          <p className="text-[10px] text-muted-foreground mb-1">Locked (shown blacked out) if</p>
+          <CondRows value={locks} add="+ lock rule" onChange={(c) => patch({ lockedIf: c.length ? c : undefined }, "lock")} />
+        </div>
+      </div>
+    </details>
+  );
+}
+
+/** Every variable the case uses, for the rule and event fields' suggestions. */
+function VarList({ graph }: { graph: InteractiveGraph }) {
+  const vars = useMemo(() => {
+    const s = new Set<string>();
+    for (const n of graph.nodes) {
+      (n.conditions || []).forEach((c) => c.var && s.add(c.var));
+      (n.routes || []).forEach((r) => r.conditions.forEach((c) => c.var && s.add(c.var)));
+      for (const o of n.options || []) {
+        (o.effects || []).forEach((e) => e.var && s.add(e.var));
+        (o.visibleIf || []).forEach((c) => c.var && s.add(c.var));
+        (o.lockedIf || []).forEach((c) => c.var && s.add(c.var));
+      }
+    }
+    return [...s].sort();
+  }, [graph]);
+  return <datalist id="ic-canvas-vars">{vars.map((v) => <option key={v} value={v} />)}</datalist>;
+}
+
+export function Inspector({ graph, node: n, onChange, onSelect, onDelete }: { graph: InteractiveGraph; node: StoryNode; onChange: (g: InteractiveGraph, coalesce?: string) => void; onSelect: (id: string) => void; onDelete: () => void }) {
   const t = typeOf(n);
   const items = graph.settings.items || [];
   const set = (patch: Partial<StoryNode>, field: string) => onChange(patchNode(graph, n.id, patch), `${n.id}:${field}`);
   const incoming = graph.nodes.filter((x) => rowsOf(x).some((r) => r.to === n.id));
   return (
     <div className="p-4 space-y-4 text-sm">
+      <VarList graph={graph} />
       <div className="flex items-center gap-2">
         <span className={`text-[10px] uppercase tracking-wider font-semibold ${TONE[t].text}`}>{TONE[t].label}</span>
         <span className="font-mono text-xs text-muted-foreground truncate">{n.id}</span>
@@ -887,22 +1013,23 @@ function Inspector({ graph, node: n, onChange, onSelect, onDelete }: { graph: In
               <button type="button" className="text-xs text-primary hover:underline" onClick={() => onChange(addRoute(graph, n.id))}>+ Route</button></div>
             {(n.routes || []).map((r, i) => (
               <div key={i} className="border border-border rounded p-2 space-y-1.5">
-                <div className="flex gap-1.5">
-                  <input value={r.conditions[0]?.var || ""} placeholder="variable, e.g. alerted" className={fieldCls}
-                    onChange={(e) => onChange(patchNode(graph, n.id, { routes: (n.routes || []).map((x, j) => (j === i ? { ...x, conditions: [{ ...(x.conditions[0] || { op: "truthy" }), var: e.target.value }, ...x.conditions.slice(1)] } : x)) }), `${n.id}:route${i}`)} />
-                  <select value={r.conditions[0]?.op === "falsy" ? "falsy" : "truthy"} className={`${fieldCls} w-28`}
-                    onChange={(e) => onChange(patchNode(graph, n.id, { routes: (n.routes || []).map((x, j) => (j === i ? { ...x, conditions: [{ ...(x.conditions[0] || { var: "" }), op: e.target.value as "truthy" | "falsy" }, ...x.conditions.slice(1)] } : x)) }))}>
-                    <option value="truthy">is set</option>
-                    <option value="falsy">is not set</option>
-                  </select>
-                </div>
-                {r.conditions.length > 1 && <p className="text-[10px] text-muted-foreground">+ {r.conditions.length - 1} more condition(s), edit in the main window</p>}
+                <CondRows value={r.conditions} add="+ condition"
+                  onChange={(c) => onChange(patchNode(graph, n.id, { routes: (n.routes || []).map((x, j) => (j === i ? { ...x, conditions: c } : x)) }), `${n.id}:route${i}`)} />
+                {r.conditions.length > 1 && <p className="text-[10px] text-muted-foreground">All conditions must match.</p>}
                 <div className="flex gap-1.5">
                   <TargetSelect graph={graph} value={r.to || ""} self={n.id} onChange={(v) => onChange(setPortTarget(graph, { nodeId: n.id, kind: "route", index: i }, v))} />
                   <button type="button" className="px-2 text-muted-foreground hover:text-destructive" onClick={() => onChange(removeRoute(graph, n.id, i))} aria-label="Remove route">✕</button>
                 </div>
               </div>
             ))}
+          </div>
+          <div>
+            <span className={labelCls}>Only show this scene if (otherwise it is skipped)</span>
+            <CondRows value={n.conditions || []} add="+ rule" onChange={(c) => set({ conditions: c.length ? c : undefined }, "conditions")} />
+          </div>
+          <div>
+            <span className={labelCls}>Notebook (added when the scene is shown)</span>
+            <NotebookRows value={n.notebook || []} onChange={(nb) => set({ notebook: nb.length ? nb : undefined }, "notebook")} />
           </div>
         </>
       )}
@@ -958,9 +1085,7 @@ function Inspector({ graph, node: n, onChange, onSelect, onDelete }: { graph: In
                     </div>
                   </>
                 )}
-                {(o.lockedIf?.length || (o.visibleIf || []).some((c) => !(o.requiresItem && c.var === `item_${o.requiresItem}`))) ? (
-                  <p className="text-[10px] text-sky-300">Has show / lock rules. Edit those in the main window.</p>
-                ) : null}
+                <ChoiceRules graph={graph} nodeId={n.id} o={o} onChange={onChange} />
                 <div className="flex justify-end gap-2 text-xs">
                   <button type="button" className="text-muted-foreground hover:text-foreground disabled:opacity-30" disabled={i === 0} onClick={() => onChange(moveOption(graph, n.id, o.id, -1))}>↑</button>
                   <button type="button" className="text-muted-foreground hover:text-foreground disabled:opacity-30" disabled={i === (n.options || []).length - 1} onClick={() => onChange(moveOption(graph, n.id, o.id, 1))}>↓</button>
@@ -1008,7 +1133,7 @@ function Inspector({ graph, node: n, onChange, onSelect, onDelete }: { graph: In
 
 // ── Items ──
 
-function ItemsPanel({ graph, onChange, onClose }: { graph: InteractiveGraph; onChange: (g: InteractiveGraph, coalesce?: string) => void; onClose: () => void }) {
+export function ItemsPanel({ graph, onChange, onClose }: { graph: InteractiveGraph; onChange: (g: InteractiveGraph, coalesce?: string) => void; onClose: () => void }) {
   const items = graph.settings.items || [];
   const setItems = (next: InventoryItem[], coalesce?: string) => onChange({ ...graph, settings: { ...graph.settings, items: next } }, coalesce);
   const add = () => {
