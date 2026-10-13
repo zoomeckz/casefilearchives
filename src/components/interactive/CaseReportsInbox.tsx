@@ -42,7 +42,7 @@ async function loadLocalReports(token?: string): Promise<ReportRow[]> {
   if (!token) return [];
   const headers = { apikey: ANON, Authorization: `Bearer ${token}` };
   const res = await fetch(
-    `${SUPA_URL}/rest/v1/interactive_events?select=id,case_key,user_id,attempt,node_id,meta,created_at&kind=eq.answer&meta->>local=eq.true&case_key=not.like.test:*&order=created_at.desc&limit=500`,
+    `${SUPA_URL}/rest/v1/interactive_events?select=id,case_key,user_id,attempt,node_id,meta,created_at&kind=eq.answer&meta->>local=eq.true&meta->>migrated=is.null&case_key=not.like.test:*&order=created_at.desc&limit=500`,
     { headers },
   );
   if (!res.ok) return [];
@@ -182,7 +182,10 @@ export const CaseReportsInbox: React.FC<{ authToken?: string }> = ({ authToken }
         rpc<ReportRow[]>("ic_admin_reports", { _status: status }, authToken),
         status === "answered" ? Promise.resolve([] as ReportRow[]) : loadLocalReports(authToken).catch(() => [] as ReportRow[]),
       ]);
-      const list = [...(Array.isArray(data) ? data : []), ...local]
+      const server = Array.isArray(data) ? data : [];
+      // A browser-saved answer the reader's own visit already moved to the server is listed once.
+      const onServer = new Set(server.map((r) => `${r.reader_id}|${r.chapter_id}|${(r.final_answer || "").trim()}`));
+      const list = [...server, ...local.filter((r) => !onServer.has(`${r.reader_id}|${r.chapter_id}|${r.final_answer.trim()}`))]
         .sort((a, b) => Date.parse(b.answered_at || "") - Date.parse(a.answered_at || ""));
       const ids = [...new Set(list.map((r) => r.chapter_id))];
       const metas: Record<string, CaseMeta> = {};
@@ -222,6 +225,23 @@ export const CaseReportsInbox: React.FC<{ authToken?: string }> = ({ authToken }
 
   const shown = (rows || []).filter((r) => !caseFilter || r.chapter_id === caseFilter);
 
+  // Moves answers saved from readers' browsers into ordinary case records (database function
+  // from migration 20261012150000), so they can be answered like any other report.
+  const [moving, setMoving] = useState(false);
+  const localCount = (rows || []).filter((r) => r.local).length;
+  const moveLocal = async () => {
+    setMoving(true);
+    try {
+      const res = await rpc<{ moved: number; skipped: number }>("ic_migrate_browser_reports", {}, authToken);
+      toast.success(`Moved ${res?.moved ?? 0} report${res?.moved === 1 ? "" : "s"} into the case records.`);
+      await load();
+    } catch (e: any) {
+      toast.error(/could not find the function|does not exist/i.test(e.message || "")
+        ? "The database update for this has not been applied yet (migration 20261012150000)."
+        : e.message || "The reports could not be moved.");
+    } finally { setMoving(false); }
+  };
+
   const markSaved = (id: string, text: string, at: string) => {
     setRows((prev) => (prev || []).map((r) => (r.playthrough_id === id ? { ...r, admin_feedback: text, feedback_at: at } : r)));
   };
@@ -251,6 +271,19 @@ export const CaseReportsInbox: React.FC<{ authToken?: string }> = ({ authToken }
         </select>
         <button type="button" onClick={() => void load()} className="px-3 py-1.5 text-xs border border-border rounded hover:border-primary/60">Refresh</button>
       </div>
+
+      {localCount > 0 && (
+        <div className="mb-6 border border-dashed border-border rounded-lg p-4 flex flex-wrap items-center gap-3 text-sm">
+          <p className="text-muted-foreground flex-1 min-w-[14rem]">
+            {localCount} report{localCount === 1 ? " was" : "s were"} saved from readers' browsers while the server could not record decisions.
+            Move them into the case records to reply to them like any other report.
+          </p>
+          <button type="button" onClick={() => void moveLocal()} disabled={moving}
+            className="px-3 py-1.5 bg-primary text-primary-foreground rounded text-xs disabled:opacity-50">
+            {moving ? "Moving…" : "Move into case records"}
+          </button>
+        </div>
+      )}
 
       {error && <p className="text-sm text-destructive mb-4">{error}</p>}
       {rows === null && <p className="case-label text-[9px]">Retrieving reports…</p>}
