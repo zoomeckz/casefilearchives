@@ -154,9 +154,35 @@ export const InteractiveReader: React.FC<Props> = ({ chapterId, title, graph, us
       if (!user) { setState(readGuest() || startLocal(graph)); return; }
       const local = readLocal();
       if (local) {
-        setOnDevice(true);
-        setState(local);
         try { localStorage.removeItem(guestKey(chapterId)); } catch {}
+        const clearLocal = () => { try { localStorage.removeItem(localKey(chapterId, user.id)); } catch {} };
+        let srv = parseServerState(await rpc("ic_start", { _chapter_id: chapterId, _replay: false }));
+        if (srv && (srv.decisions.length > 0 || srv.status !== "in_progress")) {
+          // The server already has this playthrough (moved by the database update) or newer progress.
+          clearLocal();
+          setOnDevice(false);
+          setState(srv);
+          return;
+        }
+        // Move the browser-kept playthrough onto the server, now that it records decisions.
+        try {
+          for (const d of local.decisions) {
+            srv = parseServerState(await rpc("ic_choose", { _chapter_id: chapterId, _node_id: d.node_id, _option_id: d.option_id })) || srv;
+          }
+          if (local.final_answer && srv?.status === "completed" && !srv.final_answer) {
+            srv = parseServerState(await rpc("ic_answer", { _chapter_id: chapterId, _answer: local.final_answer })) || srv;
+          }
+        } catch {
+          // Server still cannot record decisions (or the case changed under it): keep playing here.
+          if (!srv || srv.decisions.length === 0) {
+            setOnDevice(true);
+            setState(local);
+            return;
+          }
+        }
+        clearLocal();
+        setOnDevice(false);
+        setState(srv);
         return;
       }
       let s = parseServerState(await rpc("ic_start", { _chapter_id: chapterId, _replay: false }));
