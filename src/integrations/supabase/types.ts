@@ -664,6 +664,7 @@ export type Database = {
           ms: number | null
           node_id: string | null
           option_id: string | null
+          sender: string | null
           session_id: string
           user_id: string | null
         }
@@ -679,6 +680,7 @@ export type Database = {
           ms?: number | null
           node_id?: string | null
           option_id?: string | null
+          sender?: string | null
           session_id: string
           user_id?: string | null
         }
@@ -694,6 +696,7 @@ export type Database = {
           ms?: number | null
           node_id?: string | null
           option_id?: string | null
+          sender?: string | null
           session_id?: string
           user_id?: string | null
         }
