@@ -10,7 +10,7 @@ export type Database = {
   // Allows to automatically instantiate createClient with right options
   // instead of createClient<Database, { PostgrestVersion: 'XX' }>(URL, KEY)
   __InternalSupabase: {
-    PostgrestVersion: "14.5"
+    PostgrestVersion: "14.1"
   }
   public: {
     Tables: {
@@ -334,6 +334,39 @@ export type Database = {
         }
         Relationships: []
       }
+      commendations: {
+        Row: {
+          category: string
+          description: string
+          key: string
+          points: number
+          reward_frame: string | null
+          reward_title: string | null
+          sort_order: number
+          title: string
+        }
+        Insert: {
+          category: string
+          description: string
+          key: string
+          points?: number
+          reward_frame?: string | null
+          reward_title?: string | null
+          sort_order?: number
+          title: string
+        }
+        Update: {
+          category?: string
+          description?: string
+          key?: string
+          points?: number
+          reward_frame?: string | null
+          reward_title?: string | null
+          sort_order?: number
+          title?: string
+        }
+        Relationships: []
+      }
       comments: {
         Row: {
           chapter_id: string
@@ -618,13 +651,65 @@ export type Database = {
           },
         ]
       }
+      interactive_events: {
+        Row: {
+          attempt: number | null
+          case_key: string
+          client_ts: string | null
+          created_at: string
+          device_id: string
+          id: string
+          kind: string
+          meta: Json
+          ms: number | null
+          node_id: string | null
+          option_id: string | null
+          session_id: string
+          user_id: string | null
+        }
+        Insert: {
+          attempt?: number | null
+          case_key: string
+          client_ts?: string | null
+          created_at?: string
+          device_id: string
+          id?: string
+          kind: string
+          meta?: Json
+          ms?: number | null
+          node_id?: string | null
+          option_id?: string | null
+          session_id: string
+          user_id?: string | null
+        }
+        Update: {
+          attempt?: number | null
+          case_key?: string
+          client_ts?: string | null
+          created_at?: string
+          device_id?: string
+          id?: string
+          kind?: string
+          meta?: Json
+          ms?: number | null
+          node_id?: string | null
+          option_id?: string | null
+          session_id?: string
+          user_id?: string | null
+        }
+        Relationships: []
+      }
       interactive_playthroughs: {
         Row: {
+          admin_feedback: string | null
+          answered_at: string | null
           attempt: number
           chapter_id: string
           completed_at: string | null
           current_node: string | null
           ending_node: string | null
+          feedback_at: string | null
+          final_answer: string | null
           id: string
           started_at: string
           status: string
@@ -634,11 +719,15 @@ export type Database = {
           visited: Json
         }
         Insert: {
+          admin_feedback?: string | null
+          answered_at?: string | null
           attempt?: number
           chapter_id: string
           completed_at?: string | null
           current_node?: string | null
           ending_node?: string | null
+          feedback_at?: string | null
+          final_answer?: string | null
           id?: string
           started_at?: string
           status?: string
@@ -648,11 +737,15 @@ export type Database = {
           visited?: Json
         }
         Update: {
+          admin_feedback?: string | null
+          answered_at?: string | null
           attempt?: number
           chapter_id?: string
           completed_at?: string | null
           current_node?: string | null
           ending_node?: string | null
+          feedback_at?: string | null
+          final_answer?: string | null
           id?: string
           started_at?: string
           status?: string
@@ -854,6 +947,62 @@ export type Database = {
           },
         ]
       }
+      profile_settings: {
+        Row: {
+          favorite_chapter_id: string | null
+          pinned: string[]
+          selected_title: string | null
+          show_activity: boolean
+          show_cases: boolean
+          show_commendations: boolean
+          show_evidence: boolean
+          show_log: boolean
+          show_record: boolean
+          show_statement: boolean
+          timezone: string | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          favorite_chapter_id?: string | null
+          pinned?: string[]
+          selected_title?: string | null
+          show_activity?: boolean
+          show_cases?: boolean
+          show_commendations?: boolean
+          show_evidence?: boolean
+          show_log?: boolean
+          show_record?: boolean
+          show_statement?: boolean
+          timezone?: string | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          favorite_chapter_id?: string | null
+          pinned?: string[]
+          selected_title?: string | null
+          show_activity?: boolean
+          show_cases?: boolean
+          show_commendations?: boolean
+          show_evidence?: boolean
+          show_log?: boolean
+          show_record?: boolean
+          show_statement?: boolean
+          timezone?: string | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "profile_settings_favorite_chapter_id_fkey"
+            columns: ["favorite_chapter_id"]
+            isOneToOne: false
+            referencedRelation: "chapters"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       profiles: {
         Row: {
           avatar_url: string | null
@@ -924,6 +1073,27 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      referral_redemptions: {
+        Row: {
+          code: string
+          created_at: string
+          referred_id: string
+          referrer_id: string
+        }
+        Insert: {
+          code: string
+          created_at?: string
+          referred_id: string
+          referrer_id: string
+        }
+        Update: {
+          code?: string
+          created_at?: string
+          referred_id?: string
+          referrer_id?: string
+        }
+        Relationships: []
       }
       referrals: {
         Row: {
@@ -1139,6 +1309,35 @@ export type Database = {
           },
         ]
       }
+      user_commendations: {
+        Row: {
+          key: string
+          seen: boolean
+          unlocked_at: string
+          user_id: string
+        }
+        Insert: {
+          key: string
+          seen?: boolean
+          unlocked_at?: string
+          user_id: string
+        }
+        Update: {
+          key?: string
+          seen?: boolean
+          unlocked_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "user_commendations_key_fkey"
+            columns: ["key"]
+            isOneToOne: false
+            referencedRelation: "commendations"
+            referencedColumns: ["key"]
+          },
+        ]
+      }
       user_roles: {
         Row: {
           id: string
@@ -1162,6 +1361,20 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      cf_dossier: { Args: { _user_id: string }; Returns: Json }
+      cf_level: { Args: { _points: number }; Returns: number }
+      cf_mark_seen: { Args: { _keys: string[] }; Returns: undefined }
+      cf_reader_titles: {
+        Args: { _user_ids: string[] }
+        Returns: {
+          clearance: number
+          title: string
+          user_id: string
+        }[]
+      }
+      cf_redeem_referral: { Args: { _code: string }; Returns: boolean }
+      cf_stats: { Args: { _tz?: string; _uid: string }; Returns: Json }
+      cf_sync: { Args: { _tz?: string }; Returns: Json }
       get_public_profiles: {
         Args: { _user_ids?: string[] }
         Returns: {
@@ -1178,6 +1391,34 @@ export type Database = {
           _user_id: string
         }
         Returns: boolean
+      }
+      ic_admin_feedback: {
+        Args: { _feedback: string; _link?: string; _playthrough_id: string }
+        Returns: Json
+      }
+      ic_admin_reports: {
+        Args: { _status?: string }
+        Returns: {
+          admin_feedback: string
+          answered_at: string
+          attempt: number
+          case_title: string
+          chapter_id: string
+          completed_at: string
+          decisions: Json
+          ending_node: string
+          feedback_at: string
+          final_answer: string
+          playthrough_id: string
+          reader_id: string
+          reader_name: string
+          variables: Json
+          visited: Json
+        }[]
+      }
+      ic_answer: {
+        Args: { _answer: string; _chapter_id: string }
+        Returns: Json
       }
       ic_choose: {
         Args: { _chapter_id: string; _node_id: string; _option_id: string }

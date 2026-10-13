@@ -16,6 +16,12 @@
     <priority>0.7</priority>
   </url>
   <url>
+    <loc>https://thecasefiles.org/stories/lights-out-at-the-meridian</loc>
+    <lastmod>2026-10-13</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.8</priority>
+  </url>
+  <url>
     <loc>https://thecasefiles.org/stories/the-archivist</loc>
     <lastmod>2026-09-30</lastmod>
     <changefreq>monthly</changefreq>
@@ -29,7 +35,7 @@
   </url>
   <url>
     <loc>https://thecasefiles.org/stories/in-transit</loc>
-    <lastmod>2026-09-25</lastmod>
+    <lastmod>2026-10-12</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.8</priority>
   </url>
@@ -103,6 +109,12 @@
     <priority>0.7</priority>
   </url>
   <url>
+    <loc>https://thecasefiles.org/bg/stories/lights-out-at-the-meridian</loc>
+    <lastmod>2026-10-13</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.8</priority>
+  </url>
+  <url>
     <loc>https://thecasefiles.org/bg/stories/the-archivist</loc>
     <lastmod>2026-09-30</lastmod>
     <changefreq>monthly</changefreq>
@@ -116,7 +128,7 @@
   </url>
   <url>
     <loc>https://thecasefiles.org/bg/stories/in-transit</loc>
-    <lastmod>2026-09-25</lastmod>
+    <lastmod>2026-10-12</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.8</priority>
   </url>
@@ -190,6 +202,12 @@
     <priority>0.7</priority>
   </url>
   <url>
+    <loc>https://thecasefiles.org/ja/stories/lights-out-at-the-meridian</loc>
+    <lastmod>2026-10-13</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.8</priority>
+  </url>
+  <url>
     <loc>https://thecasefiles.org/ja/stories/the-archivist</loc>
     <lastmod>2026-09-30</lastmod>
     <changefreq>monthly</changefreq>
@@ -203,7 +221,7 @@
   </url>
   <url>
     <loc>https://thecasefiles.org/ja/stories/in-transit</loc>
-    <lastmod>2026-09-25</lastmod>
+    <lastmod>2026-10-12</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.8</priority>
   </url>
