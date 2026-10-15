@@ -18,7 +18,7 @@ import { Input } from "@/components/ui/input";
 import {
   Menu, X, Search, ArrowUpDown, Globe, CheckCircle2, AlertCircle, Loader2, ExternalLink, History,
   ChevronLeft, ChevronRight, ChevronDown, MoreHorizontal, Edit3, Trash2, Eye, Download, FileText,
-  Calendar, AlertTriangle, BookOpen, Sparkles, BarChart3, PanelLeftClose, PanelLeftOpen, GitBranch, Users,
+  Calendar, AlertTriangle, BookOpen, Sparkles, BarChart3, PanelLeftClose, PanelLeftOpen, GitBranch, Users, UserCog,
 } from "lucide-react";
 import { CaseAnalytics } from "@/components/interactive/CaseAnalytics";
 import {
@@ -514,9 +514,15 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ glossary, authToken, use
       label: "Insights",
       items: [
         { id: "dashboard", label: "Dashboard", icon: Icons.Dashboard },
-        { id: "readers", label: "Readers", icon: Users },
         { id: "analytics", label: "Analytics", icon: BarChart3 },
         { id: "case-analytics", label: "Case analytics", icon: GitBranch },
+      ],
+    },
+    {
+      label: "Readers",
+      items: [
+        { id: "readers", label: "Overview", icon: Users },
+        { id: "readers-manage", label: "Manage readers", icon: UserCog },
       ],
     },
     {
@@ -558,7 +564,7 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ glossary, authToken, use
 
   useEffect(() => {
     const tabParam = searchParams.get('tab');
-    const nextTab = ['dashboard', 'readers', 'chapters', 'reports', 'search', 'analytics', 'case-analytics', 'legacy', 'glossary', 'seo', 'audit'].includes(tabParam || '')
+    const nextTab = ['dashboard', 'readers', 'readers-manage', 'chapters', 'reports', 'search', 'analytics', 'case-analytics', 'legacy', 'glossary', 'seo', 'audit'].includes(tabParam || '')
       ? (tabParam as string)
       : 'dashboard';
     const nextSubTab = searchParams.get('subtab') === 'drafts' ? 'drafts' : 'published';
@@ -1130,7 +1136,10 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ glossary, authToken, use
               <CaseReportsInbox authToken={authToken} />
             )}
             {activeTab === "readers" && (
-              <ReadersAdmin authToken={authToken} />
+              <ReadersAdmin authToken={authToken} onManage={(id) => updateAdminRoute({ tab: "readers-manage", reader: id || null })} />
+            )}
+            {activeTab === "readers-manage" && (
+              <ReadersAdmin key={searchParams.get("reader") || "all"} authToken={authToken} mode="manage" />
             )}
 
             {activeTab === "glossary" && (
