@@ -7,6 +7,7 @@ import { useEmailSubscription } from "@/hooks/useEmailSubscription";
 import { AvatarCropModal } from "@/components/AvatarCropModal";
 import { ReferralSection } from "@/components/ReferralSection";
 import { Dossier } from "@/components/profile/Dossier";
+import { ChooseUsername, useNameChosen } from "@/components/profile/ChooseUsername";
 
 interface ProfilePageProps {
   user: AuthUser;
@@ -31,6 +32,7 @@ export const ProfilePage: React.FC<ProfilePageProps> = ({ user, onLogout, refres
   const [nextNameChange, setNextNameChange] = useState<string | null>(null);
   const [nameError, setNameError] = useState<string | null>(null);
   const nameLocked = !!nextNameChange && Date.parse(nextNameChange) > Date.now();
+  const nameChosen = useNameChosen(user?.id);
   const loadNameStatus = () => {
     (supabase as any).rpc("cf_name_status", { _name: "" })
       .then(({ data }: any) => setNextNameChange(data?.next_change_at || null))
@@ -132,6 +134,11 @@ export const ProfilePage: React.FC<ProfilePageProps> = ({ user, onLogout, refres
   return (
     <div className="min-h-screen py-8 sm:py-12 px-4 sm:px-6">
       <div className="max-w-5xl mx-auto">
+        {nameChosen === false && !editing && (
+          <ChooseUsername userId={user.id} currentName={savedName || user.name} className="mb-10 cf-rise"
+            onDone={(n) => { setSavedName(n); setProfile((p) => ({ ...p, name: n })); refreshUser(); setRefreshKey((k) => k + 1); }} />
+        )}
+
         {editing && (
           <section className="case-file p-6 mb-10 cf-rise">
             <p className="case-label text-[9px] mb-4">Amend personnel file</p>
@@ -144,7 +151,9 @@ export const ProfilePage: React.FC<ProfilePageProps> = ({ user, onLogout, refres
                 <p className="text-[11px] text-muted-foreground mt-1">
                   {nameLocked
                     ? `You can change your username again on ${new Date(nextNameChange!).toLocaleDateString()}.`
-                    : "Unique on the site. You can change it once a month."}
+                    : nameChosen === false
+                      ? "Unique on the site. Your first choice is free; after that you can change it once a month."
+                      : "Unique on the site. You can change it once a month."}
                 </p>
                 {nameError && <p className="text-xs text-destructive mt-1">{nameError}</p>}
               </div>
