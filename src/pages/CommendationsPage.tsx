@@ -3,6 +3,7 @@ import { toast } from "sonner";
 import type { AuthUser } from "@/hooks/useAuth";
 import { ProfileFrame } from "@/components/ProfileFrame";
 import { CommendationBadge } from "@/components/commendations/CommendationBadge";
+import { RankCard } from "@/components/commendations/RankCard";
 import { useCommendations } from "@/components/commendations/CommendationsProvider";
 import {
   CATEGORY_LABELS, CATEGORY_ORDER, COMMENDATIONS, FRAME_LABELS, ROMAN,
@@ -109,6 +110,8 @@ export const CommendationsPage: React.FC<Props> = ({ user, refreshUser }) => {
             </div>
           </div>
         </section>
+
+        <RankCard userId={user.id} />
 
         {/* Issued rewards */}
         <section className="grid gap-6 lg:grid-cols-2 mb-14">
