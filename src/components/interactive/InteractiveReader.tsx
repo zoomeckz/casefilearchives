@@ -14,6 +14,7 @@ import { CaseMap } from "@/components/interactive/CaseMap";
 import { notifyActivity } from "@/lib/commendations";
 import { CaseReport, CaseReports } from "@/components/interactive/CaseReport";
 import { EndingStats } from "@/components/interactive/EndingStats";
+import { HintPanel, HintScore } from "@/components/interactive/HintPanel";
 
 const SUPA_URL = import.meta.env.VITE_SUPABASE_URL;
 const ANON = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY;
@@ -248,6 +249,29 @@ export const InteractiveReader: React.FC<Props> = ({ chapterId, title, graph, us
   const timeLimit = currentNode?.type === "decision" && !guestBlocked ? Number(currentNode.timeLimit) || 0 : 0;
   const [remaining, setRemaining] = useState<number | null>(null);
   const viewKey = state?.status === "in_progress" && currentNode?.type === "decision" && !guestBlocked ? `${currentNode.id}#${state.decisions.length}` : "";
+  // The clock starts when the reader opens the timed decision, not when the previous choice
+  // was filed, so reading the passage that leads up to it is never timed. The server keeps
+  // the moment (ic_present) so a refresh does not reset it.
+  const shownKey = timeLimit > 0 && viewKey ? `ic-shown:${chapterId}:${state?.attempt ?? 1}:${viewKey}` : "";
+  const [shownAt, setShownAt] = useState<number | null>(null);
+  useEffect(() => {
+    if (!shownKey || !state) { setShownAt(null); return; }
+    const reached = state.reached_at ? Date.parse(state.reached_at) : NaN;
+    const server = state.presented_at ? Date.parse(state.presented_at) : NaN;
+    if (!Number.isNaN(server) && (Number.isNaN(reached) || server >= reached)) { setShownAt(server); return; }
+    let stored: number | null = null;
+    try { stored = Number(localStorage.getItem(shownKey)) || null; } catch { /* storage blocked */ }
+    if (stored != null && !Number.isNaN(reached) && stored < reached) stored = null;
+    setShownAt(stored);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [shownKey, state?.presented_at, state?.reached_at]);
+  const startClock = () => {
+    if (!shownKey || !state?.current_node) return;
+    const now = Date.now();
+    setShownAt(now);
+    try { localStorage.setItem(shownKey, String(now)); } catch { /* storage blocked */ }
+    if (user && !preview && !onDevice) void rpc("ic_present", { _chapter_id: chapterId, _node_id: state.current_node }).catch(() => {});
+  };
   useEffect(() => {
     if (viewKey && currentNode) tracker.current?.view(currentNode.id);
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -295,6 +319,7 @@ export const InteractiveReader: React.FC<Props> = ({ chapterId, title, graph, us
         : filed.consequence || null);
       setState(next);
       setPending(null);
+      if (shownKey) { try { localStorage.removeItem(shownKey); } catch { /* storage blocked */ } }
       tracker.current?.choose(state.current_node, option.id, { timedOut, filedOptionId: filed.id });
       if (!preview) notifyActivity();
     } catch (e: any) {
@@ -309,9 +334,8 @@ export const InteractiveReader: React.FC<Props> = ({ chapterId, title, graph, us
   const confirm =() => { if (pending) void fileDecision(pending); };
 
   useEffect(() => {
-    if (!timeLimit || !state || state.status !== "in_progress" || !state.current_node) { setRemaining(null); return; }
-    const reached = state.reached_at ? Date.parse(state.reached_at) : NaN;
-    const deadline = (Number.isNaN(reached) ? Date.now() : reached) + timeLimit * 1000;
+    if (!timeLimit || !state || state.status !== "in_progress" || !state.current_node || shownAt == null) { setRemaining(null); return; }
+    const deadline = shownAt + timeLimit * 1000;
     const key = `${state.current_node}:${state.decisions.length}`;
     const tick = () => {
       const left = Math.max(0, (deadline - Date.now()) / 1000);
@@ -327,7 +351,7 @@ export const InteractiveReader: React.FC<Props> = ({ chapterId, title, graph, us
     const id = window.setInterval(tick, 250);
     return () => window.clearInterval(id);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [timeLimit, state]);
+  }, [timeLimit, state, shownAt]);
 
   /** Files the reader's closing answer: once per attempt, locked afterwards (Admin → Case reports). */
   const submitAnswer = async (raw: string, questionCount: number) => {
@@ -556,6 +580,9 @@ export const InteractiveReader: React.FC<Props> = ({ chapterId, title, graph, us
             </div>
           )}
           <h3 id="ic-decision" className="font-display uppercase text-lg mt-6 mb-4">{current.title || tr("selectOne", "Select one course of action")}</h3>
+          {current.hint && !guestBlocked && (timeLimit === 0 || shownAt != null) && (
+            <HintPanel chapterId={chapterId} nodeId={current.id} hint={current.hint} user={user} preview={preview || onDevice} />
+          )}
 
           {guestBlocked ? (
             <div className="border border-border p-5 text-sm">
@@ -564,8 +591,15 @@ export const InteractiveReader: React.FC<Props> = ({ chapterId, title, graph, us
                 {tr("signIn", "Register or sign in")}
               </button>
             </div>
+          ) : timeLimit > 0 && shownAt == null ? (
+            <div className="border border-dashed border-primary/60 p-5 text-sm text-center">
+              <p className="text-foreground">{tr("timedIntro", "This is a timed decision. Once you open it you have {{n}} to choose.", { n: clock(timeLimit) })}</p>
+              <button type="button" onClick={startClock} className="mt-4 px-4 py-2 bg-primary text-primary-foreground text-xs uppercase tracking-wider">
+                {tr("timedStart", "Open the decision · start the clock")}
+              </button>
+            </div>
           ) : (
-            <ol className="space-y-3">
+            <ol className="space-y-3 mt-4">
               {(current.options || []).map((o, idx) => {
                 const letter = String.fromCharCode(65 + idx);
                 // A choice the reader cannot take (hidden by a condition, locked, or needing an item
@@ -626,6 +660,7 @@ export const InteractiveReader: React.FC<Props> = ({ chapterId, title, graph, us
             {endingNode?.endingText && <p className="text-foreground/80 mt-3 max-w-prose mx-auto">{endingNode.endingText}</p>}
             {state.completed_at && <p className="text-xs text-muted-foreground mt-4">{tr("completed", "Completed")} {new Date(state.completed_at).toLocaleDateString()}</p>}
             {!preview && user && state.ending_node && <EndingStats chapterId={chapterId} graph={graph} endingNodeId={state.ending_node} />}
+            {!preview && user && <HintScore chapterId={chapterId} />}
 
             {graph.settings.endingVisibility === "count" && allEndings.length > 0 && (
               <p className="text-xs text-muted-foreground mt-4">{tr("endingCount", "This file has {{n}} possible outcomes.", { n: allEndings.length })}</p>
