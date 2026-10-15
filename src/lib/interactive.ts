@@ -56,6 +56,8 @@ export interface StoryNode {
   warning?: string;
   /** Seconds to decide; when time runs out a random available option is filed. */
   timeLimit?: number;
+  /** Optional hint a reader can spend a hint token on (max 2 per case). */
+  hint?: string;
   // ending
   endingTitle?: string;
   endingText?: string;
@@ -134,6 +136,8 @@ export interface PlayState {
   attempt?: number;
   /** When the current decision was reached (ISO); starts the clock on timed decisions. */
   reached_at?: string | null;
+  /** When the reader opened a timed decision (server clock). */
+  presented_at?: string | null;
   /** The reader's written conclusion for this attempt. */
   final_answer?: string | null;
   answered_at?: string | null;
@@ -352,6 +356,7 @@ export function parseServerState(raw: any): PlayState | null {
     started_at: p.started_at ?? null,
     attempt: p.attempt,
     reached_at: p.updated_at ?? null,
+    presented_at: p.presented_at ?? null,
     final_answer: p.final_answer ?? null,
     answered_at: p.answered_at ?? null,
     admin_feedback: p.admin_feedback ?? null,
