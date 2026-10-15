@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
 import { ProfileFrame } from "@/components/ProfileFrame";
 import { CommendationBadge } from "@/components/commendations/CommendationBadge";
+import { RankLine } from "@/components/commendations/RankCard";
 import { CaseReports } from "@/components/interactive/CaseReport";
 import { dbFetch } from "@/lib/dbFetch";
 import { slugify } from "@/lib/slug";
@@ -133,6 +134,7 @@ export const Dossier: React.FC<Props> = ({ userId, editable = false, avatarActio
               </span>
               <span className="case-label text-[10px]">{data.points} merit points</span>
             </div>
+            <RankLine userId={userId} />
             {since && <p className="case-label text-[9px] mt-3">On file since {since}</p>}
             {headerActions && <div className="mt-5 flex flex-wrap justify-center sm:justify-start gap-3">{headerActions}</div>}
           </div>
