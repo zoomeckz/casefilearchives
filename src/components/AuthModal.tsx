@@ -32,6 +32,21 @@ function friendly(message: string): { text: string; unconfirmed?: boolean } {
   return { text: message };
 }
 
+/** Usernames are unique (ignoring capitals). Null when the check is unavailable. */
+async function nameStatus(name: string): Promise<{ name: string; available: boolean } | null> {
+  try {
+    const key = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY;
+    const res = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/rest/v1/rpc/cf_name_status`, {
+      method: "POST",
+      headers: { apikey: key, Authorization: `Bearer ${key}`, "Content-Type": "application/json" },
+      body: JSON.stringify({ _name: name }),
+    });
+    return res.ok ? await res.json() : null;
+  } catch {
+    return null;
+  }
+}
+
 export const AuthModal: React.FC<AuthModalProps> = ({
   isOpen,
   onClose,
@@ -115,6 +130,8 @@ export const AuthModal: React.FC<AuthModalProps> = ({
       if (mode === "register") {
         const name = formData.name.trim();
         if (!name) throw new Error("Please enter your name");
+        const status = await nameStatus(name.slice(0, NAME_MAX));
+        if (status && !status.available) throw new Error(`The username “${status.name}” is already taken. Choose another one.`);
         if (formData.password.length < PASSWORD_MIN) throw new Error(`Choose a password of at least ${PASSWORD_MIN} characters.`);
         const result = await onSignUp(email, formData.password, name.slice(0, NAME_MAX));
         if (result && result.alreadyRegistered) {
@@ -239,7 +256,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({
                     placeholder={t('yourName')}
                     disabled={loading}
                   />
-                  <p className="text-[11px] text-muted-foreground mt-1">Shown on your comments and forum posts.</p>
+                  <p className="text-[11px] text-muted-foreground mt-1">Your unique username, shown on comments and forum posts. You can change it once a month.</p>
                 </div>
               )}
 
