@@ -1045,6 +1045,11 @@ export function Inspector({ graph, node: n, onChange, onSelect, onDelete }: { gr
             <input type="number" min={5} value={n.timeLimit ?? ""} className={fieldCls}
               onChange={(e) => set({ timeLimit: e.target.value ? Math.max(5, Number(e.target.value)) : undefined }, "timer")} />
           </div>
+          <div>
+            <label className={labelCls}>Hint (optional, costs the reader a hint token)</label>
+            <textarea rows={2} value={n.hint || ""} className={fieldCls} placeholder="A nudge, not the answer."
+              onChange={(e) => set({ hint: e.target.value || undefined }, "hint")} />
+          </div>
           <div className="space-y-2">
             <div className="flex items-center justify-between"><span className={labelCls}>Choices</span>
               <button type="button" className="text-xs text-primary hover:underline" onClick={() => onChange(addOption(graph, n.id))}>+ Choice</button></div>
