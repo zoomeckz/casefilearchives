@@ -3,17 +3,21 @@ import { Chapter } from "@/hooks/useChapters";
 import { useTranslation } from "react-i18next";
 import { ArrowRight, Clock, FileText } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import type { AuthUser } from "@/hooks/useAuth";
+import { ContinueReading } from "@/components/reading/ReadingPosition";
 
 interface HomePageProps {
   chapters: Chapter[];
   setCurrentPage: (page: string) => void;
   setSelectedChapter: (chapter: Chapter) => void;
+  user?: AuthUser | null;
 }
 
 export const HomePage: React.FC<HomePageProps> = ({
   chapters,
   setCurrentPage,
   setSelectedChapter,
+  user = null,
 }) => {
   const { t } = useTranslation();
 
@@ -40,6 +44,8 @@ export const HomePage: React.FC<HomePageProps> = ({
           </div>
         </div>
       </section>
+
+      <ContinueReading chapters={chapters} user={user} onOpen={setSelectedChapter} />
 
       <section className="py-14 sm:py-20 px-4 sm:px-6">
         <div className="max-w-6xl mx-auto">
