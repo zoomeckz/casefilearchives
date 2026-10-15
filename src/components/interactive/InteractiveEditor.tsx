@@ -903,8 +903,14 @@ export const InteractiveEditor: React.FC<Props> = ({ graph, onChange, title, pub
                 </div>
               </div>
               {(sel.timeLimit || 0) > 0 && (
-                <p className="text-[11px] text-primary -mt-2">Timed decision: readers get {sel.timeLimit} seconds once they reach it. When time runs out, a random available choice is filed for them.</p>
+                <p className="text-[11px] text-primary -mt-2">Timed decision: readers get {sel.timeLimit} seconds once they open it (the clock does not run while they read the passage before it). When time runs out, a random available choice is filed for them.</p>
               )}
+              <div data-loc={`${sel.id}|hint`}>
+                <label className={label}>💡 Hint (optional) — readers can spend a hint token to see it, max 2 per case</label>
+                <textarea rows={2} value={sel.hint ?? ""} placeholder="A nudge, not the answer."
+                  onChange={(e) => patchSel({ hint: e.target.value || undefined })}
+                  className={field} />
+              </div>
               <div className="space-y-3">
                 {(sel.options || []).map((o, i) => {
                   const letter = String.fromCharCode(65 + i);
