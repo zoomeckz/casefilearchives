@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, useMemo } from 'react';
+import { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 
 export interface Chapter {
   id: string;
@@ -18,7 +18,10 @@ export interface Chapter {
 // The chapter list is downloaded on every page, so it leaves out the
 // interactive case structure (every branch and ending). The reader page loads
 // one case's structure only when that case is opened (useCaseGraph).
-const CHAPTER_COLUMNS = 'id,title,content,chapter_number,published_at,views,scheduled_at,cover_image_url,is_archived,tags,story_format';
+// Polls only fetch the list; story text (the heavy part) is downloaded once and
+// then only for stories that are new or were edited since (updated_at changed).
+const LIST_COLUMNS = 'id,title,chapter_number,published_at,views,scheduled_at,cover_image_url,is_archived,tags,story_format,updated_at';
+const CHAPTER_COLUMNS = `${LIST_COLUMNS},content`;
 
 function mapChapter(c: any): Chapter {
   return {
@@ -36,7 +39,7 @@ function mapChapter(c: any): Chapter {
   };
 }
 
-const CHAPTER_REFRESH_INTERVAL_MS = 30_000;
+const CHAPTER_REFRESH_INTERVAL_MS = 60_000;
 const PUBLISH_TICK_INTERVAL_MS = 60_000;
 
 // Reads the current admin session token (if any) so RLS lets us fetch
@@ -77,10 +80,10 @@ function isChapterPublished(chapter: Chapter, nowMs: number): boolean {
   return true;
 }
 
-function buildChaptersUrl(isAdmin: boolean): string {
+function buildChaptersUrl(isAdmin: boolean, withContent = true): string {
   const url = new URL(`${import.meta.env.VITE_SUPABASE_URL}/rest/v1/chapters`);
 
-  url.searchParams.set('select', CHAPTER_COLUMNS);
+  url.searchParams.set('select', withContent ? CHAPTER_COLUMNS : LIST_COLUMNS);
   url.searchParams.set('order', 'chapter_number.asc');
 
   if (!isAdmin) {
@@ -120,12 +123,15 @@ export function useChapters(isAdmin = false) {
   const [chapters, setChapters] = useState<Chapter[]>([]);
   const [loading, setLoading] = useState(true);
   const [nowMs, setNowMs] = useState(() => Date.now());
+  // Story text by id, with the updated_at it was fetched at.
+  const contentCache = useRef(new Map<string, { updatedAt: string; content: string }>());
 
   const fetchChapters = useCallback(async (): Promise<Chapter[]> => {
     const key = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY;
     const token = getAuthToken();
 
-    const response = await fetch(buildChaptersUrl(isAdmin), {
+    const first = contentCache.current.size === 0;
+    const response = await fetch(buildChaptersUrl(isAdmin, first), {
       headers: {
         'apikey': key,
         'Authorization': `Bearer ${token}`,
@@ -142,7 +148,22 @@ export function useChapters(isAdmin = false) {
       return [];
     }
 
-    return data.map(mapChapter);
+    const cache = contentCache.current;
+    if (first) {
+      for (const c of data) cache.set(c.id, { updatedAt: c.updated_at || '', content: c.content || '' });
+    } else {
+      const stale = data.filter((c: any) => cache.get(c.id)?.updatedAt !== (c.updated_at || ''));
+      if (stale.length) {
+        const url = new URL(`${import.meta.env.VITE_SUPABASE_URL}/rest/v1/chapters`);
+        url.searchParams.set('select', 'id,content,updated_at');
+        url.searchParams.set('id', `in.(${stale.map((c: any) => c.id).join(',')})`);
+        const res = await fetch(url.toString(), { headers: { apikey: key, Authorization: `Bearer ${token}` } });
+        if (res.ok) {
+          for (const row of await res.json()) cache.set(row.id, { updatedAt: row.updated_at || '', content: row.content || '' });
+        }
+      }
+    }
+    return data.map((c: any) => ({ ...mapChapter(c), content: cache.get(c.id)?.content ?? '' }));
   }, [isAdmin]);
 
   useEffect(() => {
