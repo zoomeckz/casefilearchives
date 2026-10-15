@@ -13,6 +13,7 @@ import { startTracking, type Tracker } from "@/lib/icTracking";
 import { CaseMap } from "@/components/interactive/CaseMap";
 import { notifyActivity } from "@/lib/commendations";
 import { CaseReport, CaseReports } from "@/components/interactive/CaseReport";
+import { EndingStats } from "@/components/interactive/EndingStats";
 
 const SUPA_URL = import.meta.env.VITE_SUPABASE_URL;
 const ANON = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY;
@@ -624,6 +625,7 @@ export const InteractiveReader: React.FC<Props> = ({ chapterId, title, graph, us
             <h3 className="font-display text-3xl uppercase mt-2">{endingNode?.endingTitle || tr("fileClosed", "File closed")}</h3>
             {endingNode?.endingText && <p className="text-foreground/80 mt-3 max-w-prose mx-auto">{endingNode.endingText}</p>}
             {state.completed_at && <p className="text-xs text-muted-foreground mt-4">{tr("completed", "Completed")} {new Date(state.completed_at).toLocaleDateString()}</p>}
+            {!preview && user && state.ending_node && <EndingStats chapterId={chapterId} graph={graph} endingNodeId={state.ending_node} />}
 
             {graph.settings.endingVisibility === "count" && allEndings.length > 0 && (
               <p className="text-xs text-muted-foreground mt-4">{tr("endingCount", "This file has {{n}} possible outcomes.", { n: allEndings.length })}</p>
