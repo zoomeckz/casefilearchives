@@ -17,8 +17,9 @@ import i18n, {
 } from "./i18n";
 import Index from "./pages/Index";
 import NotFound from "./pages/NotFound";
-import SectionHeaderStory from "./pages/SectionHeaderStory";
-import TestCasePage from "./pages/TestCasePage";
+// Dev preview and tester pages are loaded only when visited.
+const SectionHeaderStory = lazy(() => import("./pages/SectionHeaderStory"));
+const TestCasePage = lazy(() => import("./pages/TestCasePage"));
 // Pop-out node editor for Interactive Case Files (admin tool, loaded only when opened).
 const NodeEditorPage = lazy(() => import("./pages/NodeEditorPage"));
 // Where "Forgot password?" emails lead.
@@ -117,6 +118,8 @@ const APP_ROUTES: { path: string }[] = [
   { path: "/about" },
   { path: "/forum" },
   { path: "/forum/:postId" },
+  { path: "/series" },
+  { path: "/series/:slug" },
 ];
 
 const LEGACY_ROUTES = ["/characters", "/manga", "/leaderboard", "/world", "/rewards"];
@@ -197,9 +200,9 @@ const App = () => {
           {/* Dev-only visual story route for <SectionHeader/>. Not added to
               APP_ROUTES because it intentionally bypasses navigation, i18n,
               and the SPA shell — it's a flat preview surface. */}
-          <Route path="/dev/section-header" element={<SectionHeaderStory />} />
+          <Route path="/dev/section-header" element={<Suspense fallback={null}><SectionHeaderStory /></Suspense>} />
           {/* Tester links for unpublished Interactive Case Files (snapshot from the editor). */}
-          <Route path="/test-case/:id" element={<TestCasePage />} />
+          <Route path="/test-case/:id" element={<Suspense fallback={null}><TestCasePage /></Suspense>} />
           <Route path="/node-editor" element={<Suspense fallback={null}><NodeEditorPage /></Suspense>} />
           <Route path="/reset-password" element={<Suspense fallback={null}><ResetPasswordPage /></Suspense>} />
           {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
