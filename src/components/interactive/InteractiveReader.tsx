@@ -243,32 +243,47 @@ export const InteractiveReader: React.FC<Props> = ({ chapterId, title, graph, us
   const guestLimit = guestAccess === "opening" ? 0 : guestAccess === "two_choices" ? GUEST_CHOICE_LIMIT : Infinity;
   const guestBlocked = isGuest && (state?.decisions.length ?? 0) >= guestLimit;
 
-  // Timed decisions: the clock starts when the decision is reached (saved with the playthrough,
-  // so refreshing does not reset it). At zero a random available option is filed.
+  // Timed decisions: nothing is timed until the reader presses "I'm ready". Only then do the
+  // decision's text and choices appear and the clock start (kept on the server via ic_present,
+  // so a refresh does not reset it). At zero a random available option is filed.
   const currentNode = state?.status === "in_progress" ? findNode(graph, state.current_node) : undefined;
   const timeLimit = currentNode?.type === "decision" && !guestBlocked ? Number(currentNode.timeLimit) || 0 : 0;
   const [remaining, setRemaining] = useState<number | null>(null);
   const viewKey = state?.status === "in_progress" && currentNode?.type === "decision" && !guestBlocked ? `${currentNode.id}#${state.decisions.length}` : "";
-  // The clock starts when the reader opens the timed decision, not when the previous choice
-  // was filed, so reading the passage that leads up to it is never timed. The server keeps
-  // the moment (ic_present) so a refresh does not reset it.
   const shownKey = timeLimit > 0 && viewKey ? `ic-shown:${chapterId}:${state?.attempt ?? 1}:${viewKey}` : "";
-  const [shownAt, setShownAt] = useState<number | null>(null);
+  // The start moment belongs to one decision (shownKey). Keeping the key with it means a
+  // previous decision's start can never leak into the next one, so a new timed decision
+  // always waits for its own "I'm ready".
+  const [shown, setShown] = useState<{ key: string; at: number } | null>(null);
+  const shownAt = shownKey && shown?.key === shownKey ? shown.at : null;
+  const setShownAt = (at: number | null) => setShown(at == null || !shownKey ? null : { key: shownKey, at });
   useEffect(() => {
-    if (!shownKey || !state) { setShownAt(null); return; }
+    if (!shownKey || !state) { setShown(null); return; }
     const reached = state.reached_at ? Date.parse(state.reached_at) : NaN;
+    // The server time only counts if it belongs to this decision (set after it was reached).
     const server = state.presented_at ? Date.parse(state.presented_at) : NaN;
-    if (!Number.isNaN(server) && (Number.isNaN(reached) || server >= reached)) { setShownAt(server); return; }
+    if (!Number.isNaN(server) && (Number.isNaN(reached) || server >= reached)) { setShown({ key: shownKey, at: server }); return; }
+    // This browser's own record; the key already names the attempt, decision and step.
     let stored: number | null = null;
     try { stored = Number(localStorage.getItem(shownKey)) || null; } catch { /* storage blocked */ }
-    if (stored != null && !Number.isNaN(reached) && stored < reached) stored = null;
-    setShownAt(stored);
+    setShown(stored != null ? { key: shownKey, at: stored } : null);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [shownKey, state?.presented_at, state?.reached_at]);
+  /** "I'm ready": reveals the decision and starts its clock. The only place a clock starts. */
   const startClock = () => {
-    if (!shownKey || !state?.current_node) return;
+    if (!shownKey || !state?.current_node || shownAt != null) return;
     const now = Date.now();
     setShownAt(now);
+    // Bring the scene that just opened into view (its text sits above the choices).
+    const nodeId = state.current_node;
+    window.setTimeout(() => {
+      const nodes = document.querySelectorAll<HTMLElement>(`[data-ic-node="${CSS.escape(nodeId)}"]`);
+      const el = nodes[nodes.length - 1] || document.getElementById("ic-decision");
+      if (!el) return;
+      const lenis = (window as any).__lenis;
+      if (lenis?.scrollTo) lenis.scrollTo(el, { offset: -96 });
+      else el.scrollIntoView?.({ behavior: "smooth", block: "start" });
+    }, 60);
     try { localStorage.setItem(shownKey, String(now)); } catch { /* storage blocked */ }
     if (user && !preview && !onDevice) {
       const key = shownKey;
@@ -277,7 +292,7 @@ export const InteractiveReader: React.FC<Props> = ({ chapterId, title, graph, us
           // Opened earlier on another device: keep the clock that is already running.
           const at = res?.presented_at ? Date.parse(res.presented_at) : NaN;
           if (Number.isNaN(at) || at > now - 15_000) return;
-          setShownAt(at);
+          setShown((cur) => (cur?.key === key ? { key, at } : cur));
           try { localStorage.setItem(key, String(at)); } catch { /* storage blocked */ }
         })
         .catch(() => {});
@@ -299,9 +314,12 @@ export const InteractiveReader: React.FC<Props> = ({ chapterId, title, graph, us
   }, [endKey, tracker.current]);
   useEffect(() => { tracker.current?.setAttempt(state?.attempt); }, [state?.attempt]);
   const autoFiled = useRef<string | null>(null);
+  // True while a decision is being filed, so the clock cannot file a second one meanwhile.
+  const filing = useRef(false);
 
   const fileDecision = async (option: DecisionOption, timedOut = false) => {
-    if (!state?.current_node) return;
+    if (!state?.current_node || filing.current) return;
+    filing.current = true;
     setSubmitting(true); setError(null);
     try {
       let next: PlayState | null;
@@ -339,19 +357,19 @@ export const InteractiveReader: React.FC<Props> = ({ chapterId, title, graph, us
       setPending(null);
       setError(e.message);
       if (user && !preview) void load().then(() => setError(e.message));
-    } finally { setSubmitting(false); }
+    } finally { filing.current = false; setSubmitting(false); }
   };
 
   const confirm =() => { if (pending) void fileDecision(pending); };
 
   useEffect(() => {
-    if (!timeLimit || !state || state.status !== "in_progress" || !state.current_node || shownAt == null) { setRemaining(null); return; }
+    if (!timeLimit || !shownKey || !state || state.status !== "in_progress" || !state.current_node || shownAt == null) { setRemaining(null); return; }
     const deadline = shownAt + timeLimit * 1000;
-    const key = `${state.current_node}:${state.decisions.length}`;
+    const key = shownKey;
     const tick = () => {
       const left = Math.max(0, (deadline - Date.now()) / 1000);
       setRemaining(left);
-      if (left <= 0 && autoFiled.current !== key) {
+      if (left <= 0 && autoFiled.current !== key && !filing.current) {
         autoFiled.current = key;
         const open = (currentNode?.options || []).filter((o) => isOptionVisible(o, state.variables) && !isOptionLocked(o, state.variables));
         const pick = open[Math.floor(Math.random() * open.length)];
@@ -362,7 +380,9 @@ export const InteractiveReader: React.FC<Props> = ({ chapterId, title, graph, us
     const id = window.setInterval(tick, 250);
     return () => window.clearInterval(id);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [timeLimit, state, shownAt]);
+  }, [timeLimit, shownKey, state, shownAt]);
+  // Waiting for "I'm ready" on a timed decision: its text and choices stay hidden.
+  const timedGate = timeLimit > 0 && shownAt == null;
 
   /** Files the reader's closing answer: once per attempt, locked afterwards (Admin → Case reports). */
   const submitAnswer = async (raw: string, questionCount: number) => {
@@ -469,8 +489,10 @@ export const InteractiveReader: React.FC<Props> = ({ chapterId, title, graph, us
 
   const renderNode = (n: StoryNode, i: number) => {
     const chosen = decisionsByNode.get(n.id);
+    // A timed decision's own text appears together with its choices, after "I'm ready".
+    if (timedGate && !chosen && n.id === state.current_node && n.type === "decision") return null;
     return (
-      <section key={`${n.id}-${i}`} className="mb-10">
+      <section key={`${n.id}-${i}`} data-ic-node={n.id} className="mb-10 scroll-mt-24">
         {(n.label || n.title) && (
           <header className="mb-4">
             {n.label && <span className="case-label text-[9px]">{n.label}</span>}
@@ -572,7 +594,7 @@ export const InteractiveReader: React.FC<Props> = ({ chapterId, title, graph, us
         <section className="my-10 border-2 border-primary/70 bg-card/60 p-5 sm:p-8" aria-labelledby="ic-decision">
           <p className="case-label text-[10px] text-primary">{tr("actionRequired", "Action required")}</p>
           <p className="text-xs uppercase tracking-wider text-muted-foreground mt-1">{tr("caseFile", "Case file")}: {title}</p>
-          {remaining != null && timeLimit > 0 && (
+          {remaining != null && timeLimit > 0 && !timedGate && !submitting && (
             <div className="mt-4" role="timer" aria-label={tr("timeRemaining", "Time remaining")}>
               <div className="flex items-center justify-between gap-3 case-label text-[9px]">
                 <span className={remaining <= 10 ? "!text-primary" : ""}>{tr("timeRemaining", "Time remaining")}</span>
@@ -581,17 +603,21 @@ export const InteractiveReader: React.FC<Props> = ({ chapterId, title, graph, us
               <div className="mt-1.5 h-1.5 bg-secondary overflow-hidden">
                 <div className="h-full bg-primary transition-[width] duration-200 ease-linear" style={{ width: `${Math.min(100, (remaining / timeLimit) * 100)}%` }} />
               </div>
-              <p className="text-[11px] text-muted-foreground mt-1.5">{tr("timeHint", "If time runs out, a course of action is chosen for you.")}</p>
+              <p className="text-[11px] text-muted-foreground mt-1.5">
+                {remaining === 0 && !error ? tr("timeUp", "Time is up. Filing a course of action…") : tr("timeHint", "If time runs out, a course of action is chosen for you.")}
+              </p>
             </div>
           )}
-          {current.context && (
+          {current.context && !timedGate && (
             <div className="mt-4">
               <p className="text-[10px] uppercase tracking-wider text-muted-foreground">{tr("situation", "Current situation")}</p>
               <p className="text-foreground/90 mt-1">{current.context}</p>
             </div>
           )}
-          <h3 id="ic-decision" className="font-display uppercase text-lg mt-6 mb-4">{current.title || tr("selectOne", "Select one course of action")}</h3>
-          {current.hint && !guestBlocked && (timeLimit === 0 || shownAt != null) && (
+          <h3 id="ic-decision" className="font-display uppercase text-lg mt-6 mb-4">
+            {timedGate ? tr("timedTitle", "Timed event") : current.title || tr("selectOne", "Select one course of action")}
+          </h3>
+          {current.hint && !guestBlocked && !timedGate && (
             <HintPanel chapterId={chapterId} nodeId={current.id} hint={current.hint} user={user} preview={preview || onDevice} />
           )}
 
@@ -602,11 +628,12 @@ export const InteractiveReader: React.FC<Props> = ({ chapterId, title, graph, us
                 {tr("signIn", "Register or sign in")}
               </button>
             </div>
-          ) : timeLimit > 0 && shownAt == null ? (
+          ) : timedGate ? (
             <div className="border border-dashed border-primary/60 p-5 text-sm text-center">
-              <p className="text-foreground">{tr("timedIntro", "This is a timed decision. Once you open it you have {{n}} to choose.", { n: clock(timeLimit) })}</p>
-              <button type="button" onClick={startClock} className="mt-4 px-4 py-2 bg-primary text-primary-foreground text-xs uppercase tracking-wider">
-                {tr("timedStart", "Open the decision · start the clock")}
+              <p className="text-foreground">{tr("timedReadyIntro", "The next scene is timed. When you are ready, it opens together with your choices and you have {{n}} to decide.", { n: clock(timeLimit) })}</p>
+              <p className="text-xs text-muted-foreground mt-2">{tr("timedReadyNote", "Nothing is timed until you press the button. If time runs out, a course of action is chosen for you.")}</p>
+              <button type="button" onClick={startClock} className="mt-4 px-5 py-2 bg-primary text-primary-foreground text-xs uppercase tracking-wider">
+                {tr("timedReady", "I'm ready")}
               </button>
             </div>
           ) : (
@@ -636,7 +663,7 @@ export const InteractiveReader: React.FC<Props> = ({ chapterId, title, graph, us
                   <li key={o.id}>
                     <button
                       type="button"
-                      disabled={submitting || remaining === 0}
+                      disabled={submitting || (remaining === 0 && !error)}
                       onClick={() => { setPending(o); if (state.current_node) tracker.current?.confirmOpen(state.current_node, o.id); }}
                       className={`w-full text-left border px-4 py-3 transition-colors disabled:opacity-40 disabled:cursor-not-allowed ${ist ? `${ist.border} ${ist.bg} ${ist.hover}` : "border-border hover:border-primary focus-visible:border-primary"}`}
                     >
@@ -879,7 +906,7 @@ export const InteractiveReader: React.FC<Props> = ({ chapterId, title, graph, us
           <div className="w-full max-w-md border-2 border-primary bg-card p-6">
             <p className="case-label text-[10px] text-primary">{tr("confirmTitle", "Confirm course of action")}</p>
             <p id="ic-confirm" className="font-display text-xl mt-2">{pending.label}</p>
-            {remaining != null && timeLimit > 0 && (
+            {remaining != null && timeLimit > 0 && !submitting && (
               <p className="case-label text-[9px] !text-primary mt-2 tabular-nums">{tr("timeRemaining", "Time remaining")} {clock(remaining)}</p>
             )}
             <p className="text-sm text-muted-foreground mt-4">
