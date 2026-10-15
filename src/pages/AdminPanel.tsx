@@ -11,13 +11,14 @@ import { ContentSearch } from "@/components/ContentSearch";
 import { EditAuditPanel } from "@/components/EditAuditPanel";
 import { ChapterTranslationsManager } from "@/components/ChapterTranslationsManager";
 import { CaseReportsInbox } from "@/components/interactive/CaseReportsInbox";
+import { ReadersAdmin } from "@/components/admin/ReadersAdmin";
 import { toast } from "sonner";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { Input } from "@/components/ui/input";
 import {
   Menu, X, Search, ArrowUpDown, Globe, CheckCircle2, AlertCircle, Loader2, ExternalLink, History,
   ChevronLeft, ChevronRight, ChevronDown, MoreHorizontal, Edit3, Trash2, Eye, Download, FileText,
-  Calendar, AlertTriangle, BookOpen, Sparkles, BarChart3, PanelLeftClose, PanelLeftOpen, GitBranch,
+  Calendar, AlertTriangle, BookOpen, Sparkles, BarChart3, PanelLeftClose, PanelLeftOpen, GitBranch, Users,
 } from "lucide-react";
 import { CaseAnalytics } from "@/components/interactive/CaseAnalytics";
 import {
@@ -513,6 +514,7 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ glossary, authToken, use
       label: "Insights",
       items: [
         { id: "dashboard", label: "Dashboard", icon: Icons.Dashboard },
+        { id: "readers", label: "Readers", icon: Users },
         { id: "analytics", label: "Analytics", icon: BarChart3 },
         { id: "case-analytics", label: "Case analytics", icon: GitBranch },
       ],
@@ -556,7 +558,7 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ glossary, authToken, use
 
   useEffect(() => {
     const tabParam = searchParams.get('tab');
-    const nextTab = ['dashboard', 'chapters', 'reports', 'search', 'analytics', 'legacy', 'glossary', 'seo', 'audit'].includes(tabParam || '')
+    const nextTab = ['dashboard', 'readers', 'chapters', 'reports', 'search', 'analytics', 'case-analytics', 'legacy', 'glossary', 'seo', 'audit'].includes(tabParam || '')
       ? (tabParam as string)
       : 'dashboard';
     const nextSubTab = searchParams.get('subtab') === 'drafts' ? 'drafts' : 'published';
@@ -1126,6 +1128,9 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ glossary, authToken, use
 
             {activeTab === "reports" && (
               <CaseReportsInbox authToken={authToken} />
+            )}
+            {activeTab === "readers" && (
+              <ReadersAdmin authToken={authToken} />
             )}
 
             {activeTab === "glossary" && (
