@@ -714,6 +714,16 @@ export const InteractiveReader: React.FC<Props> = ({ chapterId, title, graph, us
             )}
           </div>
 
+          {/* The archivist can respond to a finished case even if no conclusion was filed. */}
+          {!state.final_answer && state.admin_feedback && (
+            <div className="mt-8 border border-border border-l-4 border-l-accent bg-card/40 px-4 py-3">
+              <p className="case-label text-[9px] !text-accent">
+                {tr("archivistResponse", "The archivist’s response")}{state.feedback_at ? ` · ${new Date(state.feedback_at).toLocaleDateString()}` : ""}
+              </p>
+              <p className="mt-2 text-foreground/90 whitespace-pre-line break-words">{state.admin_feedback}</p>
+            </div>
+          )}
+
           {/* Closing check: do you agree with your conclusion? */}
           {closing === "agree" && (
             <div className="mt-8 border-t border-border pt-6" aria-live="polite">
