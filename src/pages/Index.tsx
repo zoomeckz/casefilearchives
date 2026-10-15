@@ -1,3 +1,4 @@
+import { ChooseUsernameBanner } from "@/components/profile/ChooseUsername";
 import { detectLanguageFromPath, stripLanguagePrefix, withLanguagePrefix } from "@/i18n";
 import React, { useState, useEffect, useCallback } from "react";
 import { useNavigate, useLocation, useParams } from "react-router-dom";
@@ -235,6 +236,10 @@ const Index = () => {
             </button>
           </div>
         ))}
+
+        {user && currentPage !== "profile" && currentPage !== "admin" && (
+          <ChooseUsernameBanner userId={user.id} currentName={user.name} onChoose={() => setCurrentPage("profile")} />
+        )}
 
         {currentPage === "profile" && user && (
           <ProfilePage
