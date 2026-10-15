@@ -903,7 +903,7 @@ export const InteractiveEditor: React.FC<Props> = ({ graph, onChange, title, pub
                 </div>
               </div>
               {(sel.timeLimit || 0) > 0 && (
-                <p className="text-[11px] text-primary -mt-2">Timed decision: readers get {sel.timeLimit} seconds once they open it (the clock does not run while they read the passage before it). When time runs out, a random available choice is filed for them.</p>
+                <p className="text-[11px] text-primary -mt-2">Timed event: readers first see an “I'm ready” button. This decision's text and choices appear only when they press it, and that starts the {sel.timeLimit}-second clock. Nothing is timed before that. When time runs out, a random available choice is filed for them.</p>
               )}
               <div data-loc={`${sel.id}|hint`}>
                 <label className={label}>💡 Hint (optional) — readers can spend a hint token to see it, max 2 per case</label>
