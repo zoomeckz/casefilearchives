@@ -35,6 +35,9 @@ interface Thread {
   createdAt: string;
   updatedAt: string;
   replyCount: number;
+  /** "Credible" votes (theories). */
+  votes: number;
+  voted: boolean;
 }
 interface Reply { id: string; content: string; userId: string; createdAt: string; updatedAt: string | null; }
 
@@ -99,7 +102,7 @@ export const ForumPage: React.FC<ForumPageProps> = ({ user, authToken, stories, 
   const loadThreads = useCallback(async () => {
     setLoading(true);
     const { data } = await dbFetch<any[]>("forum_posts", {
-      select: "id,title,content,category,story_id,user_id,is_pinned,created_at,updated_at,forum_replies(count)",
+      select: "id,title,content,category,story_id,user_id,is_pinned,created_at,updated_at,forum_replies(count),forum_votes(count)",
       filters: "is_archived=eq.false",
       order: "is_pinned.desc.nullslast,created_at.desc",
       token: authToken,
@@ -108,13 +111,33 @@ export const ForumPage: React.FC<ForumPageProps> = ({ user, authToken, stories, 
       id: r.id, title: r.title, content: r.content, category: r.category, storyId: r.story_id,
       userId: r.user_id, isPinned: !!r.is_pinned, createdAt: r.created_at, updatedAt: r.updated_at,
       replyCount: r.forum_replies?.[0]?.count ?? 0,
+      votes: r.forum_votes?.[0]?.count ?? 0,
+      voted: false,
     }));
+    // Mark the theories this reader already found credible.
+    if (user && authToken && list.length) {
+      const { data: mine } = await dbFetch<any[]>("forum_votes", { select: "post_id", filters: `user_id=eq.${user.id}`, token: authToken });
+      const votedIds = new Set((mine || []).map((v) => v.post_id));
+      for (const t of list) t.voted = votedIds.has(t.id);
+    }
     setThreads(list);
     setLoading(false);
     loadNames(list.map((t) => t.userId));
   }, [authToken]); // eslint-disable-line react-hooks/exhaustive-deps
 
   useEffect(() => { loadThreads(); }, [loadThreads]);
+
+  // Theories: one "credible" vote per reader, never on your own post.
+  const toggleVote = async (t: Thread) => {
+    if (!requireAuth() || t.userId === user!.id) return;
+    const voted = !t.voted;
+    setThreads((p) => p.map((x) => (x.id === t.id ? { ...x, voted, votes: x.votes + (voted ? 1 : -1) } : x)));
+    const { error } = voted
+      ? await dbFetch("forum_votes", { method: "POST", body: { post_id: t.id, user_id: user!.id }, token: authToken })
+      : await dbFetch("forum_votes", { method: "DELETE", filters: `post_id=eq.${t.id}&user_id=eq.${user!.id}`, token: authToken });
+    if (error) setThreads((p) => p.map((x) => (x.id === t.id ? { ...x, voted: !voted, votes: x.votes + (voted ? -1 : 1) } : x)));
+    else notifyActivity();
+  };
 
   const active = useMemo(() => {
     if (!postId) return null;
@@ -133,7 +156,19 @@ export const ForumPage: React.FC<ForumPageProps> = ({ user, authToken, stories, 
 
   useEffect(() => { if (active) loadReplies(active.id); else setReplies([]); }, [active?.id]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  const filtered = threads.filter((t) => (!caseFilter || t.storyId === caseFilter) && (!catFilter || t.category === catFilter));
+  const filtered = threads
+    .filter((t) => (!caseFilter || t.storyId === caseFilter) && (!catFilter || t.category === catFilter))
+    // Theories: most credible first (pinned threads stay on top).
+    .sort((a, b) => (catFilter === "theories" ? Number(b.isPinned) - Number(a.isPinned) || b.votes - a.votes : 0));
+  // The leading theory on each case (needs at least one vote).
+  const topTheory = useMemo(() => {
+    const best: Record<string, Thread> = {};
+    for (const t of threads) {
+      if (t.category !== "theories" || !t.storyId || t.votes < 1) continue;
+      if (!best[t.storyId] || t.votes > best[t.storyId].votes) best[t.storyId] = t;
+    }
+    return new Set(Object.values(best).map((t) => t.id));
+  }, [threads]);
   const caseCounts = useMemo(() => {
     const m: Record<string, number> = {};
     threads.forEach((t) => { if (t.storyId) m[t.storyId] = (m[t.storyId] || 0) + 1; });
@@ -325,12 +360,27 @@ export const ForumPage: React.FC<ForumPageProps> = ({ user, authToken, stories, 
                         className="case-label text-[9px] border border-primary text-primary px-2 py-0.5">Case: {storyMap[active.storyId].title}</button>
                     )}
                     {active.isPinned && <span className="case-label text-[9px] bg-primary !text-primary-foreground px-2 py-0.5">{tr('pinned')}</span>}
+                    {topTheory.has(active.id) && <span className="case-label text-[9px] border border-primary !text-primary px-2 py-0.5">Top theory</span>}
                   </div>
                   <h2 className="font-display text-3xl text-foreground mb-2">{active.title}</h2>
                   <p className="case-label text-[9px] mb-5">
                     Filed by <button className="text-primary" onClick={() => navigate(`/user/${active.userId}`)}>{name(active.userId)}</button> <ReaderTitle userId={active.userId} /> · {fmt(active.createdAt)}
                   </p>
                   <div className="text-foreground/85 leading-relaxed break-words" dangerouslySetInnerHTML={{ __html: renderFormatted(active.content) }} />
+                  {active.category === "theories" && (
+                    <div className="mt-5 flex flex-wrap items-center gap-3">
+                      <button
+                        type="button"
+                        onClick={() => toggleVote(active)}
+                        disabled={!!user && user.id === active.userId}
+                        aria-pressed={active.voted}
+                        className={`case-label text-[10px] border px-3 py-2 transition-colors disabled:opacity-50 ${active.voted ? "border-primary bg-primary !text-primary-foreground" : "border-border hover:border-primary hover:!text-primary"}`}
+                      >
+                        ▲ {active.voted ? "Credible" : "Mark credible"} · {active.votes}
+                      </button>
+                      <span className="text-xs text-muted-foreground">{user && user.id === active.userId ? "Other readers can mark your theory credible." : "One vote per reader."}</span>
+                    </div>
+                  )}
                   {canModerate(active.userId) && (
                     <div className="flex gap-4 mt-5 pt-4 border-t border-border">
                       {user?.isAdmin && <button onClick={() => togglePin(active)} className="case-label text-[9px] hover:text-foreground">{active.isPinned ? "Unpin" : "Pin"}</button>}
@@ -380,13 +430,14 @@ export const ForumPage: React.FC<ForumPageProps> = ({ user, authToken, stories, 
                     <div className="flex flex-wrap items-center gap-2 mb-2">
                       {t.isPinned && <span className="case-label text-[9px] bg-primary !text-primary-foreground px-2 py-0.5">{tr('pinned')}</span>}
                       <span className="case-label text-[9px] border border-border px-2 py-0.5">{catLabel(t.category)}</span>
+                      {topTheory.has(t.id) && <span className="case-label text-[9px] border border-primary !text-primary px-2 py-0.5">Top theory</span>}
                       {t.storyId && storyMap[t.storyId] && (
                         <span className="case-label text-[9px] border border-primary text-primary px-2 py-0.5 truncate max-w-[220px]">{storyMap[t.storyId].title}</span>
                       )}
                     </div>
                     <h3 className="font-display text-xl text-foreground">{t.title}</h3>
                     <p className="case-label text-[9px] mt-2">
-                      {name(t.userId)} · {fmt(t.createdAt)} · {t.replyCount} {t.replyCount === 1 ? "reply" : "replies"}
+                      {name(t.userId)} · {fmt(t.createdAt)} · {t.replyCount} {t.replyCount === 1 ? "reply" : "replies"}{t.category === "theories" ? ` · ▲ ${t.votes} credible` : ""}
                     </p>
                   </button>
                 ))}
