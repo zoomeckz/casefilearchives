@@ -26,12 +26,24 @@ export const ProfilePage: React.FC<ProfilePageProps> = ({ user, onLogout, refres
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [profile, setProfile] = useState({ name: user?.name || "", bio: "", instagram: "", tiktok: "", website: "" });
   const { isSubscribed, toggleSubscription, loading: subLoading } = useEmailSubscription(user);
+  // Usernames are unique and can be changed once every 30 days.
+  const [savedName, setSavedName] = useState(user?.name || "");
+  const [nextNameChange, setNextNameChange] = useState<string | null>(null);
+  const [nameError, setNameError] = useState<string | null>(null);
+  const nameLocked = !!nextNameChange && Date.parse(nextNameChange) > Date.now();
+  const loadNameStatus = () => {
+    (supabase as any).rpc("cf_name_status", { _name: "" })
+      .then(({ data }: any) => setNextNameChange(data?.next_change_at || null))
+      .catch(() => {});
+  };
+  useEffect(() => { if (user) loadNameStatus(); }, [user?.id]);
 
   useEffect(() => {
     if (!user) return;
     supabase.from("profiles").select("name, bio, instagram, tiktok, website").eq("user_id", user.id).maybeSingle()
       .then(({ data }) => {
         if (data) {
+          setSavedName(data.name || user.name);
           setProfile({
             name: data.name || user.name,
             bio: data.bio || "",
@@ -67,16 +79,21 @@ export const ProfilePage: React.FC<ProfilePageProps> = ({ user, onLogout, refres
 
   const handleSave = async () => {
     setSaving(true);
-    await supabase
-      .from("profiles")
-      .update({
-        name: profile.name,
-        bio: profile.bio,
-        instagram: profile.instagram,
-        tiktok: profile.tiktok,
-        website: profile.website,
-      })
-      .eq("user_id", user.id);
+    setNameError(null);
+    const newName = profile.name.trim();
+    const patch: Record<string, string> = { bio: profile.bio, instagram: profile.instagram, tiktok: profile.tiktok, website: profile.website };
+    if (newName && newName !== savedName.trim()) patch.name = newName;
+    const { error } = await (supabase.from("profiles") as any).update(patch).eq("user_id", user.id);
+    if (error) {
+      const msg = error.message || "";
+      const limit = /name_change_limit:(\S+)/.exec(msg);
+      setNameError(limit
+        ? `You can change your username once a month. Next change: ${new Date(limit[1]).toLocaleDateString()}.`
+        : /name_taken|duplicate key/i.test(msg) ? "That username is already taken. Choose another one." : msg);
+      setSaving(false);
+      return;
+    }
+    if (patch.name) { setSavedName(patch.name); loadNameStatus(); }
     refreshUser();
     setEditing(false);
     setSaving(false);
@@ -120,8 +137,16 @@ export const ProfilePage: React.FC<ProfilePageProps> = ({ user, onLogout, refres
             <p className="case-label text-[9px] mb-4">Amend personnel file</p>
             <div className="grid gap-4 sm:grid-cols-2">
               <div className="sm:col-span-2">
-                <label className="case-label text-[9px] block mb-1">Display name</label>
-                <input type="text" value={profile.name} onChange={(e) => setProfile({ ...profile, name: e.target.value })} className={input} />
+                <label className="case-label text-[9px] block mb-1">Username</label>
+                <input type="text" value={profile.name} maxLength={40} disabled={nameLocked}
+                  onChange={(e) => { setNameError(null); setProfile({ ...profile, name: e.target.value }); }}
+                  className={`${input} disabled:opacity-60`} />
+                <p className="text-[11px] text-muted-foreground mt-1">
+                  {nameLocked
+                    ? `You can change your username again on ${new Date(nextNameChange!).toLocaleDateString()}.`
+                    : "Unique on the site. You can change it once a month."}
+                </p>
+                {nameError && <p className="text-xs text-destructive mt-1">{nameError}</p>}
               </div>
               <div className="sm:col-span-2">
                 <label className="case-label text-[9px] block mb-1">Statement</label>
