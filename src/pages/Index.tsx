@@ -11,23 +11,38 @@ import { Navigation } from "@/components/Navigation";
 import { Footer } from "@/components/Footer";
 import { AuthModal } from "@/components/AuthModal";
 import { HomePage } from "@/pages/HomePage";
-import { StoriesPage } from "@/pages/StoriesPage";
-import { ReaderPage } from "@/pages/ReaderPage";
-import { ProfilePage } from "@/pages/ProfilePage";
-import { AdminPanel } from "@/pages/AdminPanel";
-import { CommendationsPage } from "@/pages/CommendationsPage";
 import { CommendationsProvider } from "@/components/commendations/CommendationsProvider";
-import { PublicProfilePage } from "@/pages/PublicProfilePage";
-import { AboutPage } from "@/pages/AboutPage";
-import { ForumPage } from "@/pages/ForumPage";
 import { slugify, storyPath } from "@/lib/slug";
 import { usePageTracking } from "@/hooks/usePageTracking";
 import i18n from "i18next";
 const t = (k: string) => i18n.t(`ui.${k}`);
 
+// Pages load on demand, so a visitor only downloads the page they open (the
+// admin panel and editors alone are most of the code). The archive and reader
+// are fetched in the background after the first page has loaded.
+const loadStories = () => import("@/pages/StoriesPage");
+const loadReader = () => import("@/pages/ReaderPage");
+const StoriesPage = React.lazy(() => loadStories().then((m) => ({ default: m.StoriesPage })));
+const ReaderPage = React.lazy(() => loadReader().then((m) => ({ default: m.ReaderPage })));
+const ProfilePage = React.lazy(() => import("@/pages/ProfilePage").then((m) => ({ default: m.ProfilePage })));
+const AdminPanel = React.lazy(() => import("@/pages/AdminPanel").then((m) => ({ default: m.AdminPanel })));
+const CommendationsPage = React.lazy(() => import("@/pages/CommendationsPage").then((m) => ({ default: m.CommendationsPage })));
+const PublicProfilePage = React.lazy(() => import("@/pages/PublicProfilePage").then((m) => ({ default: m.PublicProfilePage })));
+const AboutPage = React.lazy(() => import("@/pages/AboutPage").then((m) => ({ default: m.AboutPage })));
+const ForumPage = React.lazy(() => import("@/pages/ForumPage").then((m) => ({ default: m.ForumPage })));
+const SeriesPage = React.lazy(() => import("@/pages/SeriesPage").then((m) => ({ default: m.SeriesPage })));
+
+/** Shown for the moment a page's code is loading. */
+const PageLoading = () => <p className="case-label text-[10px] text-center py-24">Retrieving file…</p>;
+
 
 const Index = () => {
   const navigate = useNavigate();
+
+  useEffect(() => {
+    const id = window.setTimeout(() => { void loadStories(); void loadReader(); }, 2500);
+    return () => window.clearTimeout(id);
+  }, []);
   const location = useLocation();
   const [showAuthModal, setShowAuthModal] = useState(false);
   const [selectedChapter, setSelectedChapter] = useState<Chapter | null>(null);
@@ -45,6 +60,7 @@ const Index = () => {
     if (path === "/admin") return "admin";
     if (path === "/about") return "about";
     if (path === "/forum" || path.startsWith("/forum/")) return "forum";
+    if (path === "/series" || path.startsWith("/series/")) return "series";
     return "home";
   })();
 
@@ -57,6 +73,7 @@ const Index = () => {
     else if (page === "admin") go("/admin");
     else if (page === "about") go("/about");
     else if (page === "forum") go("/forum");
+    else if (page === "series") go("/series");
     // "forum?case=<story id>" opens the forum filtered to one case.
     else if (page.startsWith("forum?")) go(`/forum${page.slice(5)}`);
     else if (page === "reader" && selectedChapter) {
@@ -160,8 +177,10 @@ const Index = () => {
       />
 
       <main className="flex-1">
+        <React.Suspense fallback={<PageLoading />}>
         {currentPage === "home" && (
           <HomePage
+            user={user}
             chapters={publishedChapters}
             setCurrentPage={setCurrentPage}
             setSelectedChapter={handleSelectChapter}
@@ -242,6 +261,10 @@ const Index = () => {
           <ForumPage user={user} authToken={session?.access_token} stories={publishedChapters.filter((c) => !c.isArchived)} setShowAuthModal={setShowAuthModal} />
         )}
 
+        {currentPage === "series" && (
+          <SeriesPage chapters={publishedChapters} user={user} isRead={isRead} onOpen={handleSelectChapter} />
+        )}
+        </React.Suspense>
       </main>
 
       {currentPage !== "admin" && <Footer setCurrentPage={setCurrentPage} />}
