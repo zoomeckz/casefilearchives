@@ -13,6 +13,7 @@ import { FlagIcon } from '@/components/FlagIcon';
 import { SUPPORTED_LANGUAGES, LANGUAGE_LABELS, DEFAULT_LANGUAGE, type SupportedLanguage } from '@/i18n';
 import { InteractiveEditor } from '@/components/interactive/InteractiveEditor';
 import { InteractiveReader } from '@/components/interactive/InteractiveReader';
+import { SeriesManager } from '@/components/series/SeriesManager';
 import { type InteractiveGraph, emptyGraph, normalizeGraph, validateGraph, removedNodeIds, openingContent } from '@/lib/interactive';
 
 type LangBuffer = { id?: string; title: string; content: string };
@@ -813,6 +814,13 @@ export const ChapterEditor: React.FC<ChapterEditorProps> = ({ authToken, userId,
                   ? 'Readers make decisions that change the scenes, options and ending they receive. Registered readers’ choices are locked to their account.'
                   : 'A normal story with no reader decisions.'}
               </p>
+            </div>
+          )}
+
+          {/* Series and collections */}
+          {!isLegacy && (
+            <div className="pt-5">
+              <SeriesManager chapterId={editChapterId} authToken={authToken} />
             </div>
           )}
 
