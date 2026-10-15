@@ -60,6 +60,14 @@ interface ReaderDetailData {
 
 interface CatalogueEntry { key: string; title: string; category: string; points: number }
 
+// The award catalogue is the same for every reader: load it once per visit.
+let catalogueCache: Promise<CatalogueEntry[]> | null = null;
+const loadCatalogue = () =>
+  (catalogueCache ??= fetch(`${SUPA_URL}/rest/v1/commendations?select=key,title,category,points&order=sort_order`, { headers: { apikey: ANON, Authorization: `Bearer ${ANON}` } })
+    .then((r) => (r.ok ? r.json() : []))
+    .then((rows) => (Array.isArray(rows) ? rows : []))
+    .catch(() => { catalogueCache = null; return []; }));
+
 async function rpc<T>(fn: string, body: unknown, token?: string): Promise<T> {
   const res = await fetch(`${SUPA_URL}/rest/v1/rpc/${fn}`, {
     method: "POST",
@@ -240,6 +248,11 @@ const ManageReaders: React.FC<{ readers: Reader[]; authToken?: string; reload: (
   const [query, setQuery] = useState("");
   const [sort, setSort] = useState<Sort>("joined");
   const [open, setOpen] = useState<string | null>(() => new URLSearchParams(window.location.search).get("reader"));
+  // Opened from the overview: bring that reader into view.
+  useEffect(() => {
+    if (open) document.getElementById(`reader-${open}`)?.scrollIntoView({ block: "start", behavior: "smooth" });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const visible = useMemo(() => {
     const q = query.trim().toLowerCase();
@@ -292,7 +305,7 @@ const ManageReaders: React.FC<{ readers: Reader[]; authToken?: string; reload: (
 
       <ul className="space-y-2">
         {visible.map((r) => (
-          <li key={r.user_id} className={`rounded-lg border bg-card/30 ${open === r.user_id ? "border-primary/60" : "border-border"}`}>
+          <li key={r.user_id} id={`reader-${r.user_id}`} className={`rounded-lg border bg-card/30 ${open === r.user_id ? "border-primary/60" : "border-border"}`}>
             <button type="button" onClick={() => setOpen(open === r.user_id ? null : r.user_id)} className="w-full text-left p-3 sm:p-4 flex flex-wrap items-center gap-3">
               <Avatar r={r} />
               <span className="min-w-0 flex-1">
@@ -337,7 +350,11 @@ const ReaderEditor: React.FC<{ userId: string; authToken?: string; onChanged: ()
   const [busy, setBusy] = useState<string | null>(null);
   const [loadError, setLoadError] = useState<string | null>(null);
 
-  const apply = (next: ReaderDetailData) => { setD(next); setName(next.name || ""); setEmail(next.email || ""); };
+  // Refills the name/email fields only on load and after saving them, so other actions keep unsaved edits.
+  const apply = (next: ReaderDetailData, resetFields = false) => {
+    setD(next);
+    if (resetFields) { setName(next.name || ""); setEmail(next.email || ""); }
+  };
 
   const loadCases = useCallback(async () => {
     try { setCases(await rpc<ReaderCase[]>("admin_reader_cases", { _user_id: userId }, authToken)); }
@@ -347,13 +364,10 @@ const ReaderEditor: React.FC<{ userId: string; authToken?: string; onChanged: ()
   useEffect(() => {
     let cancelled = false;
     rpc<ReaderDetailData>("admin_reader_detail", { _user_id: userId }, authToken)
-      .then((x) => { if (!cancelled) apply(x); })
+      .then((x) => { if (!cancelled) apply(x, true); })
       .catch((e) => { if (!cancelled) setLoadError(explain(e)); });
     void loadCases();
-    fetch(`${SUPA_URL}/rest/v1/commendations?select=key,title,category,points&order=sort_order`, { headers: { apikey: ANON, Authorization: `Bearer ${ANON}` } })
-      .then((r) => (r.ok ? r.json() : []))
-      .then((rows) => { if (!cancelled && Array.isArray(rows)) setCatalogue(rows); })
-      .catch(() => {});
+    void loadCatalogue().then((rows) => { if (!cancelled) setCatalogue(rows); });
     return () => { cancelled = true; };
   }, [userId, authToken, loadCases]);
 
@@ -362,9 +376,10 @@ const ReaderEditor: React.FC<{ userId: string; authToken?: string; onChanged: ()
     setBusy(key);
     try {
       const next = await fn();
-      if (next) apply(next);
+      if (next) apply(next, key === "name" || key === "email");
       toast.success(success);
-      onChanged();
+      // A password-reset email changes nothing in the list.
+      if (key !== "reset-pw") onChanged();
     } catch (e: any) {
       toast.error(explain(e));
     } finally {
