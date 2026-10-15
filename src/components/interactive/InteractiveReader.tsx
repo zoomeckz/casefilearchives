@@ -270,7 +270,18 @@ export const InteractiveReader: React.FC<Props> = ({ chapterId, title, graph, us
     const now = Date.now();
     setShownAt(now);
     try { localStorage.setItem(shownKey, String(now)); } catch { /* storage blocked */ }
-    if (user && !preview && !onDevice) void rpc("ic_present", { _chapter_id: chapterId, _node_id: state.current_node }).catch(() => {});
+    if (user && !preview && !onDevice) {
+      const key = shownKey;
+      rpc("ic_present", { _chapter_id: chapterId, _node_id: state.current_node })
+        .then((res) => {
+          // Opened earlier on another device: keep the clock that is already running.
+          const at = res?.presented_at ? Date.parse(res.presented_at) : NaN;
+          if (Number.isNaN(at) || at > now - 15_000) return;
+          setShownAt(at);
+          try { localStorage.setItem(key, String(at)); } catch { /* storage blocked */ }
+        })
+        .catch(() => {});
+    }
   };
   useEffect(() => {
     if (viewKey && currentNode) tracker.current?.view(currentNode.id);
