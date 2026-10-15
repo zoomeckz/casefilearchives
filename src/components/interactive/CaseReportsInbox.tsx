@@ -24,7 +24,8 @@ interface ReportRow {
   attempt: number;
   ending_node: string | null;
   completed_at: string | null;
-  final_answer: string;
+  /** Null when the reader finished the case without answering the closing question. */
+  final_answer: string | null;
   answered_at: string | null;
   admin_feedback: string | null;
   feedback_at: string | null;
@@ -185,8 +186,8 @@ export const CaseReportsInbox: React.FC<{ authToken?: string }> = ({ authToken }
       const server = Array.isArray(data) ? data : [];
       // A browser-saved answer the reader's own visit already moved to the server is listed once.
       const onServer = new Set(server.map((r) => `${r.reader_id}|${r.chapter_id}|${(r.final_answer || "").trim()}`));
-      const list = [...server, ...local.filter((r) => !onServer.has(`${r.reader_id}|${r.chapter_id}|${r.final_answer.trim()}`))]
-        .sort((a, b) => Date.parse(b.answered_at || "") - Date.parse(a.answered_at || ""));
+      const list = [...server, ...local.filter((r) => !onServer.has(`${r.reader_id}|${r.chapter_id}|${(r.final_answer || "").trim()}`))]
+        .sort((a, b) => Date.parse(b.answered_at || b.completed_at || "") - Date.parse(a.answered_at || a.completed_at || ""));
       const ids = [...new Set(list.map((r) => r.chapter_id))];
       const metas: Record<string, CaseMeta> = {};
       if (ids.length) {
@@ -289,7 +290,7 @@ export const CaseReportsInbox: React.FC<{ authToken?: string }> = ({ authToken }
       {rows === null && <p className="case-label text-[9px]">Retrieving reports…</p>}
       {rows !== null && shown.length === 0 && !error && (
         <p className="text-sm text-muted-foreground border border-dashed border-border rounded-lg p-6">
-          {status === "open" ? "No reports are waiting for a response." : "No reports here yet. They appear when readers file a conclusion at the end of a case."}
+          {status === "open" ? "No reports are waiting for a response." : "No reports here yet. They appear when readers finish a case."}
         </p>
       )}
 
@@ -309,11 +310,15 @@ export const CaseReportsInbox: React.FC<{ authToken?: string }> = ({ authToken }
                   </p>
                 </div>
                 <span className={`case-label text-[9px] ${r.admin_feedback ? "" : "!text-primary"}`}>
-                  {r.local ? "Saved from the reader's browser" : r.admin_feedback ? "Answered" : "Awaiting response"} · filed {fmt(r.answered_at)}
+                  {r.local ? "Saved from the reader's browser" : r.admin_feedback ? "Answered" : "Awaiting response"} · {r.final_answer ? `filed ${fmt(r.answered_at)}` : `finished ${fmt(r.completed_at)}`}
                 </span>
               </div>
 
-              <blockquote className="border-l-4 border-primary pl-4 italic text-foreground/90 whitespace-pre-line break-words">{r.final_answer}</blockquote>
+              {r.final_answer ? (
+                <blockquote className="border-l-4 border-primary pl-4 italic text-foreground/90 whitespace-pre-line break-words">{r.final_answer}</blockquote>
+              ) : (
+                <p className="border-l-4 border-border pl-4 text-sm text-muted-foreground">No conclusion filed. They reached the ending without answering the closing question. You can still read their route and respond.</p>
+              )}
 
               <details className="text-sm">
                 <summary className="cursor-pointer text-xs text-muted-foreground select-none">
