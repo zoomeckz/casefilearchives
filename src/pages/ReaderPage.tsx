@@ -17,6 +17,8 @@ import { ReaderCardsView } from "@/components/ReaderCardsView";
 import { useChapterTranslation } from "@/hooks/useChapterTranslation";
 import { InteractiveReader } from "@/components/interactive/InteractiveReader";
 import { normalizeGraph } from "@/lib/interactive";
+import { ResumeBanner, useReadingPosition } from "@/components/reading/ReadingPosition";
+import { SeriesNav } from "@/components/series/SeriesNav";
 
 
 function estimateReadingTime(content: string): number {
@@ -76,6 +78,8 @@ export const ReaderPage: React.FC<ReaderPageProps> = ({
   ];
   const [randomPrompt] = useState(() => discussionPrompts[Math.floor(Math.random() * discussionPrompts.length)]);
   const [scrollProgress, setScrollProgress] = useState(0);
+  // Remembers where the reader stopped (linear stories; interactive cases save their own place).
+  const position = useReadingPosition(sourceChapter?.id, scrollProgress, !!sourceChapter && sourceChapter.storyFormat !== "interactive", user);
   const [showBackToTop, setShowBackToTop] = useState(false);
   const [readerWidth, setReaderWidth] = useState<number>(() => {
     try { return Number(localStorage.getItem("reader-width")) || 680; } catch { return 680; }
@@ -279,6 +283,9 @@ export const ReaderPage: React.FC<ReaderPageProps> = ({
           {t("reader.back")}
         </button>
 
+        <SeriesNav chapterId={chapter.id} chapters={chapters} onOpen={setSelectedChapter} placement="top" />
+        {!isInteractive && <ResumeBanner position={position} />}
+
         {/* Reader controls — width slider + cards mode toggle */}
         {/* The width slider only matters on screens wider than the reading column. */}
         <div className={`mb-8 ${isInteractive ? "hidden md:flex" : "flex"} flex-wrap items-center gap-4 text-xs text-muted-foreground border-y border-border p-3`}>
@@ -395,6 +402,8 @@ export const ReaderPage: React.FC<ReaderPageProps> = ({
             }}
           />
         </div>
+
+        <SeriesNav chapterId={chapter.id} chapters={chapters} onOpen={setSelectedChapter} placement="bottom" />
 
         {/* Chapter Reactions */}
         <div className="mb-8">
