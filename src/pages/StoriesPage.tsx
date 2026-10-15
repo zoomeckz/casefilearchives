@@ -1,6 +1,7 @@
 import { Check } from "lucide-react";
 import React, { useState, useMemo } from "react";
-import { useSearchParams } from "react-router-dom";
+import { Link, useSearchParams } from "react-router-dom";
+import { useSeries } from "@/lib/series";
 import { useTranslation } from "react-i18next";
 import { Icons } from "@/lib/icons";
 import { Chapter } from "@/hooks/useChapters";
@@ -22,6 +23,13 @@ interface StoriesPageProps {
   isBookmarked: (chapterId: string) => boolean;
   toggleBookmark: (chapterId: string) => void;
 }
+
+/** Link to /series, shown once at least one series has files. */
+const SeriesLink: React.FC = () => {
+  const list = useSeries();
+  if (!list || !list.some((s) => s.entries.length > 0)) return null;
+  return <Link to="/series" className="case-label text-[9px] hover:!text-primary mt-3 inline-block">Browse series →</Link>;
+};
 
 export const StoriesPage: React.FC<StoriesPageProps> = ({
   chapters,
@@ -85,6 +93,7 @@ export const StoriesPage: React.FC<StoriesPageProps> = ({
           <h1 className="font-display text-4xl sm:text-5xl text-foreground uppercase">
             {t("caseFiles.storyArchive")}
           </h1>
+          <SeriesLink />
         </div>
 
         {user && (
