@@ -33,6 +33,8 @@ export const COMMENDATIONS: Commendation[] = [
     glyph: "M4 12.5l5 5L20 6.5" },
   { key: "every_angle", title: "Every Angle", description: "Reach every ending of one interactive case.", category: "interactive", points: 40, frame: "red-string",
     glyph: `M2 12s4-7 10-7 10 7 10 7-4 7-10 7S2 12 2 12z${circle(12, 12, 3)}` },
+  { key: "lone_witness", title: "Lone Witness", description: "Reach an outcome no other reader has reached.", category: "interactive", points: 30, rewardTitle: "Lone Witness",
+    glyph: `${circle(12, 7, 3.5)}M5 21c0-4 3-7 7-7s7 3 7 7` },
   { key: "night_shift", title: "Night Shift", description: "Finish a file between 00:00 and 04:00.", category: "habits", points: 15, rewardTitle: "Night Shift",
     glyph: "M20 14.5A8 8 0 0 1 9.5 4a8 8 0 1 0 10.5 10.5z" },
   { key: "stakeout", title: "Stakeout", description: "Read on 7 days in a row.", category: "habits", points: 30, frame: "surveillance",
@@ -43,7 +45,7 @@ export const COMMENDATIONS: Commendation[] = [
     glyph: "M3 4h12v8H7l-4 3zM9 15v1h7l4 3V8h-3" },
   { key: "theorist", title: "Theorist", description: "Post your first theory.", category: "community", points: 10,
     glyph: "M9 18h6M10 21h4M12 3a6 6 0 0 0-4 10.5c.7.7 1 1.5 1 2.5h6c0-1 .3-1.8 1-2.5A6 6 0 0 0 12 3z" },
-  { key: "lead_detective", title: "Lead Detective", description: "Post 10 theories.", category: "community", points: 35, rewardTitle: "Lead Detective",
+  { key: "lead_detective", title: "Lead Detective", description: "Post 10 theories, or write the top-rated theory on a case (5+ credible votes).", category: "community", points: 35, rewardTitle: "Lead Detective",
     glyph: `M5 6l7 6 7-4M12 12l-3 7${circle(5, 6, 2)}${circle(19, 8, 2)}${circle(9, 19, 2)}` },
   { key: "evidence_locker", title: "Evidence Locker", description: "Bookmark 5 files or saved quotes.", category: "community", points: 15,
     glyph: "M7 10V7a5 5 0 0 1 10 0v3M5 10h14v11H5zM12 14v3" },
@@ -113,6 +115,10 @@ export interface CommendationStats {
   current_streak: number;
   comments: number;
   theories: number;
+  /** Theories that lead their case with 5+ credible votes. */
+  top_theories?: number;
+  /** Outcomes this reader reached that no one else has. */
+  lone_endings?: number;
   evidence: number;
   reader_number: number | null;
   recruits: number;
@@ -133,7 +139,7 @@ export function progressFor(key: string, s: CommendationStats | null): { current
     case "statement_given": return n(s.comments, 1);
     case "informant": return n(s.comments, 10);
     case "theorist": return n(s.theories, 1);
-    case "lead_detective": return n(s.theories, 10);
+    case "lead_detective": return n((s.top_theories || 0) > 0 ? 10 : s.theories, 10);
     case "evidence_locker": return n(s.evidence, 5);
     case "recruiter": return n(s.recruits, 1);
     default: return null; // yes/no commendations
