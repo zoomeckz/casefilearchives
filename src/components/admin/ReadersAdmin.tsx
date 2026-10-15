@@ -68,10 +68,20 @@ const loadCatalogue = () =>
     .then((rows) => (Array.isArray(rows) ? rows : []))
     .catch(() => { catalogueCache = null; return []; }));
 
+// The token handed down from the page can be stale after the tab sat in the
+// background; the signed-in session in storage is refreshed in place, so prefer it.
+function freshToken(fallback?: string) {
+  try {
+    const s = JSON.parse(localStorage.getItem("app-auth-session") || "null");
+    if (s?.access_token && s.expires_at > Date.now() / 1000 + 30) return s.access_token as string;
+  } catch { /* ignore */ }
+  return fallback;
+}
+
 async function rpc<T>(fn: string, body: unknown, token?: string): Promise<T> {
   const res = await fetch(`${SUPA_URL}/rest/v1/rpc/${fn}`, {
     method: "POST",
-    headers: { apikey: ANON, Authorization: `Bearer ${token || ANON}`, "Content-Type": "application/json" },
+    headers: { apikey: ANON, Authorization: `Bearer ${freshToken(token) || ANON}`, "Content-Type": "application/json" },
     body: JSON.stringify(body ?? {}),
   });
   const data = await res.json().catch(() => null);
@@ -87,6 +97,7 @@ const ERRORS: Record<string, string> = {
   cannot_suspend_admin: "Admin accounts can't be suspended.",
   admin_only: "Only admins can do this.",
   not_found: "This account no longer exists.",
+  "JWT expired": "Your session expired. Reload the page and try again.",
 };
 const explain = (e: any) => ERRORS[e?.message] || (/duplicate key/i.test(e?.message || "") ? ERRORS.name_taken : e?.message || "Something went wrong.");
 
@@ -123,6 +134,8 @@ const Avatar: React.FC<{ r: { avatar_url?: string | null; name: string } }> = ({
 );
 
 const btn = "px-3 py-1.5 border border-border rounded text-xs hover:border-primary disabled:opacity-50";
+// Save next to a text field: same height as the field, never squeezed.
+const saveBtn = "shrink-0 whitespace-nowrap min-w-[5rem] px-4 rounded border text-xs font-medium transition-colors border-primary bg-primary text-primary-foreground hover:bg-primary/85 disabled:border-border disabled:bg-transparent disabled:text-muted-foreground disabled:cursor-not-allowed";
 const dangerBtn = "px-3 py-1.5 border border-destructive/50 text-destructive rounded text-xs hover:bg-destructive/10 disabled:opacity-50";
 const inputCls = "w-full px-3 py-2 bg-background border border-border rounded text-sm focus:outline-none focus:border-primary";
 
@@ -415,10 +428,11 @@ const ReaderEditor: React.FC<{ userId: string; authToken?: string; onChanged: ()
           <div>
             <label className="text-xs text-muted-foreground block mb-1">Username</label>
             <div className="flex gap-2">
-              <input value={name} maxLength={40} onChange={(e) => setName(e.target.value)} className={inputCls} />
-              <button type="button" className={btn} disabled={busy === "name" || !name.trim() || name.trim() === d.name}
+              <input value={name} maxLength={40} onChange={(e) => setName(e.target.value)} className={`${inputCls} min-w-0`}
+                onKeyDown={(e) => { if (e.key === "Enter" && name.trim() && name.trim() !== d.name && busy !== "name") void run("name", () => rpc("admin_update_reader", { _user_id: userId, _name: name }, authToken), "Username changed"); }} />
+              <button type="button" className={saveBtn} disabled={busy === "name" || !name.trim() || name.trim() === d.name}
                 onClick={() => run("name", () => rpc("admin_update_reader", { _user_id: userId, _name: name }, authToken), "Username changed")}>
-                Save
+                {busy === "name" ? "Saving…" : "Save"}
               </button>
             </div>
             <p className="text-[11px] text-muted-foreground mt-1">
@@ -428,13 +442,13 @@ const ReaderEditor: React.FC<{ userId: string; authToken?: string; onChanged: ()
           <div>
             <label className="text-xs text-muted-foreground block mb-1">Email</label>
             <div className="flex gap-2">
-              <input type="email" value={email} onChange={(e) => setEmail(e.target.value)} className={inputCls} />
-              <button type="button" className={btn} disabled={busy === "email" || !email.trim() || email.trim().toLowerCase() === d.email}
+              <input type="email" value={email} onChange={(e) => setEmail(e.target.value)} className={`${inputCls} min-w-0`} />
+              <button type="button" className={saveBtn} disabled={busy === "email" || !email.trim() || email.trim().toLowerCase() === d.email}
                 onClick={() => {
                   if (!window.confirm(`Change ${d.name}'s sign-in email to ${email.trim()}? They sign in with the new address from now on.`)) return;
                   void run("email", () => rpc("admin_update_reader", { _user_id: userId, _email: email }, authToken), "Email changed");
                 }}>
-                Save
+                {busy === "email" ? "Saving…" : "Save"}
               </button>
             </div>
             {d.provider !== "email" && <p className="text-[11px] text-muted-foreground mt-1">This reader signs in with {d.provider}; their {d.provider} account decides the address they use.</p>}
