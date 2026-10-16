@@ -14,6 +14,7 @@ import { CaseReportsInbox } from "@/components/interactive/CaseReportsInbox";
 import { ReadersAdmin } from "@/components/admin/ReadersAdmin";
 import { DiscordSettings } from "@/components/admin/DiscordSettings";
 import { DispatchesAdmin } from "@/components/admin/DispatchesAdmin";
+import { postStoryToDiscord } from "@/lib/discordPost";
 import { useAdminMenuOrder, applyMenuOrder, toMenuOrder, AdminSidebarNav } from "@/components/admin/AdminMenuOrder";
 import { toast } from "sonner";
 import { useIsMobile } from "@/hooks/use-mobile";
@@ -1778,6 +1779,11 @@ const ChapterTable: React.FC<ChapterTableProps> = ({
                          <DropdownMenuItem onClick={() => onDownload(ch.chapter_number, ch.title)}>
                           <Download className="w-4 h-4 mr-2" /> Download
                         </DropdownMenuItem>
+                        {!legacy && (
+                          <DropdownMenuItem onClick={() => void postStoryToDiscord(ch.id, ch.title)}>
+                            <Megaphone className="w-4 h-4 mr-2" /> Send to Discord
+                          </DropdownMenuItem>
+                        )}
                         <DropdownMenuSeparator />
                         <DropdownMenuItem
                           onClick={() => onDelete(ch.id, ch.title)}
