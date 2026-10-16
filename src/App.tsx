@@ -120,6 +120,9 @@ const APP_ROUTES: { path: string }[] = [
   { path: "/forum/:postId" },
   { path: "/series" },
   { path: "/series/:slug" },
+  { path: "/dispatches" },
+  { path: "/dispatches/:slug" },
+  { path: "/dispatches/:slug/:part" },
 ];
 
 const LEGACY_ROUTES = ["/characters", "/manga", "/leaderboard", "/world", "/rewards"];
