@@ -56,11 +56,11 @@ export const StoriesPage: React.FC<StoriesPageProps> = ({
     setActiveTag(null);
   };
   const counts = useMemo(() => ({
-    linear: chapters.filter((c) => c.storyFormat !== "interactive").length,
+    linear: chapters.filter((c) => c.storyFormat === "linear").length,
     interactive: chapters.filter((c) => c.storyFormat === "interactive").length,
   }), [chapters]);
   const inFormat = useMemo(
-    () => chapters.filter((c) => (format === "interactive" ? c.storyFormat === "interactive" : c.storyFormat !== "interactive")),
+    () => chapters.filter((c) => (format === "interactive" ? c.storyFormat === "interactive" : c.storyFormat === "linear")),
     [chapters, format],
   );
   const allTags = useMemo(() => Array.from(new Set(inFormat.flatMap((c) => c.tags))).sort(), [inFormat]);
@@ -101,7 +101,7 @@ export const StoriesPage: React.FC<StoriesPageProps> = ({
         )}
 
         {/* Case Files | Interactive Case Files */}
-        <div role="tablist" aria-label="Story type" className="grid grid-cols-2 gap-0 mb-8 border border-border">
+        <div role="tablist" aria-label="Story type" className="grid grid-cols-1 sm:grid-cols-3 gap-0 mb-8 border border-border">
           {([
             ["linear", t("caseFiles.tabLinear", { defaultValue: "Case Files" }), t("caseFiles.tabLinearHint", { defaultValue: "Read from start to finish" })],
             ["interactive", t("caseFiles.tabInteractive", { defaultValue: "Interactive Case Files" }), t("caseFiles.tabInteractiveHint", { defaultValue: "Your decisions decide the outcome" })],
@@ -122,7 +122,16 @@ export const StoriesPage: React.FC<StoriesPageProps> = ({
               <span className="block text-xs text-muted-foreground mt-0.5">{hint}</span>
             </button>
           ))}
+          {/* Dispatches have their own page; this tab leads there. */}
+          <Link to="/dispatches" className="text-left px-4 sm:px-5 py-3 sm:py-4 transition-colors border-t sm:border-t-0 sm:border-l border-border text-muted-foreground hover:text-foreground hover:bg-secondary/40">
+            <span className="flex items-baseline justify-between gap-2">
+              <span className="font-display text-lg sm:text-xl uppercase">{t("caseFiles.tabDispatches", { defaultValue: "Dispatches" })}</span>
+              <span className="case-label text-[9px]">→</span>
+            </span>
+            <span className="block text-xs text-muted-foreground mt-0.5">{t("caseFiles.tabDispatchesHint", { defaultValue: "Stories told in chapters" })}</span>
+          </Link>
         </div>
+
 
         {/* Sort buttons */}
         <div className="flex items-center gap-2 mb-6 flex-wrap border-b border-border pb-5">
