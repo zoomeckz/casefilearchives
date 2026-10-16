@@ -13,13 +13,15 @@ import { ChapterTranslationsManager } from "@/components/ChapterTranslationsMana
 import { CaseReportsInbox } from "@/components/interactive/CaseReportsInbox";
 import { ReadersAdmin } from "@/components/admin/ReadersAdmin";
 import { DiscordSettings } from "@/components/admin/DiscordSettings";
+import { DispatchesAdmin } from "@/components/admin/DispatchesAdmin";
+import { useAdminMenuOrder, applyMenuOrder, MenuArranger } from "@/components/admin/AdminMenuOrder";
 import { toast } from "sonner";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { Input } from "@/components/ui/input";
 import {
   Menu, X, Search, ArrowUpDown, Globe, CheckCircle2, AlertCircle, Loader2, ExternalLink, History,
   ChevronLeft, ChevronRight, ChevronDown, MoreHorizontal, Edit3, Trash2, Eye, Download, FileText,
-  Calendar, AlertTriangle, BookOpen, Sparkles, BarChart3, PanelLeftClose, PanelLeftOpen, GitBranch, Users, UserCog, Megaphone,
+  Calendar, AlertTriangle, BookOpen, Sparkles, BarChart3, PanelLeftClose, PanelLeftOpen, GitBranch, Users, UserCog, Megaphone, ScrollText,
 } from "lucide-react";
 import { CaseAnalytics } from "@/components/interactive/CaseAnalytics";
 import {
@@ -507,6 +509,7 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ glossary, authToken, use
       label: "Content",
       items: [
         { id: "chapters", label: "Stories", icon: BookOpen },
+        { id: "dispatches", label: "Dispatches", icon: ScrollText },
         { id: "reports", label: "Case reports", icon: FileText },
         { id: "search", label: "Search & replace", icon: Search },
       ],
@@ -542,7 +545,10 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ glossary, authToken, use
       ],
     },
   ];
-  const tabs = navGroups.flatMap((g) => g.items);
+  // The sidebar in the order chosen under "Arrange menu"; the panel opens on its first page.
+  const menuOrder = useAdminMenuOrder(authToken);
+  const orderedGroups = applyMenuOrder(navGroups, menuOrder.order);
+  const tabs = orderedGroups.flatMap((g) => g.items);
 
   const refreshDrafts = useCallback(async () => {
     const d = await getAllDrafts(authToken);
@@ -566,9 +572,7 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ glossary, authToken, use
 
   useEffect(() => {
     const tabParam = searchParams.get('tab');
-    const nextTab = ['dashboard', 'readers', 'readers-manage', 'discord', 'chapters', 'reports', 'search', 'analytics', 'case-analytics', 'legacy', 'glossary', 'seo', 'audit'].includes(tabParam || '')
-      ? (tabParam as string)
-      : 'dashboard';
+    const nextTab = tabs.some((tab) => tab.id === tabParam) ? (tabParam as string) : (tabs[0]?.id || 'dashboard');
     const nextSubTab = searchParams.get('subtab') === 'drafts' ? 'drafts' : 'published';
     const viewParam = searchParams.get('view');
     const nextView = viewParam === 'new' || viewParam === 'new-legacy' || viewParam === 'edit' || viewParam === 'draft' ? viewParam : 'list';
@@ -598,7 +602,7 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ glossary, authToken, use
     setResumeDraftId(null);
     setSearchHighlight(null);
     setSearchSentence(null);
-  }, [searchParams, refreshDrafts]);
+  }, [searchParams, refreshDrafts, tabs[0]?.id]);
 
   // Filtered & sorted chapters
   const filteredChapters = useMemo(() => {
@@ -668,7 +672,7 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ glossary, authToken, use
           searchSentence={editorMode === 'edit' ? searchSentence : undefined}
           legacy={editorMode === 'new-legacy'}
           onBack={() => {
-            updateAdminRoute({ view: null, chapter: null, draft: null, term: null, sentence: null });
+            updateAdminRoute({ view: null, chapter: null, draft: null, term: null, sentence: null, dispatch: null, part: null });
             fetchChapters();
             refreshDrafts();
           }}
@@ -686,6 +690,8 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ glossary, authToken, use
       draft: null,
       term: null,
       sentence: null,
+      dispatch: null,
+      part: null,
     });
     if (isMobile) setSidebarOpen(false);
   };
@@ -707,7 +713,7 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ glossary, authToken, use
 
   const renderNav = (onPick: (id: string) => void, compact: boolean) => (
     <nav className="space-y-6">
-      {navGroups.map((group) => (
+      {orderedGroups.map((group) => (
         <div key={group.label}>
           {!compact && (
             <div className="px-3 mb-2 text-[10px] uppercase tracking-[0.18em] text-muted-foreground/70 font-medium">
@@ -737,6 +743,7 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ glossary, authToken, use
           </div>
         </div>
       ))}
+      {!compact && <MenuArranger groups={orderedGroups} onSave={menuOrder.save} />}
     </nav>
   );
 
@@ -1145,6 +1152,13 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ glossary, authToken, use
             )}
             {activeTab === "discord" && (
               <DiscordSettings authToken={authToken} />
+            )}
+            {activeTab === "dispatches" && (
+              <DispatchesAdmin
+                authToken={authToken}
+                onEditChapter={(id) => updateAdminRoute({ tab: "chapters", view: "edit", chapter: id })}
+                onNewChapter={(dispatchId, part) => updateAdminRoute({ tab: "chapters", view: "new", dispatch: dispatchId, part: String(part) })}
+              />
             )}
 
             {activeTab === "glossary" && (
