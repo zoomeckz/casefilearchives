@@ -19,6 +19,7 @@ import { InteractiveReader } from "@/components/interactive/InteractiveReader";
 import { normalizeGraph } from "@/lib/interactive";
 import { ResumeBanner, useReadingPosition } from "@/components/reading/ReadingPosition";
 import { SeriesNav } from "@/components/series/SeriesNav";
+import { setPageSeo, plainExcerpt } from "@/hooks/useDynamicSeo";
 
 
 function estimateReadingTime(content: string): number {
@@ -220,6 +221,17 @@ export const ReaderPage: React.FC<ReaderPageProps> = ({
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
   }, [chapter?.id]);
+
+  // Search engines and share previews: this story's own title, opening lines and cover.
+  useEffect(() => {
+    if (!chapter) return;
+    setPageSeo({
+      title: `${chapter.title} — Case Files`,
+      description: plainExcerpt(chapter.content) || `${chapter.title} — a standalone story by AnyoneButSam.`,
+      image: chapter.coverImageUrl,
+      type: "article",
+    });
+  }, [chapter?.id, chapter?.title, chapter?.content]);
 
   if (!chapter) return null;
 
