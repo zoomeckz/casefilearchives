@@ -5,12 +5,15 @@ import { ArrowRight, Clock, FileText } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import type { AuthUser } from "@/hooks/useAuth";
 import { ContinueReading } from "@/components/reading/ReadingPosition";
+import { DispatchesTeaser } from "@/pages/DispatchesPage";
 
 interface HomePageProps {
   chapters: Chapter[];
   setCurrentPage: (page: string) => void;
   setSelectedChapter: (chapter: Chapter) => void;
   user?: AuthUser | null;
+  /** All published stories; the Dispatches strip picks the dispatch chapters. */
+  dispatchChapters?: Chapter[];
 }
 
 export const HomePage: React.FC<HomePageProps> = ({
@@ -18,6 +21,7 @@ export const HomePage: React.FC<HomePageProps> = ({
   setCurrentPage,
   setSelectedChapter,
   user = null,
+  dispatchChapters = [],
 }) => {
   const { t } = useTranslation();
 
@@ -103,6 +107,8 @@ export const HomePage: React.FC<HomePageProps> = ({
             )}
         </div>
       </section>
+
+      <DispatchesTeaser chapters={dispatchChapters} onOpen={setSelectedChapter} />
     </div>
   );
 };
