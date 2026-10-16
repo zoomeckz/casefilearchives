@@ -167,8 +167,12 @@ export const AnalyticsDashboard: React.FC<AnalyticsDashboardProps> = ({ authToke
   // ── Geographic data (pie chart) ──
   const geoData = useMemo(() => {
     const map = new Map<string, number>();
+    // Visits store a two-letter code (SE, GB…); show the country's name.
+    let names: Intl.DisplayNames | null = null;
+    try { names = new Intl.DisplayNames(["en"], { type: "region" }); } catch { /* old browser */ }
     filteredViews.forEach((pv) => {
-      const country = pv.country || "Unknown";
+      const code = (pv.country || "").trim();
+      const country = !code ? "Unknown" : /^[A-Za-z]{2}$/.test(code) ? (names?.of(code.toUpperCase()) ?? code.toUpperCase()) : code;
       map.set(country, (map.get(country) || 0) + 1);
     });
     return Array.from(map.entries())
