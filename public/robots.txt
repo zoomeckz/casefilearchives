@@ -9,8 +9,9 @@ Disallow: /reset-password
 Disallow: /node-editor
 Disallow: /test-case/
 Disallow: /dev/
-Disallow: /*/admin
-Disallow: /*/profile
-Disallow: /*/commendations
+Disallow: /bg/profile
+Disallow: /bg/commendations
+Disallow: /ja/profile
+Disallow: /ja/commendations
 
 Sitemap: https://thecasefiles.org/sitemap.xml
