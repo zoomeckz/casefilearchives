@@ -27,18 +27,23 @@ const META: Record<string, Meta> = {
     title: "Series — Case Files",
     description: "Case Files stories grouped into series and collections.",
   },
+  "/dispatches": {
+    title: "Dispatches — Case Files",
+    description: "Longer stories by AnyoneButSam, told in chapters.",
+  },
 };
 
 // Pages inside a section, until the page itself sets something more specific.
 const SECTIONS: [RegExp, Meta][] = [
   [/^\/forum\/./, META["/forum"]],
   [/^\/series\/./, META["/series"]],
+  [/^\/dispatches\/[^/]+\/?$/, META["/dispatches"]],
   [/^\/user\/./, { title: "Reader profile — Case Files", description: "A reader's personnel file on Case Files." }],
 ];
 
 // Story pages set their own title and description once the story has loaded (ReaderPage).
 // Until then the prerendered values in the HTML stay, so they are never replaced by the home page's.
-const STORY = /^\/(stories|chapters)\/./;
+const STORY = /^\/((stories|chapters)\/.|dispatches\/[^/]+\/\d+)/;
 
 // Accounts, admin and tools: never in search results.
 const PRIVATE = /^\/(admin|profile|commendations|reset-password|node-editor|test-case|dev)(\/|$)/;
