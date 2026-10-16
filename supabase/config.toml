@@ -15,6 +15,9 @@ verify_jwt = false
 [functions.content-feed]
 verify_jwt = false
 
+[functions.rss-feed]
+verify_jwt = false
+
 [functions.seo-status]
 verify_jwt = false
 
