@@ -43,6 +43,7 @@ export const NAV_GROUPS = {
   primary: [
     { id: "home", i18nKey: "home" },
     { id: "chapters", i18nKey: "chapters" },
+    { id: "dispatches", i18nKey: "dispatches" },
     { id: "forum", i18nKey: "forum" },
   ] as const satisfies readonly NavEntry[],
   community: [] as const satisfies readonly NavEntry[],
