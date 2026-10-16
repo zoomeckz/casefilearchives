@@ -93,12 +93,37 @@ function renderHead(shell: string, opts: {
     /<link rel="canonical" href="[^"]*"\s*\/?>/i,
     `<link rel="canonical" href="${esc(opts.canonical)}" />`,
   );
-  if (opts.image) {
-    head = head.replace(
-      /<meta property="og:image" content="[^"]*"\s*\/?>/i,
-      `<meta property="og:image" content="${esc(opts.image)}">`,
-    );
+  // Twitter/X reads its own tags first; left alone they showed the home page for every story.
+  head = head.replace(
+    /<meta name="twitter:title" content="[^"]*"\s*\/?>/i,
+    `<meta name="twitter:title" content="${esc(opts.title)}">`,
+  );
+  head = head.replace(
+    /<meta name="twitter:description" content="[^"]*"\s*\/?>/i,
+    `<meta name="twitter:description" content="${esc(opts.description)}">`,
+  );
+  const image = opts.image ? (opts.image.startsWith("http") ? opts.image : `${BASE_URL}${opts.image.startsWith("/") ? "" : "/"}${opts.image}`) : null;
+  if (image) {
+    const og = `<meta property="og:image" content="${esc(image)}">`;
+    head = /<meta property="og:image"/i.test(head)
+      ? head.replace(/<meta property="og:image" content="[^"]*"\s*\/?>/i, og)
+      : head.replace(/<\/head>/i, `  ${og}\n  </head>`);
+    head = head.replace(/<meta name="twitter:card" content="[^"]*"\s*\/?>/i, `<meta name="twitter:card" content="summary_large_image" />`);
+    head = head.replace(/<\/head>/i, `  <meta name="twitter:image" content="${esc(image)}">\n  </head>`);
   }
+  // The shell's language links point at the home page; here they must point at this page
+  // (and its translated versions, which are listed in the sitemap).
+  const path = opts.canonical.slice(BASE_URL.length) || "/";
+  const alternates = [
+    ["en", opts.canonical],
+    ...["bg", "ja"].map((l) => [l, `${BASE_URL}/${l}${path === "/" ? "" : path}`]),
+    ["x-default", opts.canonical],
+  ];
+  head = head.replace(/[ \t]*<link rel="alternate" hreflang="[^"]*" href="[^"]*"\s*\/?>\r?\n?/gi, "");
+  head = head.replace(
+    /<\/head>/i,
+    alternates.map(([l, href]) => `  <link rel="alternate" hreflang="${l}" href="${esc(href)}" />`).join("\n") + "\n  </head>",
+  );
   return head.replace(
     /<\/head>/i,
     `  <script type="application/ld+json">${JSON.stringify(opts.jsonLd)}</script>\n  </head>`,
