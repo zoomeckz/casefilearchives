@@ -14,7 +14,7 @@ import { CaseReportsInbox } from "@/components/interactive/CaseReportsInbox";
 import { ReadersAdmin } from "@/components/admin/ReadersAdmin";
 import { DiscordSettings } from "@/components/admin/DiscordSettings";
 import { DispatchesAdmin } from "@/components/admin/DispatchesAdmin";
-import { useAdminMenuOrder, applyMenuOrder, MenuArranger } from "@/components/admin/AdminMenuOrder";
+import { useAdminMenuOrder, applyMenuOrder, toMenuOrder, AdminSidebarNav } from "@/components/admin/AdminMenuOrder";
 import { toast } from "sonner";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { Input } from "@/components/ui/input";
@@ -711,40 +711,17 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ glossary, authToken, use
   const sidebarOffsetClass = sidebarCollapsed ? "md:ml-16" : "md:ml-64";
   const showLabels = !sidebarCollapsed;
 
+  // Sidebar: drag a menu heading or a page to reorder; the order is saved on drop.
   const renderNav = (onPick: (id: string) => void, compact: boolean) => (
-    <nav className="space-y-6">
-      {orderedGroups.map((group) => (
-        <div key={group.label}>
-          {!compact && (
-            <div className="px-3 mb-2 text-[10px] uppercase tracking-[0.18em] text-muted-foreground/70 font-medium">
-              {group.label}
-            </div>
-          )}
-          <div className="space-y-1">
-            {group.items.map((item) => {
-              const isActive = activeTab === item.id;
-              const Icon = item.icon;
-              return (
-                <button
-                  key={item.id}
-                  onClick={() => onPick(item.id)}
-                  title={compact ? item.label : undefined}
-                  className={`w-full flex items-center gap-3 ${compact ? "justify-center px-0" : "px-3"} py-2.5 rounded-lg text-left text-sm transition-colors ${
-                    isActive
-                      ? "bg-primary/15 text-primary border border-primary/30"
-                      : "text-muted-foreground hover:text-foreground hover:bg-secondary/60 border border-transparent"
-                  }`}
-                >
-                  <Icon className="w-4 h-4 shrink-0" />
-                  {!compact && <span className="truncate">{item.label}</span>}
-                </button>
-              );
-            })}
-          </div>
-        </div>
-      ))}
-      {!compact && <MenuArranger groups={orderedGroups} onSave={menuOrder.save} />}
-    </nav>
+    <AdminSidebarNav
+      groups={orderedGroups}
+      activeTab={activeTab}
+      compact={compact}
+      onPick={onPick}
+      onReorder={(next) => void menuOrder.save(toMenuOrder(next))}
+      canReset={!!menuOrder.order}
+      onReset={() => void menuOrder.save(null)}
+    />
   );
 
   return (
