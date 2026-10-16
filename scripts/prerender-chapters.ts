@@ -137,6 +137,21 @@ function injectBody(html: string, markup: string) {
   );
 }
 
+/** Dispatch chapters by chapter number → their address. Empty before the dispatches migration. */
+async function fetchDispatchPaths(): Promise<Map<number, string>> {
+  try {
+    const res = await fetch(
+      `${SUPABASE_URL}/rest/v1/chapters?select=chapter_number,dispatch_part,dispatch:dispatches(slug)&story_format=eq.dispatch`,
+      { headers: { apikey: ANON_KEY, Authorization: `Bearer ${ANON_KEY}` } },
+    );
+    if (!res.ok) return new Map();
+    const rows = (await res.json()) as { chapter_number: number; dispatch_part: number | null; dispatch: { slug: string } | null }[];
+    return new Map(rows.filter((r) => r.dispatch?.slug && r.dispatch_part).map((r) => [r.chapter_number, `/dispatches/${r.dispatch!.slug}/${r.dispatch_part}`]));
+  } catch {
+    return new Map();
+  }
+}
+
 async function main() {
   const distIndex = resolve("dist/index.html");
   if (!existsSync(distIndex)) {
@@ -145,6 +160,10 @@ async function main() {
   }
   const shell = readFileSync(distIndex, "utf8");
   const chapters = await fetchChapters();
+  // Dispatch chapters live under /dispatches/<slug>/<n> and stay out of the story list.
+  const dispatchPaths = await fetchDispatchPaths();
+  const pathOf = (c: Chapter) => dispatchPaths.get(c.chapter_number) ?? `/stories/${slugify(c.title)}`;
+  const stories = chapters.filter((c) => !dispatchPaths.has(c.chapter_number));
   if (!chapters.length) {
     console.warn("prerender: no published stories found — skipping");
     return;
@@ -154,7 +173,7 @@ async function main() {
     const c = chapters[i];
     const prev = chapters[i - 1];
     const next = chapters[i + 1];
-    const canonical = `${BASE_URL}/stories/${slugify(c.title)}`;
+    const canonical = `${BASE_URL}${pathOf(c)}`;
     const body = sanitize(c.content ?? "");
     const plain = stripTags(body);
     const description =
@@ -197,7 +216,7 @@ async function main() {
       renderHead(shell, { title, description, canonical, image: c.cover_image_url, jsonLd }),
       markup,
     );
-    const dir = resolve(`dist/stories/${slugify(c.title)}`);
+    const dir = resolve(`dist${pathOf(c)}`);
     mkdirSync(dir, { recursive: true });
     writeFileSync(resolve(dir, "index.html"), page);
   }
@@ -206,7 +225,7 @@ async function main() {
   const listMarkup = [
     `<h1>All Stories — Case Files</h1>`,
     `<ul>`,
-    ...chapters.map(
+    ...stories.map(
       (c) =>
         `<li><a href="/stories/${slugify(c.title)}">${esc(c.title)}</a></li>`,
     ),
@@ -216,7 +235,7 @@ async function main() {
     "@context": "https://schema.org",
     "@type": "ItemList",
     name: "Case Files stories",
-    itemListElement: chapters.map((c, i) => ({
+    itemListElement: stories.map((c, i) => ({
       "@type": "ListItem",
       position: i + 1,
       name: c.title,
@@ -226,7 +245,7 @@ async function main() {
   const listPage = injectBody(
     renderHead(shell, {
       title: `Stories — Case Files, standalone fiction by ${AUTHOR}`,
-      description: `Read ${chapters.length} free standalone stories by ${AUTHOR}. Unrelated stories. Uncomfortable possibilities.`,
+      description: `Read ${stories.length} free standalone stories by ${AUTHOR}. Unrelated stories. Uncomfortable possibilities.`,
       canonical: `${BASE_URL}/chapters`,
       jsonLd: listJsonLd,
     }),
