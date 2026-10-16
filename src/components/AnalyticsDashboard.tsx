@@ -484,15 +484,15 @@ export const AnalyticsDashboard: React.FC<AnalyticsDashboardProps> = ({ authToke
         <div className="space-y-8">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <ChartCard title="Visitors by Country">
-              {geoData.length === 0 || (geoData.length === 1 && geoData[0].country === "Unknown") ? (
+              {!geoData.some((g) => g.country !== "Unknown") ? (
                 <div className="flex items-center justify-center h-60 text-muted-foreground">
                   <p>No geographic data available yet.</p>
                 </div>
               ) : (
                 <ResponsiveContainer width="100%" height={300}>
                   <PieChart>
-                    <Pie data={geoData.slice(0, 8)} cx="50%" cy="50%" outerRadius={100} dataKey="count" label={({ country, percentage }) => `${country} ${percentage}%`}>
-                      {geoData.slice(0, 8).map((_, i) => (
+                    <Pie data={geoData.filter((g) => g.country !== "Unknown").slice(0, 8)} cx="50%" cy="50%" outerRadius={100} dataKey="count" label={({ country, percentage }) => `${country} ${percentage}%`}>
+                      {geoData.filter((g) => g.country !== "Unknown").slice(0, 8).map((_, i) => (
                         <Cell key={i} fill={COLORS[i % COLORS.length]} />
                       ))}
                     </Pie>
