@@ -12,13 +12,14 @@ import { EditAuditPanel } from "@/components/EditAuditPanel";
 import { ChapterTranslationsManager } from "@/components/ChapterTranslationsManager";
 import { CaseReportsInbox } from "@/components/interactive/CaseReportsInbox";
 import { ReadersAdmin } from "@/components/admin/ReadersAdmin";
+import { DiscordSettings } from "@/components/admin/DiscordSettings";
 import { toast } from "sonner";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { Input } from "@/components/ui/input";
 import {
   Menu, X, Search, ArrowUpDown, Globe, CheckCircle2, AlertCircle, Loader2, ExternalLink, History,
   ChevronLeft, ChevronRight, ChevronDown, MoreHorizontal, Edit3, Trash2, Eye, Download, FileText,
-  Calendar, AlertTriangle, BookOpen, Sparkles, BarChart3, PanelLeftClose, PanelLeftOpen, GitBranch, Users, UserCog,
+  Calendar, AlertTriangle, BookOpen, Sparkles, BarChart3, PanelLeftClose, PanelLeftOpen, GitBranch, Users, UserCog, Megaphone,
 } from "lucide-react";
 import { CaseAnalytics } from "@/components/interactive/CaseAnalytics";
 import {
@@ -536,6 +537,7 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ glossary, authToken, use
       label: "System",
       items: [
         { id: "seo", label: "SEO & feeds", icon: Globe },
+        { id: "discord", label: "Discord & RSS", icon: Megaphone },
         { id: "audit", label: "Edit audit", icon: History },
       ],
     },
@@ -564,7 +566,7 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ glossary, authToken, use
 
   useEffect(() => {
     const tabParam = searchParams.get('tab');
-    const nextTab = ['dashboard', 'readers', 'readers-manage', 'chapters', 'reports', 'search', 'analytics', 'case-analytics', 'legacy', 'glossary', 'seo', 'audit'].includes(tabParam || '')
+    const nextTab = ['dashboard', 'readers', 'readers-manage', 'discord', 'chapters', 'reports', 'search', 'analytics', 'case-analytics', 'legacy', 'glossary', 'seo', 'audit'].includes(tabParam || '')
       ? (tabParam as string)
       : 'dashboard';
     const nextSubTab = searchParams.get('subtab') === 'drafts' ? 'drafts' : 'published';
@@ -1140,6 +1142,9 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ glossary, authToken, use
             )}
             {activeTab === "readers-manage" && (
               <ReadersAdmin key={searchParams.get("reader") || "all"} authToken={authToken} mode="manage" />
+            )}
+            {activeTab === "discord" && (
+              <DiscordSettings authToken={authToken} />
             )}
 
             {activeTab === "glossary" && (
