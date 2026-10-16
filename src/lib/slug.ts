@@ -9,8 +9,9 @@ export function slugify(title: string): string {
     .replace(/^-+|-+$/g, "");
 }
 
-/** Public path for a story. Legacy chapters keep their numeric address. */
-export function storyPath(ch: { title: string; chapterNumber: number; isArchived?: boolean }): string {
+/** Public path for a story. Legacy chapters keep their numeric address; dispatch chapters live under their dispatch. */
+export function storyPath(ch: { title: string; chapterNumber: number; isArchived?: boolean; storyFormat?: string; dispatchSlug?: string | null; dispatchPart?: number | null }): string {
+  if (ch.storyFormat === "dispatch" && ch.dispatchSlug && ch.dispatchPart) return `/dispatches/${ch.dispatchSlug}/${ch.dispatchPart}`;
   const slug = slugify(ch.title);
   if (ch.isArchived || !slug) return `/chapters/${ch.chapterNumber}`;
   return `/stories/${slug}`;
