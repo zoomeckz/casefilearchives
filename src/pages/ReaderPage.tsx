@@ -226,7 +226,7 @@ export const ReaderPage: React.FC<ReaderPageProps> = ({
   useEffect(() => {
     if (!chapter) return;
     setPageSeo({
-      title: `${chapter.title} — Case Files`,
+      title: chapter.storyFormat === "dispatch" ? `${chapter.title} · ${chapter.dispatchTitle ?? "Dispatches"} — Case Files` : `${chapter.title} — Case Files`,
       description: plainExcerpt(chapter.content) || `${chapter.title} — a standalone story by AnyoneButSam.`,
       image: chapter.coverImageUrl,
       type: "article",
@@ -288,7 +288,7 @@ export const ReaderPage: React.FC<ReaderPageProps> = ({
 
       <div className="reader-column">
         <button
-          onClick={() => setCurrentPage("chapters")}
+          onClick={() => setCurrentPage(chapter.storyFormat === "dispatch" && chapter.dispatchSlug ? `dispatches/${chapter.dispatchSlug}` : "chapters")}
           className="flex items-center gap-2 text-muted-foreground hover:text-foreground mb-8"
         >
           <Icons.ChevronLeft />
@@ -330,7 +330,7 @@ export const ReaderPage: React.FC<ReaderPageProps> = ({
 
         <header className="mb-12 border-l-4 border-primary pl-6 text-left">
           <span className="case-label text-[9px]">
-            {chapter.isArchived ? `${t("chapters.chapterLabel")} ${chapter.chapterNumber}` : (chapter.tags ?? []).join(" · ")}
+            {chapter.storyFormat === "dispatch" ? `Dispatches · ${chapter.dispatchTitle ?? ""} · Chapter ${chapter.dispatchPart ?? ""}` : chapter.isArchived ? `${t("chapters.chapterLabel")} ${chapter.chapterNumber}` : (chapter.tags ?? []).join(" · ")}
           </span>
           <h1 className="font-display text-4xl sm:text-6xl uppercase text-foreground mt-2 mb-4">
             {chapter.title}
@@ -415,6 +415,23 @@ export const ReaderPage: React.FC<ReaderPageProps> = ({
           />
         </div>
 
+        {/* Dispatches: the previous and next chapter of the same dispatch. */}
+        {chapter.storyFormat === "dispatch" && (prevChapter || nextChapter) && (
+          <nav className="my-8 grid grid-cols-2 gap-3" aria-label="Chapters">
+            {prevChapter ? (
+              <button type="button" onClick={() => setSelectedChapter(prevChapter)} className="text-left border border-border p-4 hover:border-primary transition-colors">
+                <span className="case-label text-[9px] block mb-1">← Chapter {prevChapter.dispatchPart}</span>
+                <span className="font-display uppercase text-foreground">{prevChapter.title}</span>
+              </button>
+            ) : <span />}
+            {nextChapter ? (
+              <button type="button" onClick={() => setSelectedChapter(nextChapter)} className="text-right border border-border p-4 hover:border-primary transition-colors">
+                <span className="case-label text-[9px] block mb-1">Chapter {nextChapter.dispatchPart} →</span>
+                <span className="font-display uppercase text-foreground">{nextChapter.title}</span>
+              </button>
+            ) : <span />}
+          </nav>
+        )}
         <SeriesNav chapterId={chapter.id} chapters={chapters} onOpen={setSelectedChapter} placement="bottom" />
 
         {/* Chapter Reactions */}
