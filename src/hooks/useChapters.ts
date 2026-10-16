@@ -12,7 +12,12 @@ export interface Chapter {
   coverImageUrl: string | null;
   isArchived: boolean;
   tags: string[];
-  storyFormat: 'linear' | 'interactive';
+  storyFormat: 'linear' | 'interactive' | 'dispatch';
+  /** Dispatch chapters: the dispatch (story told in chapters) they belong to, and their chapter number. */
+  dispatchId: string | null;
+  dispatchPart: number | null;
+  dispatchSlug: string | null;
+  dispatchTitle: string | null;
 }
 
 // The chapter list is downloaded on every page, so it leaves out the
@@ -21,7 +26,11 @@ export interface Chapter {
 // Polls only fetch the list; story text (the heavy part) is downloaded once and
 // then only for stories that are new or were edited since (updated_at changed).
 const LIST_COLUMNS = 'id,title,chapter_number,published_at,views,scheduled_at,cover_image_url,is_archived,tags,story_format,updated_at';
-const CHAPTER_COLUMNS = `${LIST_COLUMNS},content`;
+// The dispatch columns exist once the dispatches migration has run; until then the
+// list is fetched without them so the site keeps working.
+const DISPATCH_COLUMNS = ',dispatch_id,dispatch_part,dispatch:dispatches(slug,title)';
+let withDispatchColumns = true;
+const listColumns = () => LIST_COLUMNS + (withDispatchColumns ? DISPATCH_COLUMNS : '');
 
 function mapChapter(c: any): Chapter {
   return {
@@ -35,7 +44,11 @@ function mapChapter(c: any): Chapter {
     coverImageUrl: c.cover_image_url || null,
     isArchived: c.is_archived === true,
     tags: Array.isArray(c.tags) ? c.tags : [],
-    storyFormat: c.story_format === 'interactive' ? 'interactive' : 'linear',
+    storyFormat: c.story_format === 'interactive' ? 'interactive' : c.story_format === 'dispatch' ? 'dispatch' : 'linear',
+    dispatchId: c.dispatch_id ?? null,
+    dispatchPart: c.dispatch_part ?? null,
+    dispatchSlug: c.dispatch?.slug ?? null,
+    dispatchTitle: c.dispatch?.title ?? null,
   };
 }
 
@@ -83,7 +96,7 @@ function isChapterPublished(chapter: Chapter, nowMs: number): boolean {
 function buildChaptersUrl(isAdmin: boolean, withContent = true): string {
   const url = new URL(`${import.meta.env.VITE_SUPABASE_URL}/rest/v1/chapters`);
 
-  url.searchParams.set('select', withContent ? CHAPTER_COLUMNS : LIST_COLUMNS);
+  url.searchParams.set('select', withContent ? `${listColumns()},content` : listColumns());
   url.searchParams.set('order', 'chapter_number.asc');
 
   if (!isAdmin) {
@@ -139,6 +152,10 @@ export function useChapters(isAdmin = false) {
     });
 
     if (!response.ok) {
+      if (response.status === 400 && withDispatchColumns) {
+        withDispatchColumns = false;
+        return fetchChapters();
+      }
       throw new Error(`Failed to fetch chapters (${response.status})`);
     }
 
