@@ -46,10 +46,10 @@ interface AnalyticsData {
   totalForumPosts: number;
   totalSubscribers: number;
   recentPageViews: Array<{ page: string; count: number; avg_duration: number }>;
-  chapterStats: Array<{ id: string; title: string; views: number; chapter_number: number }>;
+  chapterStats: Array<{ id: string; title: string; views: number; chapter_number: number; published_at?: string | null; story_format?: string | null }>;
 }
 
-type ChapterSortKey = 'number-asc' | 'number-desc' | 'views-desc' | 'views-asc' | 'newest' | 'oldest';
+type ChapterSortKey = 'number-asc' | 'number-desc' | 'views-desc' | 'views-asc' | 'newest' | 'oldest' | 'type-asc' | 'type-desc';
 
 // Moment the old connected-world content was archived; activity before this counts as legacy.
 const LEGACY_CUTOFF = '2026-09-23T13:49:55Z';
@@ -66,6 +66,9 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ glossary, authToken, use
   const [chapterSearch, setChapterSearch] = useState("");
   const [chapterSort, setChapterSort] = useState<ChapterSortKey>('newest');
   const [dashboardSearch, setDashboardSearch] = useState("");
+  const [dashboardKind, setDashboardKind] = useState<KindFilterValue>('all');
+  const [dashboardSort, setDashboardSort] = useState<'views-desc' | 'views-asc' | 'newest' | 'oldest' | 'title' | 'type'>('views-desc');
+  const [storyKind, setStoryKind] = useState<KindFilterValue>('all');
 
   // Chapter editor state
   const [editorMode, setEditorMode] = useState<'list' | 'new' | 'new-legacy' | 'edit' | 'draft'>('list');
@@ -306,7 +309,7 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ glossary, authToken, use
 
   const fetchChapters = async () => {
     const { data } = await dbFetch<any[]>('chapters', {
-      select: 'id,title,chapter_number,views,published_at,scheduled_at,is_archived,tags',
+      select: 'id,title,chapter_number,views,published_at,scheduled_at,is_archived,tags,story_format',
       order: 'chapter_number.asc',
       token: authToken,
     });
@@ -319,7 +322,7 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ glossary, authToken, use
         const after = `created_at=gte.${LEGACY_CUTOFF}`;
         const before = `created_at=lt.${LEGACY_CUTOFF}`;
         const [chaptersRes, readersRes, commentsRes, forumRes, subscribersRes, pageViewsRes, oldReadersRes, oldCommentsRes, oldSubsRes] = await Promise.all([
-          dbFetch<any[]>('chapters', { select: 'id,title,views,chapter_number,published_at,scheduled_at,is_archived,tags', order: 'chapter_number.asc', token: authToken }),
+          dbFetch<any[]>('chapters', { select: 'id,title,views,chapter_number,published_at,scheduled_at,is_archived,tags,story_format', order: 'chapter_number.asc', token: authToken }),
           dbFetch<any[]>('profiles', { select: '*', head: true, filters: after, token: authToken }),
           dbFetch<any[]>('comments', { select: '*', head: true, filters: after, token: authToken }),
           dbFetch<any[]>('forum_posts', { select: '*', head: true, token: authToken }),
@@ -612,11 +615,18 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ glossary, authToken, use
       const q = chapterSearch.toLowerCase();
       list = list.filter(ch => ch.title?.toLowerCase().includes(q) || (ch.is_archived && String(ch.chapter_number).includes(q)));
     }
+    // Type filter (legacy chapters are always plain case files and stay listed).
+    if (storyKind !== 'all') list = list.filter((ch) => ch.is_archived || kindOf(ch) === storyKind);
     switch (chapterSort) {
       case 'number-asc': return list.sort((a, b) => a.chapter_number - b.chapter_number);
       case 'number-desc': return list.sort((a, b) => b.chapter_number - a.chapter_number);
       case 'views-desc': return list.sort((a, b) => b.views - a.views);
       case 'views-asc': return list.sort((a, b) => a.views - b.views);
+      case 'type-asc':
+      case 'type-desc': {
+        const dir = chapterSort === 'type-asc' ? 1 : -1;
+        return list.sort((a, b) => dir * (KIND_RANK[kindOf(a)] - KIND_RANK[kindOf(b)]) || (a.title || '').localeCompare(b.title || ''));
+      }
       // Sort by the story's effective date: a future scheduled_at counts as
       // the publish date; missing/unparseable dates sort last (newest) or
       // first (oldest) instead of breaking the comparison with NaN.
@@ -640,17 +650,27 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ glossary, authToken, use
       }
       default: return list;
     }
-  }, [chapters, chapterSearch, chapterSort]);
+  }, [chapters, chapterSearch, chapterSort, storyKind]);
   const activeChapters = filteredChapters.filter((chapter) => !chapter.is_archived);
   const archivedChapters = filteredChapters.filter((chapter) => chapter.is_archived);
 
   // Filtered dashboard chapter stats
   const filteredDashboardStats = useMemo(() => {
     if (!analytics) return [];
-    if (!dashboardSearch.trim()) return analytics.chapterStats;
-    const q = dashboardSearch.toLowerCase();
-    return analytics.chapterStats.filter(ch => ch.title?.toLowerCase().includes(q));
-  }, [analytics, dashboardSearch]);
+    const q = dashboardSearch.trim().toLowerCase();
+    const list = analytics.chapterStats.filter((ch) => (!q || ch.title?.toLowerCase().includes(q)) && (dashboardKind === 'all' || kindOf(ch) === dashboardKind));
+    const when = (ch: { published_at?: string | null }) => (ch.published_at ? Date.parse(ch.published_at) || 0 : 0);
+    return [...list].sort((a, b) => {
+      switch (dashboardSort) {
+        case 'views-asc': return a.views - b.views;
+        case 'newest': return when(b) - when(a);
+        case 'oldest': return when(a) - when(b);
+        case 'title': return (a.title || '').localeCompare(b.title || '');
+        case 'type': return KIND_RANK[kindOf(a)] - KIND_RANK[kindOf(b)] || b.views - a.views;
+        default: return b.views - a.views;
+      }
+    });
+  }, [analytics, dashboardSearch, dashboardKind, dashboardSort]);
 
   // Filtered drafts
   const filteredDrafts = useMemo(() => {
@@ -834,10 +854,28 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ glossary, authToken, use
                     </button>
                   </div>
                 </div>
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 mb-3">
+                  <KindFilter value={dashboardKind} onChange={setDashboardKind} counts={countKinds(analytics.chapterStats)} />
+                  <label className="flex items-center gap-2 text-xs text-muted-foreground">
+                    Sort
+                    <select value={dashboardSort} onChange={(e) => setDashboardSort(e.target.value as typeof dashboardSort)} className="h-8 px-2 bg-background border border-border rounded text-xs text-foreground">
+                      <option value="views-desc">Most views</option>
+                      <option value="views-asc">Fewest views</option>
+                      <option value="newest">Newest</option>
+                      <option value="oldest">Oldest</option>
+                      <option value="title">Title A–Z</option>
+                      <option value="type">Type</option>
+                    </select>
+                  </label>
+                </div>
+                {filteredDashboardStats.length === 0 && <p className="text-sm text-muted-foreground">No stories match.</p>}
                 <div className="space-y-2">
                   {filteredDashboardStats.map(ch => (
                      <div key={ch.id} className="flex items-center justify-between p-3 md:p-4 bg-card/50 rounded-lg border border-border/50">
-                       <span className="text-foreground text-sm md:text-base truncate mr-2">{ch.title}</span>
+                       <span className="flex items-center gap-2 min-w-0 mr-2">
+                         <KindBadge kind={kindOf(ch)} />
+                         <span className="text-foreground text-sm md:text-base truncate">{ch.title}</span>
+                       </span>
                       <div className="flex items-center gap-3 shrink-0">
                         <span className="text-muted-foreground text-xs md:text-sm whitespace-nowrap">{ch.views} views</span>
                         <button
@@ -879,6 +917,10 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ glossary, authToken, use
                       className="pl-9 h-9 text-sm"
                     />
                   </div>
+                </div>
+
+                <div className="mb-3">
+                  <KindFilter value={storyKind} onChange={setStoryKind} counts={countKinds(chapters.filter((c) => !c.is_archived))} />
                 </div>
 
                 {/* Sub-tabs */}
@@ -1588,9 +1630,51 @@ type ChapterRow = {
   scheduled_at: string | null;
   is_archived?: boolean;
   tags?: string[];
+  story_format?: string | null;
 };
 
-type SortKey = 'number-asc' | 'number-desc' | 'views-desc' | 'views-asc' | 'newest' | 'oldest';
+// Case Files, Interactive Case Files and Dispatches are told apart everywhere in the admin.
+type StoryKind = 'linear' | 'interactive' | 'dispatch';
+const kindOf = (ch: { story_format?: string | null }): StoryKind =>
+  ch.story_format === 'interactive' ? 'interactive' : ch.story_format === 'dispatch' ? 'dispatch' : 'linear';
+const KIND_RANK: Record<StoryKind, number> = { linear: 0, interactive: 1, dispatch: 2 };
+const KIND_LABEL: Record<StoryKind, string> = { linear: 'Case file', interactive: 'Interactive', dispatch: 'Dispatch' };
+const KIND_STYLE: Record<StoryKind, string> = {
+  linear: 'border-border text-muted-foreground',
+  interactive: 'border-primary/50 text-primary',
+  dispatch: 'border-amber-500/50 text-amber-400',
+};
+
+const KindBadge: React.FC<{ kind: StoryKind }> = ({ kind }) => (
+  <span className={`inline-block shrink-0 px-1.5 py-0.5 rounded border text-[10px] uppercase tracking-wider whitespace-nowrap ${KIND_STYLE[kind]}`}>{KIND_LABEL[kind]}</span>
+);
+
+type KindFilterValue = 'all' | StoryKind;
+const countKinds = (list: { story_format?: string | null }[]): Record<KindFilterValue, number> => ({
+  all: list.length,
+  linear: list.filter((c) => kindOf(c) === 'linear').length,
+  interactive: list.filter((c) => kindOf(c) === 'interactive').length,
+  dispatch: list.filter((c) => kindOf(c) === 'dispatch').length,
+});
+
+const KindFilter: React.FC<{ value: KindFilterValue; onChange: (v: KindFilterValue) => void; counts: Record<KindFilterValue, number> }> = ({ value, onChange, counts }) => (
+  <div className="flex flex-wrap gap-1 bg-card/30 p-1 rounded-lg w-fit" role="group" aria-label="Story type">
+    {(['all', 'linear', 'interactive', 'dispatch'] as const).map((k) => (
+      <button
+        key={k}
+        type="button"
+        onClick={() => onChange(k)}
+        aria-pressed={value === k}
+        className={`px-3 py-1.5 rounded-md text-xs font-medium transition-colors ${value === k ? 'bg-primary/20 text-primary' : 'text-muted-foreground hover:text-foreground'}`}
+      >
+        {k === 'all' ? 'All' : k === 'linear' ? 'Case files' : k === 'interactive' ? 'Interactive' : 'Dispatches'}
+        <span className="ml-1.5 opacity-60 tabular-nums">{counts[k]}</span>
+      </button>
+    ))}
+  </div>
+);
+
+type SortKey = ChapterSortKey;
 
 interface ChapterTableProps {
   chapters: ChapterRow[];
@@ -1625,10 +1709,11 @@ const ChapterTable: React.FC<ChapterTableProps> = ({
 }) => {
   // Each header maps a column to its (asc, desc) sort keys. Clicking a header
   // toggles between the two; the active one shows a directional caret.
-  type Column = { key: 'number' | 'title' | 'tags' | 'views' | 'date'; label: string; ascKey?: SortKey; descKey?: SortKey; align?: string; hideOnMobile?: boolean };
+  type Column = { key: 'number' | 'title' | 'type' | 'tags' | 'views' | 'date'; label: string; ascKey?: SortKey; descKey?: SortKey; align?: string; hideOnMobile?: boolean };
   const columns: Column[] = [
     ...(legacy ? [{ key: 'number' as const, label: '#', ascKey: 'number-asc' as SortKey, descKey: 'number-desc' as SortKey }] : []),
     { key: 'title', label: 'Title' },
+    ...(!legacy ? [{ key: 'type' as const, label: 'Type', ascKey: 'type-asc' as SortKey, descKey: 'type-desc' as SortKey }] : []),
     ...(!legacy ? [{ key: 'tags' as const, label: 'Tags', hideOnMobile: true }] : []),
     { key: 'views', label: 'Views', ascKey: 'views-asc', descKey: 'views-desc', align: 'text-right', hideOnMobile: true },
     { key: 'date', label: 'Published', ascKey: 'oldest', descKey: 'newest', hideOnMobile: true },
@@ -1724,6 +1809,7 @@ const ChapterTable: React.FC<ChapterTableProps> = ({
                       {ch.views} views · {ch.published_at ? new Date(ch.published_at).toLocaleDateString() : 'No date'}
                     </div>
                   </td>
+                   {!legacy && <td className="px-3 md:px-4 py-3"><KindBadge kind={kindOf(ch)} /></td>}
                    {!legacy && (
                      <td className="px-3 md:px-4 py-3 hidden md:table-cell">
                        <div className="flex flex-wrap gap-1">
