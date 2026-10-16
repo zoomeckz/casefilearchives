@@ -26,6 +26,7 @@ const loadStories = () => import("@/pages/StoriesPage");
 const loadReader = () => import("@/pages/ReaderPage");
 const StoriesPage = React.lazy(() => loadStories().then((m) => ({ default: m.StoriesPage })));
 const ReaderPage = React.lazy(() => loadReader().then((m) => ({ default: m.ReaderPage })));
+const DispatchesPage = React.lazy(() => import("@/pages/DispatchesPage").then((m) => ({ default: m.DispatchesPage })));
 const ProfilePage = React.lazy(() => import("@/pages/ProfilePage").then((m) => ({ default: m.ProfilePage })));
 const AdminPanel = React.lazy(() => import("@/pages/AdminPanel").then((m) => ({ default: m.AdminPanel })));
 const CommendationsPage = React.lazy(() => import("@/pages/CommendationsPage").then((m) => ({ default: m.CommendationsPage })));
@@ -55,6 +56,7 @@ const Index = () => {
   const currentPage = (() => {
     const path = barePath;
     if (path.startsWith("/chapters/") || path.startsWith("/stories/")) return "reader";
+    if (path === "/dispatches" || path.startsWith("/dispatches/")) return /^\/dispatches\/[^/]+\/\d+\/?$/.test(path) ? "reader" : "dispatches";
     if (path === "/chapters") return "chapters";
     if (path === "/commendations") return "commendations";
     if (path.startsWith("/user/")) return "public-profile";
@@ -76,6 +78,9 @@ const Index = () => {
     else if (page === "about") go("/about");
     else if (page === "forum") go("/forum");
     else if (page === "series") go("/series");
+    else if (page === "dispatches") go("/dispatches");
+    // "dispatches/<slug>" opens one dispatch.
+    else if (page.startsWith("dispatches/")) go(`/${page}`);
     // "forum?case=<story id>" opens the forum filtered to one case.
     else if (page.startsWith("forum?")) go(`/forum${page.slice(5)}`);
     else if (page === "reader" && selectedChapter) {
@@ -90,6 +95,13 @@ const Index = () => {
   const { chapters: allChapters, publishedChapters, incrementViews, loading: chaptersLoading } = useChapters(user?.isAdmin);
   // Legacy/archived chapters are admin-panel only — never shown on public pages, even to admins.
   const chapters = React.useMemo(() => allChapters.filter((c) => !c.isArchived), [allChapters]);
+  // The reader steps through its own kind only: a dispatch's chapters in order, or the other stories.
+  const readerChapters = React.useMemo(() => {
+    if (selectedChapter?.storyFormat === "dispatch") {
+      return chapters.filter((c) => c.storyFormat === "dispatch" && c.dispatchId === selectedChapter.dispatchId).sort((a, b) => (a.dispatchPart ?? 0) - (b.dispatchPart ?? 0));
+    }
+    return chapters.filter((c) => c.storyFormat !== "dispatch");
+  }, [chapters, selectedChapter]);
 
   // Reading progress
   const { isRead, markAsRead, markAsUnread, readCount } = useReadingProgress(user);
@@ -142,9 +154,11 @@ const Index = () => {
     if (chapters.length === 0) return;
     const numMatch = barePath.match(/^\/chapters\/(\d+)$/);
     const slugMatch = barePath.match(/^\/stories\/([^/]+)$/);
+    const dispatchMatch = barePath.match(/^\/dispatches\/([^/]+)\/(\d+)\/?$/);
     let ch: Chapter | undefined;
     if (numMatch) ch = chapters.find(c => c.chapterNumber === parseInt(numMatch[1]));
     else if (slugMatch) ch = chapters.find(c => slugify(c.title) === decodeURIComponent(slugMatch[1]));
+    else if (dispatchMatch) ch = chapters.find(c => c.storyFormat === "dispatch" && c.dispatchSlug === decodeURIComponent(dispatchMatch[1]) && c.dispatchPart === parseInt(dispatchMatch[2]));
     if (!ch) {
       // Dead, renamed, or still-unknown link: drop any previously selected
       // story so the reader shows the not-found fallback instead of stale text.
@@ -183,7 +197,8 @@ const Index = () => {
         {currentPage === "home" && (
           <HomePage
             user={user}
-            chapters={publishedChapters}
+            chapters={publishedChapters.filter((c) => c.storyFormat !== "dispatch")}
+            dispatchChapters={publishedChapters}
             setCurrentPage={setCurrentPage}
             setSelectedChapter={handleSelectChapter}
           />
@@ -207,7 +222,7 @@ const Index = () => {
         {currentPage === "reader" && (selectedChapter ? (
           <ReaderPage
             chapter={selectedChapter}
-            chapters={chapters}
+            chapters={readerChapters}
             setSelectedChapter={handleSelectChapter}
             setCurrentPage={setCurrentPage}
             user={user}
@@ -266,6 +281,16 @@ const Index = () => {
 
         {currentPage === "forum" && (
           <ForumPage user={user} authToken={session?.access_token} stories={publishedChapters.filter((c) => !c.isArchived)} setShowAuthModal={setShowAuthModal} />
+        )}
+
+        {currentPage === "dispatches" && (
+          <DispatchesPage
+            chapters={publishedChapters}
+            slug={(() => { const m = barePath.match(/^\/dispatches\/([^/]+)/); return m ? decodeURIComponent(m[1]) : null; })()}
+            user={user}
+            isRead={isRead}
+            onOpen={handleSelectChapter}
+          />
         )}
 
         {currentPage === "series" && (
