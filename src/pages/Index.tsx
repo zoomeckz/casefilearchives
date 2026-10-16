@@ -15,6 +15,7 @@ import { HomePage } from "@/pages/HomePage";
 import { CommendationsProvider } from "@/components/commendations/CommendationsProvider";
 import { slugify, storyPath } from "@/lib/slug";
 import { usePageTracking } from "@/hooks/usePageTracking";
+import { NoIndex } from "@/hooks/useDynamicSeo";
 import i18n from "i18next";
 const t = (k: string) => i18n.t(`ui.${k}`);
 
@@ -221,6 +222,7 @@ const Index = () => {
           />
         ) : chaptersLoading ? null : (
           <div className="flex-1 flex flex-col items-center justify-center text-center px-6 py-24">
+            <NoIndex title="Story not found — Case Files" />
             <p className="case-label text-[10px] mb-3">CASE FILES</p>
             <h1 className="font-display text-3xl sm:text-4xl uppercase text-foreground mb-4">
               {t('notFoundTitle')}
