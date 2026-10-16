@@ -2,6 +2,7 @@ import { useEffect, useRef } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import type { AuthUser } from './useAuth';
 import type { Chapter } from './useChapters';
+import { visitorCountry } from '@/lib/visitorCountry';
 
 export function usePageTracking(
   user: AuthUser | null,
@@ -21,6 +22,7 @@ export function usePageTracking(
         chapter_id: lastChapterId.current || null,
         page: lastPage.current,
         duration_seconds: elapsed,
+        country: visitorCountry(),
       }).then(() => {});
     }
 
@@ -38,6 +40,7 @@ export function usePageTracking(
           chapter_id: selectedChapter?.id || null,
           page: currentPage,
           duration_seconds: dur,
+          country: visitorCountry(),
         };
         // Fire and forget
         supabase.from('page_views').insert(payload).then(() => {});
