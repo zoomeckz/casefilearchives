@@ -14,10 +14,11 @@ import { SUPPORTED_LANGUAGES, LANGUAGE_LABELS, DEFAULT_LANGUAGE, type SupportedL
 import { InteractiveEditor } from '@/components/interactive/InteractiveEditor';
 import { InteractiveReader } from '@/components/interactive/InteractiveReader';
 import { SeriesManager } from '@/components/series/SeriesManager';
+import { DispatchFields } from '@/components/dispatches/DispatchFields';
 import { type InteractiveGraph, emptyGraph, normalizeGraph, validateGraph, removedNodeIds, openingContent } from '@/lib/interactive';
 
 type LangBuffer = { id?: string; title: string; content: string };
-type StoryFormat = 'linear' | 'interactive';
+type StoryFormat = 'linear' | 'interactive' | 'dispatch';
 
 // The drafts table only stores title/content, so an unpublished interactive
 // case structure is backed up in this browser until it is published.
@@ -198,7 +199,10 @@ export const ChapterEditor: React.FC<ChapterEditorProps> = ({ authToken, userId,
   const langBuffers = useRef<Partial<Record<SupportedLanguage, LangBuffer>>>({});
   const [filledLangs, setFilledLangs] = useState<SupportedLanguage[]>([DEFAULT_LANGUAGE]);
   // Interactive Case Files: branching structure stored in chapters.interactive_graph.
-  const [storyFormat, setStoryFormat] = useState<StoryFormat>('linear');
+  // A new chapter opened from Admin → Dispatches arrives with ?dispatch=…&part=… in the address.
+  const [storyFormat, setStoryFormat] = useState<StoryFormat>(() => (!editChapterId && new URLSearchParams(window.location.search).get('dispatch') ? 'dispatch' : 'linear'));
+  const [dispatchId, setDispatchId] = useState<string | null>(() => (!editChapterId ? new URLSearchParams(window.location.search).get('dispatch') : null));
+  const [dispatchPart, setDispatchPart] = useState<number | null>(() => { const p = Number(new URLSearchParams(window.location.search).get('part')); return !editChapterId && p > 0 ? p : null; });
   const [graph, setGraph] = useState<InteractiveGraph>(() => emptyGraph());
   const [publishedGraph, setPublishedGraph] = useState<InteractiveGraph | null>(null);
   const [publishedFormat, setPublishedFormat] = useState<StoryFormat>('linear');
@@ -219,7 +223,7 @@ export const ChapterEditor: React.FC<ChapterEditorProps> = ({ authToken, userId,
 
   const changeStoryFormat = (next: StoryFormat) => {
     if (next === storyFormat) return;
-    if (next === 'linear' && publishedFormat === 'interactive' &&
+    if (next !== 'interactive' && publishedFormat === 'interactive' &&
       !window.confirm('This case is published as interactive. Switching to linear hides the branches and readers’ saved routes until you switch back. Continue?')) {
       return;
     }
@@ -258,11 +262,10 @@ export const ChapterEditor: React.FC<ChapterEditorProps> = ({ authToken, userId,
   useEffect(() => {
     if (editChapterId) {
       const loadChapter = async () => {
-        const { data } = await dbFetch<any[]>('chapters', {
-          select: 'title,content,chapter_number,scheduled_at,cover_image_url,is_archived,tags,story_format,interactive_graph',
-          filters: `id=eq.${editChapterId}`,
-          token: authToken,
-        });
+        const base = 'title,content,chapter_number,scheduled_at,cover_image_url,is_archived,tags,story_format,interactive_graph';
+        let { data } = await dbFetch<any[]>('chapters', { select: `${base},dispatch_id,dispatch_part`, filters: `id=eq.${editChapterId}`, token: authToken });
+        // Before the dispatches migration the dispatch columns don't exist yet.
+        if (!data) ({ data } = await dbFetch<any[]>('chapters', { select: base, filters: `id=eq.${editChapterId}`, token: authToken }));
         if (data && data[0]) {
           setTitle(data[0].title);
           setContent(data[0].content);
@@ -294,6 +297,12 @@ export const ChapterEditor: React.FC<ChapterEditorProps> = ({ authToken, userId,
             setStoryFormat('interactive');
             setPublishedFormat('interactive');
           }
+          if (data[0].story_format === 'dispatch') {
+            setStoryFormat('dispatch');
+            setPublishedFormat('dispatch');
+          }
+          setDispatchId(data[0].dispatch_id ?? null);
+          setDispatchPart(data[0].dispatch_part ?? null);
           langBuffers.current[DEFAULT_LANGUAGE] = { title: data[0].title, content: data[0].content };
           const { data: tr } = await dbFetch<any[]>('chapter_translations', {
             select: 'id,language_code,title,content',
@@ -466,6 +475,11 @@ export const ChapterEditor: React.FC<ChapterEditorProps> = ({ authToken, userId,
       return;
     }
 
+    if (!isLegacy && storyFormat === 'dispatch' && (!dispatchId || !dispatchPart)) {
+      toast.error('Choose the dispatch and the chapter number for this chapter.');
+      return;
+    }
+
     setPublishing(true);
     try {
       let normalizedScheduledAt = normalizeScheduledAt(scheduledAt);
@@ -478,8 +492,12 @@ export const ChapterEditor: React.FC<ChapterEditorProps> = ({ authToken, userId,
       const normalizedContent = normalizeRichTextHtml(storyContent);
       // Switching an interactive case back to linear keeps its graph so it can be restored.
       const formatFields = isLegacy ? {} : {
-        story_format: isInteractive ? 'interactive' : 'linear',
+        story_format: isInteractive ? 'interactive' : storyFormat === 'dispatch' ? 'dispatch' : 'linear',
         interactive_graph: isInteractive ? graph : (publishedGraph ?? null),
+        // Only sent for dispatch chapters, so other stories still save before the dispatches migration.
+        ...(storyFormat === 'dispatch' || publishedFormat === 'dispatch'
+          ? { dispatch_id: storyFormat === 'dispatch' ? dispatchId : null, dispatch_part: storyFormat === 'dispatch' ? dispatchPart : null }
+          : {}),
       };
 
       if (editChapterId) {
@@ -796,6 +814,7 @@ export const ChapterEditor: React.FC<ChapterEditorProps> = ({ authToken, userId,
                 {([
                   ['linear', 'Linear Case File'],
                   ['interactive', 'Interactive Case File'],
+                  ['dispatch', 'Dispatch chapter'],
                 ] as const).map(([f, label]) => (
                   <button
                     key={f}
@@ -812,8 +831,13 @@ export const ChapterEditor: React.FC<ChapterEditorProps> = ({ authToken, userId,
               <p className="text-xs text-muted-foreground mt-2">
                 {isInteractive
                   ? 'Readers make decisions that change the scenes, options and ending they receive. Registered readers’ choices are locked to their account.'
-                  : 'A normal story with no reader decisions.'}
+                  : storyFormat === 'dispatch'
+                    ? 'One chapter of a dispatch (a story told in chapters). It appears under Dispatches, not with the Case Files.'
+                    : 'A normal story with no reader decisions.'}
               </p>
+              {storyFormat === 'dispatch' && (
+                <DispatchFields dispatchId={dispatchId} part={dispatchPart} onChange={(n) => { setDispatchId(n.dispatchId); setDispatchPart(n.part); }} />
+              )}
             </div>
           )}
 
