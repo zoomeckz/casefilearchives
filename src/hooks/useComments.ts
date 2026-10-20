@@ -28,17 +28,26 @@ export function useComments(chapterId: string | undefined) {
         content,
         created_at,
         updated_at,
-        user_id,
-        profiles!inner(name)
+        user_id
       `)
       .eq('chapter_id', chapterId)
       .order('created_at', { ascending: true });
 
     if (!error && data) {
+      // Comments have no database link to profiles, so names come from the public profile list.
+      const ids = [...new Set(data.map(c => c.user_id))];
+      const names = new Map<string, string>();
+      if (ids.length) {
+        const { data: people } = await (supabase as any)
+          .rpc('get_public_profiles')
+          .select('user_id,name')
+          .in('user_id', ids);
+        for (const p of (people || []) as { user_id: string; name: string }[]) names.set(p.user_id, p.name);
+      }
       setComments(data.map(c => ({
         id: c.id,
         content: c.content,
-        author: (c.profiles as any)?.name || 'Anonymous',
+        author: names.get(c.user_id) || 'Anonymous',
         authorId: c.user_id,
         createdAt: c.created_at,
         updatedAt: c.updated_at || c.created_at,
