@@ -157,7 +157,15 @@ const Index = () => {
     const dispatchMatch = barePath.match(/^\/dispatches\/([^/]+)\/(\d+)\/?$/);
     let ch: Chapter | undefined;
     if (numMatch) ch = chapters.find(c => c.chapterNumber === parseInt(numMatch[1]));
-    else if (slugMatch) ch = chapters.find(c => slugify(c.title) === decodeURIComponent(slugMatch[1]));
+    else if (slugMatch) {
+      const slug = decodeURIComponent(slugMatch[1]);
+      ch = chapters.find(c => slugify(c.title) === slug);
+      // A title that gained a prefix ("Ari and Robin - …") keeps its old address working.
+      if (!ch) {
+        const prefixed = chapters.filter(c => slugify(c.title).endsWith("-" + slug));
+        if (prefixed.length === 1) ch = prefixed[0];
+      }
+    }
     else if (dispatchMatch) ch = chapters.find(c => c.storyFormat === "dispatch" && c.dispatchSlug === decodeURIComponent(dispatchMatch[1]) && c.dispatchPart === parseInt(dispatchMatch[2]));
     if (!ch) {
       // Dead, renamed, or still-unknown link: drop any previously selected
